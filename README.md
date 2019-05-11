@@ -50,3 +50,7 @@ Please join our discord, mention @OP and let me know what cities you'd like adde
 ## Secret Functionality:
 - Putting `all` for the states/cities question will loop through a txt file of all 50 states. This is nice because it will create a csv per state
 - Putting `united-states` will go through all listing (10k+) in the entire US but it will put all of it into 1 CSV... _BEWARE THIS IS A MASSIVE FILE_
+
+
+### Please consider donating if you enjoy!
+https://commerce.coinbase.com/checkout/820e33e8-b652-408f-8f33-713af2ff7732
