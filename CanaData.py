@@ -145,6 +145,11 @@ class WeedMapper:
                 # Convert the menu data to JSON to work with
                 menuJsonData = menuData.json()
 
+                clean_listing = {}
+
+                for listingKey in menuJsonData['listing'].keys():
+                    clean_listing[listingKey] = str(menuJsonData['listing'][listingKey]).encode('utf-8')
+
                 # Add the listing to our finishedLocations list
                 self.finishedLocations.append(menuJsonData['listing'])
                 # Print visual queue the location is being worked on
@@ -264,7 +269,7 @@ class WeedMapper:
             makedirs(home_dir)
 
         # Create CSV file as outfile
-        with open(f'{home_dir}/{filename}.csv', 'w') as outfile:
+        with open(f'{home_dir}/{filename}.csv', 'w', newline='', encoding='utf-8') as outfile:
             # Setup csv writer with file
             output = csv.writer(outfile)
 
