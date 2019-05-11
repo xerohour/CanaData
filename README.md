@@ -8,6 +8,11 @@ Don's favorite tool to retrieve state/cities listing results from Weedmaps! (Yes
 ## Discord to discuss:
 https://discord.gg/6WAcVek
 
+## Got an Example CURL request to show what endpoints are involved?
+YUP! This example is for the lovely state of Washington DC as they don't have too many Locations so it's a smaller dataset. Feel free to changeout `washington-dc` to a lowercase version of your state (replace spaces with a dash if there is one `-`)
+```
+curl -g "https://api-g.weedmaps.com/discovery/v1/listings?filter[any_retailer_services][]=storefront&filter[any_retailer_services][]=delivery&filter[region_slug[deliveries]]=washington-dc&filter[region_slug[dispensaries]]=washington-dc&page_size=100&size=100"
+```
 
 ## Why would I use this?
 When I found that a single item by the same company can be sold at multiple locations at different prices, I was determined to find a way to put these dispensary and delivery services more in competition with each other. Stop leaving us consumers left out to dry when it comes to understanding where we should shop thats best for us.
@@ -36,6 +41,10 @@ When I found that a single item by the same company can be sold at multiple loca
 
 
 - Follow the on screen steps!
+
+
+## I want more cities! State has too much info or takes to long (2hr+ for California lol!)
+Please join our discord, mention @OP and let me know what cities you'd like added!
 
 
 ## Secret Functionality:
