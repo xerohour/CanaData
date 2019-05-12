@@ -379,6 +379,13 @@ if __name__ == '__main__':
     if city == 'all':
         # States list is set to our list
         states = allStates
+    elif city == 'mylist':
+        try:
+            states = knownCities = [line.rstrip('\n').lower().replace(' ', '-') for line in open('mylist.txt')]  # Updated by Don Manually through magic
+        except Exception as e:
+            print(e)
+            print('Had an error opening your file! Please check above / that the mylist.txt file exists! ^^')
+            exit()
     else:
         # State list is set to a single item list of what the user input
         states = [city]
