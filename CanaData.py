@@ -214,7 +214,7 @@ class WeedMapper:
             for all_key in all_keys:
                 # if one of the all_keys is not present in this dicitonary's key list, add it with value
                 if all_key in current_keys:
-                    flat_ordered_dict[all_key] = str(item[all_key]).encode('utf-8')
+                    flat_ordered_dict[all_key] = str(item[all_key])
                 # IF the key is not present in the dictionary's key list, add it with value as "None"
                 else:
                     flat_ordered_dict[all_key] = 'None'
