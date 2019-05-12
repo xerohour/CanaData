@@ -17,9 +17,9 @@ class WeedMapper:
         # Populated with the City/State Slug
         self.searchSlug = None
         # Set to True if we are grabbing storefronts
-        self.storefronts = False
+        self.storefronts = True
         # Set to True if we are grabbing deliveries
-        self.deliveries = False
+        self.deliveries = True
         # Number of Locations found for searchSlug
         self.locationsFound = 0
         # Number returned from Weedmaps as to Max # of locations
@@ -48,6 +48,8 @@ class WeedMapper:
             reqJson = req.json()
             # Return JSON dataset
             return reqJson
+        elif req.status_code == 422:
+            return 'break'
         else:
             # Print the error into the terminal
             print(req.text)
@@ -75,7 +77,8 @@ class WeedMapper:
 
             # Check if the request was successul or not
             if locations is not False:
-
+                if locations == 'break':
+                    break
                 # If we haven't set our max # of locations, do so
                 if self.maxLocations is None:
                     # Set self variable to the responses' total listing attribute
@@ -134,32 +137,41 @@ class WeedMapper:
         count = 0
         # If the city/state slug is friendly, then loop through the listings one by one
         for location in self.locations:
-            # Craft a URL variable which pulls all menu items for a location
-            url = f'https://weedmaps.com/api/web/v1/listings/{location["slug"]}/menu?type={location["type"]}'
+            finished = False
+            while finished is False:
+                try:
+                    # Craft a URL variable which pulls all menu items for a location
+                    url = f'https://weedmaps.com/api/web/v1/listings/{location["slug"]}/menu?type={location["type"]}'
 
-            # Get the menu data from the URL
-            menuData = requests.get(url)
+                    # Get the menu data from the URL
+                    menuData = requests.get(url)
 
-            # If that was successful
-            if menuData.status_code == 200:
-                # Convert the menu data to JSON to work with
-                menuJsonData = menuData.json()
+                    # If that was successful
+                    if menuData.status_code == 200:
+                        # Convert the menu data to JSON to work with
+                        menuJsonData = menuData.json()
+                        count += 1
+                        clean_listing = {}
 
-                clean_listing = {}
+                        for listingKey in menuJsonData['listing'].keys():
+                            clean_listing[listingKey] = str(menuJsonData['listing'][listingKey]).encode('utf-8')
 
-                for listingKey in menuJsonData['listing'].keys():
-                    clean_listing[listingKey] = str(menuJsonData['listing'][listingKey]).encode('utf-8')
-
-                # Add the listing to our finishedLocations list
-                self.finishedLocations.append(menuJsonData['listing'])
-                # Print visual queue the location is being worked on
-                print(f'Working on the menu for {menuJsonData["listing"]["name"]}')
-                # Loop through each menu category
-                for menuItemCategory in menuJsonData['categories']:
-                    # Loop through each item in each category
-                    for menuItem in menuItemCategory['items']:
-                        # Add the menu item to our allMenuItems list
-                        self.allMenuItems.append(menuItem)
+                        # Add the listing to our finishedLocations list
+                        self.finishedLocations.append(menuJsonData['listing'])
+                        # Print visual queue the location is being worked on
+                        print(f'Working on the menu ({str(count)}/{str(len(self.locations))}) for {menuJsonData["listing"]["name"]}')
+                        # Loop through each menu category
+                        for menuItemCategory in menuJsonData['categories']:
+                            # Loop through each item in each category
+                            for menuItem in menuItemCategory['items']:
+                                # Add the menu item to our allMenuItems list
+                                self.allMenuItems.append(menuItem)
+                        finished = True
+                except Exception as e:
+                    print(e)
+                    print(menuData.text)
+                    input('Issue with menu retrival, see issue and hit Enter to retry or enter "Skip" to continue\n\n- ').lower()
+                    continue
         # Special function to flatten all our Menu items!
         self.organize_into_clean_list()
 
@@ -335,16 +347,16 @@ class WeedMapper:
     # Function to determine if we are searching for Dispensary data or Delivery Data (can be both)
     def identifyDataTypes(self):
         # Ask the user to put y/yes or we wont search dispensaries
-        dispensaryChoice = input('\n\nAre we pulling Dispensary Info? (Yes/y or hit enter)\n\n--').lower()
-        if 'y' in dispensaryChoice or 'yes' in dispensaryChoice:
-            # Set self value to True so dispensaries are included in datasets
-            self.storefronts = True
+        dispensaryChoice = input('\n\nAre we pulling Dispensary Info? (No/n or hit enter for yes)\n\n--').lower()
+        if 'n' in dispensaryChoice or 'no' in dispensaryChoice:
+            # Set self value to False so dispensaries are included in datasets
+            self.storefronts = False
 
         # Ask the user to put y/yes or we wont search deliveries
-        deliveriesChoice = input('\n\nAre we pulling Deliveries Info? (Yes/y or hit enter)\n\n--').lower()
-        if 'y' in deliveriesChoice or 'yes' in dispensaryChoice:
-            # Set self value to True so deliveries are included in datasets
-            self.deliveries = True
+        deliveriesChoice = input('\n\nAre we pulling Deliveries Info? (No/N or hit enter for yes)\n\n--').lower()
+        if 'n' in deliveriesChoice or 'no' in dispensaryChoice:
+            # Set self value to False so deliveries are included in datasets
+            self.deliveries = False
 
 
 if __name__ == '__main__':

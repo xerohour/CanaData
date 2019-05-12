@@ -49,4 +49,8 @@ Please join our discord, mention @OP and let me know what cities you'd like adde
 
 ## Secret Functionality:
 - Putting `all` for the states/cities question will loop through a txt file of all 50 states. This is nice because it will create a csv per state
-- Putting `united-states` will go through all listing (10k+) in the entire US but it will put all of it into 1 CSV... _BEWARE THIS IS A MASSIVE FILE_
+- Putting `mylist` will attempt to read a 'mylist.txt' file locally. Please separate the states by new lines like so (capitals doesn't matter):
+
+`California
+Colorado
+Oregon`
