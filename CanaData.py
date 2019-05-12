@@ -172,6 +172,7 @@ class WeedMapper:
                     print(menuData.text)
                     input('Issue with menu retrival, see issue and hit Enter to retry or enter "Skip" to continue\n\n- ').lower()
                     continue
+        print('\n\nFinished will grabbing all the Menus! Organizing now into clean lists for export! (up to a couple minutes on those big exports (5k+) looking at you California)\n')
         # Special function to flatten all our Menu items!
         self.organize_into_clean_list()
 
@@ -369,23 +370,21 @@ if __name__ == '__main__':
     # Grab list of known Cities from local file
     knownCities = [line.rstrip('\n').lower().replace(' ', '-') for line in open('cities.txt')]  # Updated by Don Manually through magic
 
+    myList = [line.rstrip('\n').lower().replace(' ', '-') for line in open('mylist.txt')]  # Updated by Don Manually through magic
+
     # Ask the user for what City they'd like to run
-    city = input(f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\nWhat cityslug or state slug would you like to search? (Put all for all states)\n\nKnown State Options:\n\n{", ".join(allStates)}\n\nKnown City Options:\n\n{", ".join(knownCities)}\n\n-- ').lower()
+    city = input(f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\nWhat cityslug or state slug would you like to search? (Put all for all states)\n\nKnown State Options:\n{", ".join(allStates)}\n\nKnown City Options:\n{", ".join(knownCities)}\n\nKnown Mylist Options:\n{", ".join(myList)}\n\n-- ').lower()
 
     # Asks the user if they'd like to grab dispensaries and/or deliveries
     mapper.identifyDataTypes()
 
     # Check if user asked for all
     if city == 'all':
-        # States list is set to our list
+        # States list is set to our 50 state list # Fingers crossed it runs through all!
         states = allStates
     elif city == 'mylist':
-        try:
-            states = knownCities = [line.rstrip('\n').lower().replace(' ', '-') for line in open('mylist.txt')]  # Updated by Don Manually through magic
-        except Exception as e:
-            print(e)
-            print('Had an error opening your file! Please check above / that the mylist.txt file exists! ^^')
-            exit()
+        # States list is set to the list from the myList.txt file
+        states = myList
     else:
         # State list is set to a single item list of what the user input
         states = [city]
