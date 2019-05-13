@@ -6,7 +6,7 @@ Retrieve state/cities listing results from Weedmaps! (Yes you can try all 50 sta
 
 
 ## Discord to discuss:
-https://discord.gg/6WAcVek
+[https://discord.gg/6WAcVek](https://discord.gg/6WAcVek)
 
 ## Got an Example CURL request to show what endpoints are involved?
 YUP! This example is for the lovely state of Washington DC as they don't have too many Locations so it's a smaller dataset. Feel free to changeout `washington-dc` to a lowercase version of your state (replace spaces with a dash if there is one `-`)
