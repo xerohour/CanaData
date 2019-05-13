@@ -2,7 +2,7 @@
 
 
 # Welcome to CanaData
-Don's favorite tool to retrieve state/cities listing results from Weedmaps! (Yes you can try all 50 states two ways!)
+Retrieve state/cities listing results from Weedmaps! (Yes you can try all 50 states!)
 
 
 ## Discord to discuss:
