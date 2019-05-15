@@ -19,7 +19,7 @@ When I found that a single item by the same company can be sold at multiple loca
 
 
 ## How do I use this?
-- Go here, hover your mouse on Download and download python 3.X for your operating system -> https://www.python.org/
+- Go here, hover your mouse on Download and download python 3.X for your operating system: [https://www.python.org/](https://www.python.org/)
 
 
 - Download this Repository into a folder (typically works best putting on your Desktop so it's easy to find!)
@@ -49,13 +49,14 @@ Please join our discord, mention @OP and let me know what cities you'd like adde
 
 ## Secret Functionality:
 - Putting `all` for the states/cities question will loop through a txt file of all 50 states. This is nice because it will create a csv per state
-- Putting `mylist` will attempt to read a 'mylist.txt' file locally. Please separate the states by new lines like so (capitals doesn't matter):
+- Putting `mylist` will attempt to read a 'mylist.txt' file locally. Please separate the states by new lines like so (capitals don't matter):
 
 `California`
 
 `Colorado`
 
 `Oregon`
+
 
 
 ### Please consider donating if you enjoy!
