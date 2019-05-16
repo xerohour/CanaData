@@ -3,6 +3,7 @@ from datetime import datetime
 from os import path as ospath
 from os import makedirs
 from sys import path
+from sys import argv
 import requests
 import json
 import csv
@@ -22,12 +23,15 @@ class WeedMapper:
         self.deliveries = True
         # Number of Locations found for searchSlug
         self.locationsFound = 0
+        # Number of Items found
+        self.menuItemsFound = 0
         # Number returned from Weedmaps as to Max # of locations
         self.maxLocations = None
         # Dataset of locations
         self.locations = []
-        # List of menu items
-        self.allMenuItems = []
+        # Dictionary of menu items by Listing URL
+        # Avoids duplicating items from deliveries using their Storefront Menus
+        self.allMenuItems = {}
         # List of flattened menu items
         self.finishedMenuItems = []
         # List of flattened locations
@@ -134,10 +138,16 @@ class WeedMapper:
         # If the city/state slug is not friendly to Cannabis, skip them!
         if self.NonGreenState is True:
             return
-        count = 0
+
+        location_count = 0
+
+        seen_locations = []
+
         # If the city/state slug is friendly, then loop through the listings one by one
         for location in self.locations:
             finished = False
+            checked = False
+
             while finished is False:
                 try:
                     # Craft a URL variable which pulls all menu items for a location
@@ -150,46 +160,95 @@ class WeedMapper:
                     if menuData.status_code == 200:
                         # Convert the menu data to JSON to work with
                         menuJsonData = menuData.json()
-                        count += 1
+
+                        # Add to our count of Listing Progress
+                        location_count += 1
+
+                        # Clean dictionary to house the finished encoded items + reorganizes them all into right order
                         clean_listing = {}
 
+                        # Variable to set our Listing URL to
+                        listing_url = None
+
+                        # Integer to count # of menu items for listing
+                        menu_items = 0
+
+                        # Print visual queue the location is being worked on
+                        print(f'\nWorking on the menu ({str(location_count)}/{str(len(self.locations))}) for {menuJsonData["listing"]["name"]}')
+
+                        print(f'There are {str(len(menuJsonData["categories"]))} categories in the menu!')
+
+                        # Loop through values to clean them with encoding!
                         for listingKey in menuJsonData['listing'].keys():
                             clean_listing[listingKey] = str(menuJsonData['listing'][listingKey]).encode('utf-8')
 
-                        # Add the listing to our finishedLocations list
-                        self.finishedLocations.append(menuJsonData['listing'])
-                        # Print visual queue the location is being worked on
-                        print(f'Working on the menu ({str(count)}/{str(len(self.locations))}) for {menuJsonData["listing"]["name"]}')
+                        
                         # Loop through each menu category
                         for menuItemCategory in menuJsonData['categories']:
+                            # Quick check for if we've seen the listing before!
+                            if checked is False:
+                                for menuItem in menuItemCategory['items']:
+                                    if menuItemCategory['items'][0]['listing_url'] in seen_locations:
+                                        checked = True
+                                        print('We\'ve already grabbed this menus\'s items! (It has been seen before!)')
+                                        finished = True
+                                    else:
+                                        checked = True
+                                        self.allMenuItems[menuItem['listing_url']] = []
+                            if finished is True:
+                                break
                             # Loop through each item in each category
                             for menuItem in menuItemCategory['items']:
-                                # Add the menu item to our allMenuItems list
-                                self.allMenuItems.append(menuItem)
+                                if listing_url is None:
+                                    listing_url = menuItem['listing_url']
+                                # Add the menu item to our allMenuItems dictionary
+                                self.allMenuItems[menuItem['listing_url']].append(menuItem)
+                                menu_items += 1
+                                self.menuItemsFound += 1
+
+                        # Visual progress of Listing's items amount
+                        finished_statement = f'There are {str(menu_items)} items in the menu!'
+                        if menu_items == 0:
+                            finished_statement += '  <--- Will be on Listings CSV but no items on Menu Results!'
+                        print(finished_statement)
+
+                        # Add # of menu items to listing Info!
+                        menuJsonData['listing']['num_menu_items'] = str(menu_items)
+
+                        # Add the listing to our finishedLocations list
+                        self.finishedLocations.append(menuJsonData['listing'])
+
+                        
+
+                        print(f'#{str(len(self.allMenuItems.keys()))} Total Menus Processed!!')
+
                         finished = True
+
                 except Exception as e:
                     print(e)
-                    print(menuData.text)
+                    # print(menuData.text)
                     input('Issue with menu retrival, see issue and hit Enter to retry or enter "Skip" to continue\n\n- ').lower()
                     continue
-        print('\n\nFinished will grabbing all the Menus! Organizing now into clean lists for export! (up to a couple minutes on those big exports (5k+) looking at you California)\n')
+        print('\n\nFinished grabbing all the Menus & Items! \n\nOrganizing now into clean lists for export!\n(up to a couple minutes on those big exports (5k+) looking at you California)\n')
         # Special function to flatten all our Menu items!
         self.organize_into_clean_list()
 
     # This function loops through our identifed menu items and flattens them into exportable datasets
     def organize_into_clean_list(self):
         # Grab the data from allMenuItems
-        data = self.allMenuItems
+        listings = self.allMenuItems
 
         # This is where our flat datasets will reside once finished
         flatDictList = []
 
-        # Loop through allMenuItems
-        for item in data:
-            # Flatten the dataset for each item
-            flatData = self.flatten_dictionary(item)
-            # Add the flat dataset to our flatDictList
-            flatDictList.append(flatData)
+        # Loop through the Listings
+        for listing in listings:
+            # Loop through the menu item Dictionaries for each listings
+            for item in listings[listing]:
+                # Flatten the dataset for each item
+                flatData = self.flatten_dictionary(item)
+                # Add the flat dataset to our flatDictList
+                flatDictList.append(flatData)
 
         # This list will be all possible keys
         all_keys = []
@@ -315,11 +374,17 @@ class WeedMapper:
         try:
             self.csv_maker(f'{self.searchSlug}_results', self.finishedMenuItems)
         except Exception as e:
-            print(e)
-            print('Probably were no actual items.. Heres a visual conformation though!:\n', json.dumps(self.finishedMenuItems[0], indent=3))
+            print(f'Error: {str(e)}')
+            print('^^ Probably were no actual items (if error says \'list index out of range\')')
 
-        # Since the Listing dataset always has values regardless of empty menus, turn that dataset into a CSV
-        self.csv_maker(f'{self.searchSlug}_total_listings', self.finishedLocations)
+        # Listing dataset typically has values regardless of empty menus, turn that dataset into a CSV
+        try:
+            self.csv_maker(f'{self.searchSlug}_total_listings', self.finishedLocations)
+        except Exception as e:
+            print(f'Error: {str(e)}')
+            print('^^ Musta been a bad search query? (if error says \'list index out of range\')')
+
+        print(f'\n\nResults for -> {self.searchSlug}:\n- {str(self.locationsFound)} locations\n- {str(len(self.allMenuItems.keys()))} Menus\n- {str(self.menuItemsFound)} Menu Items')
 
     # Since we loop through states in the "All" option, we have to reset some values
     def resetDataSets(self):
@@ -332,7 +397,7 @@ class WeedMapper:
         # Reset the locations dataset
         self.locations = []
         # Reset the list of Menu Items
-        self.allMenuItems = []
+        self.allMenuItems = {}
         # Reset the list of Finished Menu Items
         self.finishedMenuItems = []
         # Reset the list of Finished Locations
@@ -361,7 +426,7 @@ class WeedMapper:
 
 
 if __name__ == '__main__':
-    # Initiate the Class
+    # Initiate the Library
     mapper = WeedMapper()
 
     # Grab list of States from local file
@@ -370,31 +435,39 @@ if __name__ == '__main__':
     # Grab list of known Cities from local file
     knownCities = [line.rstrip('\n').lower().replace(' ', '-') for line in open('cities.txt')]  # Updated by Don Manually through magic
 
+    # Grab list of known Cities from local file
     myList = [line.rstrip('\n').lower().replace(' ', '-') for line in open('mylist.txt')]  # Updated by Don Manually through magic
 
-    # Ask the user for what City they'd like to run
-    city = input(f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\nWhat cityslug or state slug would you like to search? (Put all for all states)\n\nKnown State Options:\n{", ".join(allStates)}\n\nKnown City Options:\n{", ".join(knownCities)}\n\nKnown Mylist Options:\n{", ".join(myList)}\n\n-- ').lower()
+    # Check if user is doing Quickrun
+    if len(argv) > 1:
+        if argv[1] == '-go':
+            if argv[2].lower() == 'mylist':
+                myList = [line.rstrip('\n').lower().replace(' ', '-') for line in open('mylist.txt')]  # Updated by Don Manually through magic
+                states = myList
+            else:
+                states = [argv[2].lower()]
+            print(f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\n\n\nStarting Quickrun on {str(", ".join(states))}\n\n\n')
 
-    # Asks the user if they'd like to grab dispensaries and/or deliveries
-    mapper.identifyDataTypes()
-
-    # Check if user asked for all
-    if city == 'all':
-        # States list is set to our 50 state list # Fingers crossed it runs through all!
-        states = allStates
-    elif city == 'mylist':
-        # States list is set to the list from the myList.txt file
-        states = myList
+    # If user is not doing Quickrun
     else:
-        # State list is set to a single item list of what the user input
-        states = [city]
+        # Ask the user for what City they'd like to run
+        city = input(f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\nWhat cityslug or state slug would you like to search? (Put all for all states)\n\nKnown State Options:\n{", ".join(allStates)}\n\nKnown City Options:\n{", ".join(knownCities)}\n\nKnown Mylist Options:\n{", ".join(myList)}\n\n-- ').lower()
+
+        # Check if user asked for all
+        if city == 'all':
+            # States list is set to our 50 state list # Fingers crossed it runs through all!
+            states = allStates
+        elif city == 'mylist':
+            # States list is set to the list from the myList.txt file
+            states = myList
+        else:
+            # State list is set to a single item list of what the user input
+            states = [city]
 
     # Loop through the list of states (or single) and run functions against them all
     for state in states:
         # Visual queue of starting a state
         print(f'\n\nStarting on {state}')
-        # Reset the self variables to avoid using old data from other states/slugs
-        mapper.resetDataSets()
         # Set our searchSlug to the State we are working on
         mapper.setCitySlug(state)
         # Get the locations for the given slug
@@ -403,7 +476,7 @@ if __name__ == '__main__':
         mapper.getMenus()
         # Convert our Datasets to CSV's (1 for Menu Items & 1 for Listing Info)
         mapper.dataToCSV()
-        # Visual queue of finished with state
-        print('Finished with state!\n')
+        # Reset the self variables to avoid using old data from other states/slugs
+        mapper.resetDataSets()
     # Print out the list of Non-Cannabis friendly states
     mapper.identifyNaughtyStates()
