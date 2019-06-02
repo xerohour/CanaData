@@ -61,3 +61,7 @@ Please join our discord, mention @OP and let me know what cities you'd like adde
 
 ### Please consider donating if you enjoy!
 [https://commerce.coinbase.com/checkout/820e33e8-b652-408f-8f33-713af2ff7732](https://commerce.coinbase.com/checkout/820e33e8-b652-408f-8f33-713af2ff7732)
+
+
+##*Disclaimer*
+This project is solely for fun and personal use. It is not associated, affiliated, or in conjunction with Weedmaps in any way. Nor do they know it probably exists. Please contact Weedmaps directly before using this information or code for any public/for profit usage. I made this to help people, not make money! Don't sue me Weedmaps!
