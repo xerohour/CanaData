@@ -452,14 +452,23 @@ if __name__ == '__main__':
     # This is where we end pu putting our list of items. Replaced with a list of search slugs -> []
     searchSlugs = None
 
-    # Grab list of States from local file
-    allStatesSlugs = [line.rstrip('\n').lower().replace(' ', '-') for line in open('states.txt')]  # Updated by Manually through magic
+    try:
+        # Grab list of States from local file
+        allStatesSlugs = [line.rstrip('\n').lower().replace(' ', '-') for line in open('states.txt')]  # Updated by Manually through magic
+    except Exception as e:
+        print('Looks like no states.txt file! No biggy, just cant use the all option!')
 
-    # Grab list of known Cities from local file
-    knownSlugs = [line.rstrip('\n').lower().replace(' ', '-') for line in open('slugs.txt')]
+    try:
+        # Grab list of known Cities from local file
+        knownSlugs = [line.rstrip('\n').lower().replace(' ', '-') for line in open('slugs.txt')]
+    except Exception as e:
+        print('Looks like no slugs.txt file! No biggy, just cant use the slugs option!')
 
-    # Grab list of known Cities from local file
-    mySlugList = [line.rstrip('\n').lower().replace(' ', '-') for line in open('mylist.txt')]  # Updated by Manually through magic
+    try:
+        # Grab list of known Cities from local file
+        mySlugList = [line.rstrip('\n').lower().replace(' ', '-') for line in open('mylist.txt')]  # Updated by Manually through magic
+    except Exception as e:
+        print('Looks like no mylist.txt file! No biggy, just cant use the mylist option!')
 
     # Argument list
     argList = list(argv)
