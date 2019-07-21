@@ -24,10 +24,10 @@ csv_folder = "../"+"CanaData_" + str(datetime.today().strftime('%m-%d-%Y'))
 #csv_file = "vermont_results.csv"
 #csv_file = "washington_results.csv"
 #csv_file = "washington-dc_results.csv"
-#csv_file = "colorado_results.csv"
+csv_file = "colorado_results.csv"
 #csv_file = "arizona_results.csv"
 #csv_file = "maine_results.csv"
-csv_file = "nevada_results.csv"
+#csv_file = "nevada_results.csv"
 
 flower_filters = []
 with open('./flower-filters.json') as json_file:
