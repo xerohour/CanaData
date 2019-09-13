@@ -242,7 +242,10 @@ class CanaData:
                 except Exception as e:
                     print(e)
                     print(menuData.text)
-                    input('Issue with menu retrival, see issue and hit Enter to retry or enter "Skip" to continue\n\n- ').lower()
+                    skip_check = input('Issue with menu retrival, see issue and hit Enter to retry or enter "Skip" to continue\n\n- ').lower()
+                    if 'skip' in skip_check.lower():
+                        print('Ok, skipping that locations items!')
+                        finished = True
                     continue
         print('\n\nFinished grabbing all the Menus & Items! \n\nOrganizing now into clean lists for export!\n(up to a couple minutes on those big exports (5k+) looking at you California)\n')
         # Special function to flatten all our Menu items!
@@ -481,7 +484,6 @@ if __name__ == '__main__':
         if '-slugs' in argList:
             cana.slugs()
 
-
     # This specifically looks for the quick run argument and sets the State list
     if '-go' in argList:
         # Search slug location in args is after the -go
@@ -499,7 +501,6 @@ if __name__ == '__main__':
             searchSlugs = [argv[searchSlug].lower()]
         # Visual queue of start (in place of question for search slug)
         print(f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\n\n\nStarting Quickrun on {str(len(searchSlugs))} Slugs: \n{str(", ".join(searchSlugs))}\n\n\n')
-
 
     # If user is not doing Quickrun
     # Ask them for a slug then determine if its one of our preset 3 or a regular search
@@ -520,8 +521,6 @@ if __name__ == '__main__':
         else:
             # State list is set to a single item list of what the user input
             searchSlugs = [answer]
-
-
 
     # This Loop fires no matter what to process all search slugs provided either manually or through a .txt file!
     # Fun functions against them all!
