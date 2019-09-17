@@ -24,6 +24,8 @@ class CanaData:
         self.deliveries = True
         # Number of Locations found for searchSlug
         self.locationsFound = 0
+        # Set to true if troubleshooting
+        self.testMode = False
         # Number of Items found
         self.menuItemsFound = 0
         # Number returned from Weedmaps as to Max # of locations
@@ -159,11 +161,22 @@ class CanaData:
                     # Craft a URL variable which pulls all menu items for a location
                     url = f'https://weedmaps.com/api/web/v1/listings/{location["slug"]}/menu?type={location["type"]}'
 
+                    # Print visual queue the location is being worked on
+                    print(f'\nWorking on menu ({str(location_count)}/{str(len(self.locations))}) --> {location["slug"]}')
+                    if self.testMode is True:
+                        print(f'Using url: {url}\n(for troubleshooting in browser)')
+
                     # Get the menu data from the URL
                     menuData = requests.get(url)
 
+                    if menuData.status_code == 503:
+                        print('First Byte error. Unsure of what this means but skipping for now! Please reach out in discord.')
+                        finished = True
+                        break
+
                     # If that was successful
                     if menuData.status_code == 200:
+                        print('Successfully retrieved!')
                         # Convert the menu data to JSON to work with
                         menuJsonData = menuData.json()
 
@@ -175,9 +188,6 @@ class CanaData:
 
                         # Integer to count # of menu items for listing
                         menu_items = 0
-
-                        # Print visual queue the location is being worked on
-                        print(f'\nWorking on menu ({str(location_count)}/{str(len(self.locations))}) --> {menuJsonData["listing"]["name"]}')
 
                         # Loop through values of the Listing Data (not menu items) to clean them with encoding!
                         for listingKey in menuJsonData['listing'].keys():
@@ -239,9 +249,14 @@ class CanaData:
 
                         finished = True
 
+                    else:
+                        print('Issue on menu retrieval!')
+                        print(menuData.text)
+                        print(menuData.status_code)
+                        exit()
+
                 except Exception as e:
                     print(e)
-                    print(menuData.text)
                     skip_check = input('Issue with menu retrival, see issue and hit Enter to retry or enter "Skip" to continue\n\n- ').lower()
                     if 'skip' in skip_check.lower():
                         print('Ok, skipping that locations items!')
@@ -447,6 +462,10 @@ class CanaData:
         print('Set slugGrab to true!')
         self.slugGrab = True
 
+    def TestMode(self):
+        print('Set TestMode to True')
+        self.testMode = True
+
 
 if __name__ == '__main__':
     # Initiate the Library
@@ -475,6 +494,9 @@ if __name__ == '__main__':
 
     # Argument list
     argList = list(argv)
+
+    if '-tshoot' in argList:
+        cana.TestMode()
 
     # Check if arguments were passed
     if len(argList) > 1:
