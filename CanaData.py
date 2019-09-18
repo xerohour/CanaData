@@ -250,12 +250,16 @@ class CanaData:
                         finished = True
 
                     else:
-                        print('Issue on menu retrieval!')
+                        print('Issue with retrieval:\n')
                         print(menuData.text)
-                        print(menuData.status_code)
-                        exit()
+                        skip_check = input('Issue with menu retrival, see issue and hit Enter to retry or enter "Skip" to continue\n\n- ').lower()
+                        if 'skip' in skip_check.lower():
+                            print('Ok, skipping that locations items!')
+                            finished = True
+                        continue
 
                 except Exception as e:
+                    print('Caught an error on the Try function:\n')
                     print(e)
                     skip_check = input('Issue with menu retrival, see issue and hit Enter to retry or enter "Skip" to continue\n\n- ').lower()
                     if 'skip' in skip_check.lower():
@@ -463,7 +467,7 @@ class CanaData:
         self.slugGrab = True
 
     def TestMode(self):
-        print('Set TestMode to True')
+        print('Set Troubleshooting Mode to True')
         self.testMode = True
 
 
@@ -528,7 +532,7 @@ if __name__ == '__main__':
     # Ask them for a slug then determine if its one of our preset 3 or a regular search
     else:
         # Ask the user for what City they'd like to run
-        answer = input(f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\nWhat city slug or state slug would you like to search? Can put all for all states or mylist for your custom list or slugs for the list of custom slugs from slugs.txt!\n\nKnown State Options:\n{", ".join(allStates)}\n\nKnown Slug Options:\n{", ".join(knownSlugs)}\n\nKnown Mylist Options:\n{", ".join(myList)}\n\n-- ').lower()
+        answer = input(f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\nWhat city slug or state slug would you like to search? Can put all for all states or mylist for your custom list or slugs for the list of custom slugs from slugs.txt!\n\nKnown State Options:\n{", ".join(allStatesSlugs)}\n\nKnown Slug Options:\n{", ".join(knownSlugs)}\n\nKnown Mylist Options:\n{", ".join(mySlugList)}\n\n-- ').lower()
 
         # Check if user asked for all
         if answer == 'all':
