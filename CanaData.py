@@ -24,6 +24,8 @@ class CanaData:
         self.deliveries = True
         # Number of Locations found for searchSlug
         self.locationsFound = 0
+        # Set to true if troubleshooting
+        self.testMode = False
         # Number of Items found
         self.menuItemsFound = 0
         # Number returned from Weedmaps as to Max # of locations
@@ -159,11 +161,22 @@ class CanaData:
                     # Craft a URL variable which pulls all menu items for a location
                     url = f'https://weedmaps.com/api/web/v1/listings/{location["slug"]}/menu?type={location["type"]}'
 
+                    # Print visual queue the location is being worked on
+                    print(f'\nWorking on menu ({str(location_count)}/{str(len(self.locations))}) --> {location["slug"]}')
+                    if self.testMode is True:
+                        print(f'Using url: {url}\n(for troubleshooting in browser)')
+
                     # Get the menu data from the URL
                     menuData = requests.get(url)
 
+                    if menuData.status_code == 503:
+                        print('First Byte error. Unsure of what this means but skipping for now! Please reach out in discord.')
+                        finished = True
+                        break
+
                     # If that was successful
                     if menuData.status_code == 200:
+                        print('Successfully retrieved!')
                         # Convert the menu data to JSON to work with
                         menuJsonData = menuData.json()
 
@@ -175,9 +188,6 @@ class CanaData:
 
                         # Integer to count # of menu items for listing
                         menu_items = 0
-
-                        # Print visual queue the location is being worked on
-                        print(f'\nWorking on menu ({str(location_count)}/{str(len(self.locations))}) --> {menuJsonData["listing"]["name"]}')
 
                         # Loop through values of the Listing Data (not menu items) to clean them with encoding!
                         for listingKey in menuJsonData['listing'].keys():
@@ -239,10 +249,22 @@ class CanaData:
 
                         finished = True
 
+                    else:
+                        print('Issue with retrieval:\n')
+                        print(menuData.text)
+                        skip_check = input('Issue with menu retrival, see issue and hit Enter to retry or enter "Skip" to continue\n\n- ').lower()
+                        if 'skip' in skip_check.lower():
+                            print('Ok, skipping that locations items!')
+                            finished = True
+                        continue
+
                 except Exception as e:
+                    print('Caught an error on the Try function:\n')
                     print(e)
-                    print(menuData.text)
-                    input('Issue with menu retrival, see issue and hit Enter to retry or enter "Skip" to continue\n\n- ').lower()
+                    skip_check = input('Issue with menu retrival, see issue and hit Enter to retry or enter "Skip" to continue\n\n- ').lower()
+                    if 'skip' in skip_check.lower():
+                        print('Ok, skipping that locations items!')
+                        finished = True
                     continue
         print('\n\nFinished grabbing all the Menus & Items! \n\nOrganizing now into clean lists for export!\n(up to a couple minutes on those big exports (5k+) looking at you California)\n')
         # Special function to flatten all our Menu items!
@@ -444,6 +466,10 @@ class CanaData:
         print('Set slugGrab to true!')
         self.slugGrab = True
 
+    def TestMode(self):
+        print('Set Troubleshooting Mode to True')
+        self.testMode = True
+
 
 if __name__ == '__main__':
     # Initiate the Library
@@ -473,6 +499,9 @@ if __name__ == '__main__':
     # Argument list
     argList = list(argv)
 
+    if '-tshoot' in argList:
+        cana.TestMode()
+
     # Check if arguments were passed
     if len(argList) > 1:
         # There were arguments! Now to check for specifics
@@ -480,7 +509,6 @@ if __name__ == '__main__':
         # This looks to see if we need to save the City list that we identify!
         if '-slugs' in argList:
             cana.slugs()
-
 
     # This specifically looks for the quick run argument and sets the State list
     if '-go' in argList:
@@ -499,7 +527,6 @@ if __name__ == '__main__':
             searchSlugs = [argv[searchSlug].lower()]
         # Visual queue of start (in place of question for search slug)
         print(f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\n\n\nStarting Quickrun on {str(len(searchSlugs))} Slugs: \n{str(", ".join(searchSlugs))}\n\n\n')
-
 
     # If user is not doing Quickrun
     # Ask them for a slug then determine if its one of our preset 3 or a regular search
@@ -520,8 +547,6 @@ if __name__ == '__main__':
         else:
             # State list is set to a single item list of what the user input
             searchSlugs = [answer]
-
-
 
     # This Loop fires no matter what to process all search slugs provided either manually or through a .txt file!
     # Fun functions against them all!
