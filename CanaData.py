@@ -51,7 +51,7 @@ class CanaData:
     # If successul, converts the response to JSON and returns the dataset
     def do_request(self, url):
         # Make the request to the URL (no authentication)
-        req = requests.get(url)
+        req = requests.get(url, headers={"User-Agent": "XY"})
         # If status was success
         if req.status_code == 200:
             # Convert dataset to JSON
@@ -159,15 +159,15 @@ class CanaData:
             while finished is False:
                 try:
                     # Craft a URL variable which pulls all menu items for a location
-                    url = f'https://weedmaps.com/api/web/v1/listings/{location["slug"]}/menu?type={location["type"]}'
+                    url = f'https://api-g.weedmaps.com/discovery/v1/listings/{location["slug"]}/menu?type={location["type"]}'
 
                     # Print visual queue the location is being worked on
                     print(f'\nWorking on menu ({str(location_count)}/{str(len(self.locations))}) --> {location["slug"]}')
-                    if self.testMode is True:
-                        print(f'Using url: {url}\n(for troubleshooting in browser)')
+                    #if self.testMode is True:
+                    print(f'Using url: {url}\n(for troubleshooting in browser)')
 
                     # Get the menu data from the URL
-                    menuData = requests.get(url)
+                    menuData = requests.get(url, headers={"User-Agent": "XY"})
 
                     if menuData.status_code == 503:
                         print('First Byte error. Unsure of what this means but skipping for now! Please reach out in discord.')
@@ -185,7 +185,7 @@ class CanaData:
 
                         # Clean dictionary to house the finished encoded items + reorganizes them all into right order
                         clean_listing = {}
-
+    
                         # Integer to count # of menu items for listing
                         menu_items = 0
 
@@ -249,7 +249,7 @@ class CanaData:
 
                         finished = True
 
-                    else:
+                    else:   
                         print('Issue with retrieval:\n')
                         print(menuData.text)
                         skip_check = input('Issue with menu retrival, see issue and hit Enter to retry or enter "Skip" to continue\n\n- ').lower()
