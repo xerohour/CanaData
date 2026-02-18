@@ -11,6 +11,13 @@ from typing import Optional, List, Dict, Any, Union
 from dotenv import load_dotenv
 from LeaflyScraper import scrape_leafly
 from CannMenusClient import CannMenusClient
+import concurrent.futures
+import threading
+import time
+from concurrent_processor import ConcurrentMenuProcessor
+from cache_manager import CacheManager
+from cached_api_client import CachedAPIClient
+from optimized_data_processor import OptimizedDataProcessor
 
 # Load environment variables
 load_dotenv()
@@ -57,7 +64,7 @@ class CanaData:
         NonGreenState (bool): Flag indicating current slug has no locations
         slugGrab (bool): Whether to save discovered slugs
     """
-    def __init__(self):
+    def __init__(self, max_workers: int = 10, rate_limit: float = 1.0, cache_enabled: bool = True, optimize_processing: bool = True):
         # Where the Magic happens
         self.baseUrl: str = os.getenv('WEEDMAPS_BASE_URL', 'https://api-g.weedmaps.com/discovery/v1/listings')
         self.brandsBaseUrl: str = os.getenv('WEEDMAPS_BRANDS_URL', 'https://api-g.weedmaps.com/discovery/v1/brands')
@@ -100,8 +107,34 @@ class CanaData:
         self.extractedStrains: Dict[str, Any] = {}
         self.brandsFound: int = 0
         self.strainsFound: int = 0
+        
+        # Concurrent processing configuration
+        self.max_workers = max_workers
+        self.rate_limit = rate_limit
+        
+        # Caching configuration
+        self.cache_enabled = cache_enabled
+        if cache_enabled:
+            cache_ttl = int(os.getenv('CACHE_TTL', 3600))
+            self.cache_manager = CacheManager(
+                memory_cache_size=int(os.getenv('MEMORY_CACHE_SIZE', 2000)),
+                memory_cache_ttl=cache_ttl,
+                disk_cache_ttl=cache_ttl * 6,  # Disk cache lasts longer
+                enable_disk_cache=os.getenv('ENABLE_DISK_CACHE', 'true').lower() == 'true'
+            )
+            self.api_client = CachedAPIClient(self.cache_manager)
+        else:
+            self.cache_manager = None
+            self.api_client = None
+            
+        # Data processing optimization
+        self.optimize_processing = optimize_processing
+        if optimize_processing:
+            self.data_processor = OptimizedDataProcessor(max_workers=max_workers)
+        else:
+            self.data_processor = None
 
-    def do_request(self, url):
+    def do_request(self, url, use_cache: bool = True):
         """
         Execute HTTP GET request and return JSON response.
         
@@ -110,6 +143,7 @@ class CanaData:
         
         Args:
             url (str): Complete URL to request
+            use_cache (bool): Whether to use caching (default: True)
             
         Returns:
             dict: JSON response data if successful (status 200)
@@ -117,6 +151,16 @@ class CanaData:
             bool: False if other error occurred
         """
         
+        # Use cached API client if enabled
+        if self.cache_enabled and self.api_client and use_cache:
+            try:
+                return self.api_client.get(url, timeout=30)
+            except Exception as e:
+                logger.warning(f"Cached request failed, trying without cache: {e}")
+                # Fall back to direct request
+                pass
+        
+        # Direct request without cache
         try:
             req = requests.get(url, timeout=30)
             if req.status_code == 200:
@@ -201,6 +245,16 @@ class CanaData:
         if self.NonGreenState:
             return
 
+        # Check if we should use concurrent processing
+        use_concurrent = os.getenv('USE_CONCURRENT_PROCESSING', 'false').lower() == 'true'
+        
+        if use_concurrent:
+            self._getMenusConcurrent()
+        else:
+            self._getMenusSequential()
+
+    def _getMenusSequential(self):
+        """Original sequential menu fetching implementation"""
         for i, location in enumerate(self.locations):
             location_slug = location["slug"]
             location_type = location["type"]
@@ -236,6 +290,63 @@ class CanaData:
 
         logger.info("Finished gathering menus. Organizing for export...")
         self.organize_into_clean_list()
+
+    def _getMenusConcurrent(self):
+        """Concurrent menu fetching implementation"""
+        logger.info(f"Processing {len(self.locations)} locations concurrently...")
+        
+        # Create processor with configuration from environment or defaults
+        max_workers = int(os.getenv('MAX_WORKERS', self.max_workers))
+        rate_limit = float(os.getenv('RATE_LIMIT', self.rate_limit))
+        
+        processor = ConcurrentMenuProcessor(max_workers=max_workers, rate_limit=rate_limit)
+        
+        # Define the processing function for a single location
+        def process_location_menu(location):
+            return self._fetch_and_process_menu(location)
+        
+        # Process all locations concurrently
+        results = processor.process_locations(self.locations, process_location_menu)
+        
+        # Update instance variables with results
+        # The _fetch_and_process_menu method already updates self.allMenuItems
+        logger.info("Finished gathering menus. Organizing for export...")
+        self.organize_into_clean_list()
+        
+        # Log any errors that occurred
+        if processor.errors:
+            logger.warning(f"Encountered {len(processor.errors)} errors during processing")
+            for error in processor.errors[:5]:  # Log first 5 errors
+                logger.warning(f"Error for {error['location']['slug']}: {error['error']}")
+
+    def _fetch_and_process_menu(self, location: Dict[str, Any]) -> bool:
+        """Fetch and process menu for a single location"""
+        location_slug = location["slug"]
+        location_type = location["type"]
+        
+        try:
+            url = f'https://weedmaps.com/api/web/v1/listings/{location_slug}/menu?type={location_type}'
+            
+            if self.testMode:
+                logger.debug(f"Menu URL: {url}")
+            
+            resp = requests.get(url, timeout=30)
+            
+            if resp.status_code == 503:
+                logger.warning(f"503 Service Unavailable for {location_slug}. Skipping.")
+                return False
+            
+            if resp.status_code == 200:
+                # Process the menu data using the existing method
+                self.process_menu_json(resp.json())
+                return True
+            else:
+                logger.error(f"Failed to fetch menu for {location_slug}: {resp.status_code}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error processing {location_slug}: {str(e)}")
+            return False
 
     def getBrands(self):
         """
@@ -431,6 +542,19 @@ class CanaData:
         Example:
             Input:  {'name': 'Product', 'price': {'amount': 10}}
             Output: {'name': 'Product', 'price.amount': '10'}
+        """
+        # Use optimized data processor if enabled
+        if self.optimize_processing and self.data_processor:
+            logger.info("Using optimized data processing pipeline")
+            self.finishedMenuItems = self.data_processor.process_menu_data(self.allMenuItems)
+        else:
+            # Fall back to original method
+            logger.info("Using original data processing method")
+            self._original_organize_into_clean_list()
+    
+    def _original_organize_into_clean_list(self):
+        """
+        Original data organization method for backward compatibility.
         """
         # Grab the data from allMenuItems
         listings = self.allMenuItems

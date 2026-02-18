@@ -124,6 +124,28 @@ The script creates a directory named `CanaData_MM-DD-YYYY` containing:
 3. `all_brands.csv` / `all_strains.csv`: Global metadata exports (if requested).
 4. `listing_report.html`: Visual HTML report for the searched region.
 
+## 8. Performance Features
+
+### Concurrent Processing
+The script now supports concurrent processing of multiple locations using `ThreadPoolExecutor`. This can significantly reduce scraping time for areas with many locations.
+
+Configuration options:
+- `MAX_WORKERS`: Number of concurrent threads (default: 10)
+- `RATE_LIMIT`: Minimum delay between requests in seconds (default: 1.0)
+
+### Caching
+Multi-tier caching reduces redundant API calls:
+- Memory cache with TTL (default: 1 hour)
+- Disk cache for persistence across runs (default: 6 hours)
+- Configurable through `CACHE_ENABLED`, `CACHE_TTL`, and `DISK_CACHE_TTL`
+
+### Optimized Data Processing
+Data flattening is now optimized using pandas `json_normalize` when available, with fallback to the custom algorithm for edge cases.
+
+Configuration options:
+- `OPTIMIZE_PROCESSING`: Enable/disable optimized processing (default: true)
+- `PROCESSING_MAX_WORKERS`: Workers for fallback processing (default: 4)
+
 ---
 
 *For usage instructions, please refer to the [README.md](./README.md).*

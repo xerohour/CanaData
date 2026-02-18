@@ -41,6 +41,17 @@ python CanaData.py
 ### Advanced Usage (Command Line Arguments):
 - `-go [slug]`: Quickstart the script with a specific slug or keyword (`all`, `mylist`).
 - `-tshoot`: Enable troubleshooting mode for more verbose output.
+- `-brands`: Fetch all brand data from Weedmaps discovery API.
+- `-strains`: Fetch all strain data from Weedmaps discovery API (Note: This endpoint is currently unreliable).
+
+### Environment Configuration:
+The script now supports extensive configuration through environment variables. See `.env.example` for all available options.
+
+### Performance Features:
+- **Concurrent Processing**: Process multiple locations simultaneously (configurable via `MAX_WORKERS`).
+- **Rate Limiting**: Prevent API bans with configurable delays (`RATE_LIMIT`).
+- **Caching**: Reduce redundant API calls with multi-tier caching (memory and disk).
+- **Optimized Data Processing**: Faster data flattening using pandas when available.
 
 ---
 
