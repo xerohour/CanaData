@@ -11,6 +11,7 @@ from typing import Optional, List, Dict, Any, Union
 from dotenv import load_dotenv
 from LeaflyScraper import scrape_leafly
 from CannMenusClient import CannMenusClient
+from data_sources import DataSourceManager
 import concurrent.futures
 import threading
 import time
@@ -133,6 +134,10 @@ class CanaData:
             self.data_processor = OptimizedDataProcessor(max_workers=max_workers)
         else:
             self.data_processor = None
+
+        # Pluggable data source manager
+        self.source_manager = DataSourceManager()
+        self.source_manager.auto_register()
 
     def do_request(self, url, use_cache: bool = True):
         """
@@ -519,6 +524,51 @@ class CanaData:
                 self.totalLocations.append(shop)
         
         logger.info(f"Finished CannMenus integration. Total items: {self.menuItemsFound}")
+
+    def getSourceData(self, source_name: str):
+        """
+        Fetch data from any registered pluggable data source.
+
+        This method uses the DataSourceManager to dispatch to the correct
+        adapter (API client or scraper) based on *source_name*.  It stores
+        the results in the same internal structures that getMenus() and
+        getCannMenusData() use, so the downstream CSV export works unchanged.
+
+        Args:
+            source_name (str): Registered adapter name (e.g. "cannmenus", "leafly").
+        """
+        slug = self.searchSlug
+        if not slug:
+            logger.error("No search slug provided for source '%s'!", source_name)
+            return
+
+        if source_name not in self.source_manager:
+            available = [s["name"] for s in self.source_manager.list_sources()]
+            logger.error(
+                "Source '%s' is not registered. Available: %s",
+                source_name, ", ".join(available) or "(none)",
+            )
+            return
+
+        logger.info("Fetching data via pluggable source '%s' for slug=%s", source_name, slug)
+        try:
+            result = self.source_manager.fetch(source_name, slug)
+        except Exception as exc:
+            logger.error("Source '%s' failed: %s", source_name, exc)
+            return
+
+        # Merge results into CanaData's internal structures
+        for loc_id, items in result.get("menus", {}).items():
+            self.allMenuItems[loc_id] = items
+            self.menuItemsFound += len(items)
+
+        for loc in result.get("locations", []):
+            self.totalLocations.append(loc)
+
+        logger.info(
+            "Source '%s' integration complete: %d locations, %d items",
+            source_name, len(result.get("locations", [])), result.get("total_items", 0),
+        )
 
     def organize_into_clean_list(self):
         """
@@ -942,7 +992,15 @@ if __name__ == '__main__':
                      # If user just typed something but also wants brands/strains, maybe they want both
                      pass
 
-            if '-leafly' in argList:
+            if '-source' in argList:
+                # Generic pluggable source: -source <name>
+                source_idx = argList.index('-source') + 1
+                if source_idx < len(argList):
+                    cana.getSourceData(argList[source_idx])
+                else:
+                    print('Error: -source requires a source name argument')
+                    print(f'Available: {[s["name"] for s in cana.source_manager.list_sources()]}')
+            elif '-leafly' in argList:
                 cana.getLeaflyData()
             elif '-cannmenus' in argList:
                 cana.getCannMenusData()
