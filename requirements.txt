@@ -2,6 +2,11 @@ requests>=2.32.0
 yattag==1.12.2
 python-dotenv>=1.0.0
 # Removed explicit urllib3/chardet/idna to let requests handle them
-pytest
-responses
 apify-client
+pandas>=1.5.0
+numpy>=1.21.0
+
+# Testing dependencies
+pytest>=7.0.0
+pytest-cov>=4.0.0
+responses>=0.23.0
