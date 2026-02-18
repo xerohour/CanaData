@@ -1,1 +1,7 @@
-requests==2.21.0
+requests>=2.32.0
+yattag==1.12.2
+python-dotenv>=1.0.0
+# Removed explicit urllib3/chardet/idna to let requests handle them
+pytest
+responses
+apify-client

@@ -1,1 +1,2 @@
-yattag==1.11.1
+yattag>=1.15.1
+python-dotenv>=1.0.0

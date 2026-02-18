@@ -1,277 +1,437 @@
-#!/usr/bin/python3
-from datetime import datetime
-from os import path as ospath
-from os import makedirs
-from sys import path
-from sys import argv
 import requests
 import json
 import csv
+import logging
+import os
+from datetime import datetime
+from os import path as ospath
+from os import makedirs
+from sys import path, argv
+from typing import Optional, List, Dict, Any, Union
+from dotenv import load_dotenv
+from LeaflyScraper import scrape_leafly
+from CannMenusClient import CannMenusClient
+
+# Load environment variables
+load_dotenv()
+
+# Configure logging
+logging.basicConfig(
+    level=os.getenv('LOG_LEVEL', 'INFO'),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
 # Low and behold, the almighty CanaData
 class CanaData:
+    """
+    CanaData - A Weedmaps Data Scraper
+    
+    This class provides functionality to scrape cannabis dispensary and delivery service
+    data from Weedmaps API, including location information and menu items.
+    
+    Workflow:
+    1. Initialize with configuration settings
+    2. Set search slug (city/state identifier)
+    3. Retrieve all locations for the slug via paginated API calls
+    4. For each location, fetch and flatten menu data
+    5. Export results to CSV files
+    
+    Attributes:
+        baseUrl (str): Base API endpoint for Weedmaps discovery
+        pageSize (str): Pagination parameters for API requests
+        searchSlug (str): Current city/state slug being processed
+        storefronts (bool): Whether to include storefront dispensaries
+        deliveries (bool): Whether to include delivery services
+        locationsFound (int): Counter for locations retrieved
+        testMode (bool): Enable verbose debugging output
+        menuItemsFound (int): Counter for total menu items processed
+        maxLocations (int): Total locations available for current slug
+        locations (list): Collection of location dictionaries with slug and type
+        emptyMenus (dict): Locations with no menu items
+        allMenuItems (dict): Menu items organized by location ID
+        finishedMenuItems (list): Flattened menu items ready for export
+        totalLocations (list): All location metadata
+        unFriendlyStates (list): Slugs with zero locations found
+        NonGreenState (bool): Flag indicating current slug has no locations
+        slugGrab (bool): Whether to save discovered slugs
+    """
     def __init__(self):
         # Where the Magic happens
-        self.baseUrl = 'https://api-g.weedmaps.com/discovery/v1/listings'
+        self.baseUrl: str = os.getenv('WEEDMAPS_BASE_URL', 'https://api-g.weedmaps.com/discovery/v1/listings')
+        self.brandsBaseUrl: str = os.getenv('WEEDMAPS_BRANDS_URL', 'https://api-g.weedmaps.com/discovery/v1/brands')
+        self.strainsBaseUrl: str = os.getenv('WEEDMAPS_STRAINS_URL', 'https://api-g.weedmaps.com/discovery/v1/strains')
         # Pagination & Page size
-        self.pageSize = '&page_size=100&size=100'
+        self.pageSize: str = f"&page_size={os.getenv('PAGE_SIZE', '100')}&size={os.getenv('PAGE_SIZE', '100')}"
         # Populated with the City/State Slug
-        self.searchSlug = None
+        self.searchSlug: Optional[str] = None
         # Set to True if we are grabbing storefronts
-        self.storefronts = True
+        self.storefronts: bool = True
         # Set to True if we are grabbing deliveries
-        self.deliveries = True
+        self.deliveries: bool = True
         # Number of Locations found for searchSlug
-        self.locationsFound = 0
+        self.locationsFound: int = 0
         # Set to true if troubleshooting
-        self.testMode = False
+        self.testMode: bool = False
         # Number of Items found
-        self.menuItemsFound = 0
+        self.menuItemsFound: int = 0
         # Number returned from Weedmaps as to Max # of locations
-        self.maxLocations = None
+        self.maxLocations: Optional[int] = None
         # Dataset of locations
-        self.locations = []
+        self.locations: List[Dict[str, Any]] = []
         # Dictionary of Empty Location Menus
-        self.emptyMenus = {}
+        self.emptyMenus: Dict[str, Any] = {}
         # Avoids duplicating items from deliveries using their Storefront Menus
-        self.allMenuItems = {}
+        self.allMenuItems: Dict[str, List[Dict[str, Any]]] = {}
         # List of flattened menu items
-        self.finishedMenuItems = []
+        self.finishedMenuItems: List[Dict[str, str]] = []
         # List of total flattened locations
-        self.totalLocations = []
+        self.totalLocations: List[Dict[str, Any]] = []
         # List of States with No locations
-        self.unFriendlyStates = []
+        self.unFriendlyStates: List[str] = []
         # Set to True if there are no locations
-        self.NonGreenState = False
+        self.NonGreenState: bool = False
         # Sets whether or not we grab the slugs for the search
-        self.slugGrab = False
+        self.slugGrab: bool = False
+        # Brand and Strain datasets
+        self.brands: List[Dict[str, Any]] = []
+        self.strains: List[Dict[str, Any]] = []
+        self.extractedStrains: Dict[str, Any] = {}
+        self.brandsFound: int = 0
+        self.strainsFound: int = 0
 
-    # This function recieves a URL (string) and makes an HTTP request to it
-    # If successul, converts the response to JSON and returns the dataset
     def do_request(self, url):
-        # Make the request to the URL (no authentication)
-        req = requests.get(url)
-        # If status was success
-        if req.status_code == 200:
-            # Convert dataset to JSON
-            reqJson = req.json()
-            # Return JSON dataset
-            return reqJson
-        elif req.status_code == 422:
-            print(req.text)
-            exit()
-            return 'break'
-        else:
-            # Print the error into the terminal
-            print(req.text)
-            exit()
-            # Return False to signal issues
+        """
+        Execute HTTP GET request and return JSON response.
+        
+        This is the core HTTP request handler for all API calls. It handles
+        successful responses (200), validation errors (422), and other errors.
+        
+        Args:
+            url (str): Complete URL to request
+            
+        Returns:
+            dict: JSON response data if successful (status 200)
+            str: 'break' if validation error (status 422)
+            bool: False if other error occurred
+        """
+        
+        try:
+            req = requests.get(url, timeout=30)
+            if req.status_code == 200:
+                return req.json()
+            elif req.status_code == 422:
+                try:
+                    error_detail = req.json().get('errors', [{}])[0].get('detail', req.text)
+                    logger.error(f"Validation Error (422): {error_detail}")
+                except Exception:
+                    logger.error(f"Validation Error (422): {req.text}")
+                return 'break'
+            elif req.status_code == 406:
+                logger.error(f"Not Acceptable (406): This is likely due to bot detection. Try updating headers.")
+                return False
+            else:
+                logger.warning(f"Request failed with status {req.status_code}: {req.text}")
+                return False
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Network error occurred: {str(e)}")
             return False
 
-    # This function takes no input but uses the self variables to make its requests
-    # Looping through to get all Locations for a given City/State slug
     def getLocations(self, lat=None, long=None):
-        # While true lets us loop until we have all data
-        while True:
-            # Create the url with Offset so to paginate to next set of data
-            url = f'{self.baseUrl}?offset={str(self.locationsFound)}{self.pageSize}'
-
-            # If we are returning storefronts our URL needs extra parameters
-            if self.storefronts is True:
-                url += f'&filter[any_retailer_services][]=storefront&filter[region_slug[dispensaries]]={self.searchSlug}'
-
-            # If we are returning deliveries our URL needs extra parameters
-            if self.deliveries is True:
-                url += f'&filter[any_retailer_services][]=delivery&filter[region_slug[deliveries]]={self.searchSlug}'
-
-            # Make the http request and get back either data or False
-            locations = self.do_request(url)
-
-            # Check if the request was successul or not
-            if locations is not False:
-                if locations == 'break':
-                    break
-                # If we haven't set our max # of locations, do so
-                if self.maxLocations is None:
-                    # Set self variable to the responses' total listing attribute
-                    self.maxLocations = locations['meta']['total_listings']
-                    # Print what we set the max at for visual checking
-                    print(f'\nSet the max locations # to {self.maxLocations}')
-
-                    # If the Max locations is 0, then we know we should stop going forward
-                    if locations['meta']['total_listings'] == 0:
-                        # Print that we found nothing
-                        print('Found no locations for the state (sad times)!')
-                        # Add the state to our list of un-green states
-                        self.unFriendlyStates.append(self.searchSlug)
-                        # Set our non green state attribute to True so it knows to stop processing this slug
-                        self.NonGreenState = True
-                        # Break out of the While true loop
-                        break
-
-                # Visual queue to how far along the script is
-                print(f'Working on locations #{self.locationsFound} through #{self.locationsFound+len(locations["data"]["listings"])}')
-
-                # Loop through the listings and pull out the slug and type
-                for location in locations['data']['listings']:
-                    location_dct = {}
-                    location_dct['slug'] = location['slug']
-                    location_dct['type'] = location['type']
-                    self.locations.append(location_dct)
-
-                    # Count the number of listings
-                    self.locationsFound += 1
-
-                # IF we've reached the max number of locations, we are finished so break
-                if self.locationsFound == self.maxLocations:
-                    print('\nRetrieved all locations! Moving to pull Menus\n')
-                    break
-
-            # If there is an issue pulling the data from the page, (potentially due to rate limiting), ask user to continue or not
-            else:
-                # User is prompted to enter no/n or hit enter to continue
-                retry = input('Issue with Page. Retry? (n/no or hit enter)\n\n- ').lower()
-
-                # If the user put "n" or "no" then we stop trying and put this slug into the list of bad states
-                if 'n' in retry or 'no' in retry:
-                    # Set NonGreenState to True to skip other functions when we get to them
-                    self.NonGreenState = True
-                    break
-                # Otherwise we try again!
-                else:
-                    self.do_request(url)
-
-    # This function goes through the list of locations and gets the menu + flattens the items
-    def getMenus(self):
-        # If the city/state slug is not friendly to Cannabis, skip them!
-        if self.NonGreenState is True:
+        """
+        Retrieve all dispensary/delivery locations for the current search slug.
+        """
+        if not self.searchSlug:
+            logger.error("No search slug provided! Use -go <slug> or specify a slug.")
             return
 
-        location_count = 0
+        while True:
+            # Construct the paginated API URL with current offset
+            url = f'{self.baseUrl}?offset={str(self.locationsFound)}{self.pageSize}'
 
-        seen_locations = []
+            # Add filters based on user selection or defaults
+            if self.storefronts:
+                url += f'&filter[any_retailer_services][]=storefront&filter[region_slug[dispensaries]]={self.searchSlug}'
 
-        # If the city/state slug is friendly, then loop through the listings one by one
-        for location in self.locations:
+            if self.deliveries:
+                url += f'&filter[any_retailer_services][]=delivery&filter[region_slug[deliveries]]={self.searchSlug}'
+
+            # Execute the request
+            locations = self.do_request(url)
+
+            if locations:
+                if locations == 'break':
+                    break
+                
+                # First response sets the total expected result count
+                if self.maxLocations is None:
+                    self.maxLocations = locations['meta']['total_listings']
+                    logger.info(f"Set the max locations # to {self.maxLocations}")
+
+                if self.maxLocations == 0:
+                        logger.warning(f"Found no locations for the state: {self.searchSlug}")
+                        if self.searchSlug:
+                            self.unFriendlyStates.append(self.searchSlug)
+                        self.NonGreenState = True
+                        break
+
+                logger.info(f'Working on locations #{self.locationsFound} through #{self.locationsFound+len(locations["data"]["listings"])}')
+
+                for location in locations['data']['listings']:
+                    self.locations.append({
+                        'slug': location['slug'],
+                        'type': location['type']
+                    })
+                    self.locationsFound += 1
+
+                if self.maxLocations is not None and self.locationsFound >= self.maxLocations:
+                    logger.info('Retrieved all locations! Moving to pull Menus')
+                    break
+            else:
+                retry = input('Issue with Page. Retry? (n/no or hit enter)\n\n- ').lower()
+                if 'n' in retry:
+                    self.NonGreenState = True
+                    break
+
+    def getMenus(self):
+        """
+        Fetch and process menu data for all retrieved locations.
+        """
+        if self.NonGreenState:
+            return
+
+        for i, location in enumerate(self.locations):
+            location_slug = location["slug"]
+            location_type = location["type"]
             finished = False
 
-            while finished is False:
+            while not finished:
                 try:
-                    # Craft a URL variable which pulls all menu items for a location
-                    url = f'https://weedmaps.com/api/web/v1/listings/{location["slug"]}/menu?type={location["type"]}'
+                    url = f'https://weedmaps.com/api/web/v1/listings/{location_slug}/menu?type={location_type}'
+                    logger.info(f"Processing menu ({i+1}/{len(self.locations)}) --> {location_slug}")
+                    
+                    if self.testMode:
+                        logger.debug(f"Menu URL: {url}")
 
-                    # Print visual queue the location is being worked on
-                    print(f'\nWorking on menu ({str(location_count)}/{str(len(self.locations))}) --> {location["slug"]}')
-                    if self.testMode is True:
-                        print(f'Using url: {url}\n(for troubleshooting in browser)')
-
-                    # Get the menu data from the URL
-                    menuData = requests.get(url)
-
-                    if menuData.status_code == 503:
-                        print('First Byte error. Unsure of what this means but skipping for now! Please reach out in discord.')
+                    resp = requests.get(url, timeout=30)
+                    if resp.status_code == 503:
+                        logger.warning(f"503 Service Unavailable for {location_slug}. Skipping.")
                         finished = True
                         break
 
-                    # If that was successful
-                    if menuData.status_code == 200:
-                        print('Successfully retrieved!')
-                        # Convert the menu data to JSON to work with
-                        menuJsonData = menuData.json()
-
-                        # Add to our count of Listing Progress
-                        location_count += 1
-
-                        # Clean dictionary to house the finished encoded items + reorganizes them all into right order
-                        clean_listing = {}
-
-                        # Integer to count # of menu items for listing
-                        menu_items = 0
-
-                        # Loop through values of the Listing Data (not menu items) to clean them with encoding!
-                        for listingKey in menuJsonData['listing'].keys():
-                            clean_listing[listingKey] = str(menuJsonData['listing'][listingKey]).encode('utf-8')
-
-                        if len(menuJsonData["categories"]) == 0:
-                            print('No Categories means no items, moving on!\nGrabbed the listing info though')
-                            # Add the listing to our totalLocations list
-                            self.totalLocations.append(menuJsonData['listing'])
-                            # Dictionary of Empty Location Menus added to the EmptyMenus Dictionary
-                            self.emptyMenus[menuJsonData["listing"]["id"]] = menuJsonData["listing"]
-                            print(f'Added to Total Locations (empty menu)! {str(len(self.totalLocations))}')
-                            finished = True
-                            break
-                        else:
-                            # Print visual of how many Categories exist in this menu
-                            print(f'There are {str(len(menuJsonData["categories"]))} Categories in the Menu!')
-
-                        # Create a string representation of the Listing (this should be what each item refers to in listing_url)
-                        if menuJsonData["listing"]["_type"] == 'delivery':
-                            listing_type = 'deliveries'
-                        elif menuJsonData["listing"]["_type"] == 'dispensary':
-                            listing_type = 'dispensaries'
-                        else:
-                            print(menuJsonData['listing']['_type'])
-
-                        listing_url = f'/{listing_type}/{menuJsonData["listing"]["slug"]}'
-                        # print(f'-- The listing URL is: {listing_url}')
-
-                        self.allMenuItems[menuJsonData["listing"]["id"]] = []
-
-                        # Loop through each menu category
-                        for menuItemCategory in menuJsonData['categories']:
-                            for menuItem in menuItemCategory['items']:
-                                menuItem['locations_found_at'] = [listing_url]
-                                menuItem['listing_id'] = menuJsonData["listing"]["id"]
-                                menuItem['listing_wmid'] = menuJsonData["listing"]["wmid"]
-                                # Add the menu item to our allMenuItems dictionary
-                                self.allMenuItems[menuJsonData["listing"]["id"]].append(menuItem)
-                                menu_items += 1
-                                self.menuItemsFound += 1
-
-                        # Visual progress of Listing's items amount
-                        finished_statement = f'#{str(menu_items)} Items in the Menu!'
-                        if menu_items == 0:
-                            finished_statement += '  <--- Will be on Listings CSV but no items on Menu Results!'
-                        # print(finished_statement)
-
-                        # Add # of menu items to listing Info!
-                        menuJsonData['listing']['num_menu_items'] = str(menu_items)
-
-                        # print(f'#{str(self.menuItemsFound)} Total Items Processed!!')
-
-                        # Add the listing to our totalLocations list
-                        self.totalLocations.append(menuJsonData['listing'])
-                        print(f'Added to Total Locations (normal)! {str(len(self.totalLocations))}')
-
-                        # print(f'#{str(len(self.allMenuItems.keys()))} Total Menus Processed!!')
-
+                    if resp.status_code == 200:
+                        self.process_menu_json(resp.json())
                         finished = True
-
                     else:
-                        print('Issue with retrieval:\n')
-                        print(menuData.text)
-                        skip_check = input('Issue with menu retrival, see issue and hit Enter to retry or enter "Skip" to continue\n\n- ').lower()
-                        if 'skip' in skip_check.lower():
-                            print('Ok, skipping that locations items!')
+                        logger.error(f"Failed to fetch menu for {location_slug}: {resp.status_code}")
+                        skip = input("Press enter to retry or type 'skip': ").lower()
+                        if 'skip' in skip:
                             finished = True
-                        continue
-
                 except Exception as e:
-                    print('Caught an error on the Try function:\n')
-                    print(e)
-                    skip_check = input('Issue with menu retrival, see issue and hit Enter to retry or enter "Skip" to continue\n\n- ').lower()
-                    if 'skip' in skip_check.lower():
-                        print('Ok, skipping that locations items!')
+                    logger.error(f"Error processing {location_slug}: {str(e)}")
+                    skip = input("Press enter to retry or type 'skip': ").lower()
+                    if 'skip' in skip:
                         finished = True
-                    continue
-        print('\n\nFinished grabbing all the Menus & Items! \n\nOrganizing now into clean lists for export!\n(up to a couple minutes on those big exports (5k+) looking at you California)\n')
-        # Special function to flatten all our Menu items!
+
+        logger.info("Finished gathering menus. Organizing for export...")
         self.organize_into_clean_list()
 
-    # This function loops through our identifed menu items and flattens them into exportable datasets
+    def getBrands(self):
+        """
+        Retrieve all brands from Weedmaps discovery API.
+        """
+        offset: int = 0
+        while True:
+            url = f'{self.brandsBaseUrl}?offset={str(offset)}{self.pageSize}'
+            logger.info(f"Fetching brands (offset: {offset})...")
+            
+            data = self.do_request(url)
+            if data and data != 'break':
+                brands_list = data.get('data', {}).get('brands', [])
+                if not brands_list:
+                    break
+                
+                for brand in brands_list:
+                    self.brands.append(brand)
+                    self.brandsFound += 1
+                
+                total_brands = data.get('meta', {}).get('total_brands', 0)
+                if self.brandsFound >= total_brands:
+                    break
+                offset += len(brands_list)
+            else:
+                break
+        logger.info(f"Retrieved {self.brandsFound} brands.")
+
+    def getStrains(self):
+        """
+        Retrieve all strains from Weedmaps discovery API.
+        NOTE: This endpoint is currently unreliable (often 404/406).
+        Consider using extracted menu strain data instead.
+        """
+        logger.warning("Global Strains endpoint is currently unreliable. Proceeding with attempt, but menu-based extraction is recommended.")
+        offset: int = 0
+        while True:
+            url = f'{self.strainsBaseUrl}?offset={str(offset)}{self.pageSize}'
+            logger.info(f"Fetching strains (offset: {offset})...")
+            
+            data = self.do_request(url)
+            if data and data != 'break':
+                strains_list = data.get('data', {}).get('strains', [])
+                if not strains_list:
+                    # Try alternate key if 'strains' not found
+                    strains_list = data.get('data', {}).get('taxonomy', {}).get('strains', [])
+                    if not strains_list:
+                        break
+                
+                for strain in strains_list:
+                    self.strains.append(strain)
+                    self.strainsFound += 1
+                
+                total_strains = data.get('meta', {}).get('total_strains', 0)
+                if self.strainsFound >= total_strains or total_strains == 0:
+                    break
+                offset += len(strains_list)
+            else:
+                # If 404, we might be using the wrong version/path for strains
+                logger.warning(f"Could not fetch strains from {url}. Status might be 404 or restricted.")
+                break
+        logger.info(f"Retrieved {self.strainsFound} strains.")
+
+    def process_menu_json(self, menu_json):
+        """
+        Process the JSON response for a single location's menu.
+        """
+        listing = menu_json.get('listing', {})
+        listing_id = listing.get('id')
+        listing_slug = listing.get('slug')
+        listing_type = 'deliveries' if listing.get('_type') == 'delivery' else 'dispensaries'
+        listing_url = f'/{listing_type}/{listing_slug}'
+        
+        categories = menu_json.get('categories', [])
+        menu_items_count = 0
+
+        self.allMenuItems[listing_id] = []
+
+        if not categories:
+            logger.info(f"Location {listing_slug} has no categories.")
+            self.emptyMenus[listing_id] = listing
+        else:
+            for category in categories:
+                for item in category.get('items', []):
+                    item.update({
+                        'locations_found_at': [listing_url],
+                        'listing_id': listing_id,
+                        'listing_wmid': listing.get('wmid')
+                    })
+                    
+                    # Extract strain data if present
+                    if 'strain_data' in item:
+                        strain = item['strain_data']
+                        slug = strain.get('slug')
+                        if slug and slug not in self.extractedStrains:
+                            self.extractedStrains[slug] = strain
+                    elif 'strain' in item:
+                        # Sometimes it's just 'strain' and might be a dict or ID
+                        strain = item['strain']
+                        if isinstance(strain, dict):
+                            slug = strain.get('slug')
+                            if slug and slug not in self.extractedStrains:
+                                self.extractedStrains[slug] = strain
+
+                    self.allMenuItems[listing_id].append(item)
+                    menu_items_count += 1
+                    self.menuItemsFound += 1
+
+        listing['num_menu_items'] = str(menu_items_count)
+        self.totalLocations.append(listing)
+        logger.info(f"Processed {menu_items_count} items for {listing_slug}")
+
+    def getLeaflyData(self):
+        """
+        Fetch data from Leafly using the Apify Scraper.
+        """
+        if not self.searchSlug:
+            logger.error("No search slug provided for Leafly!")
+            return
+
+        logger.info(f"Starting Leafly integration for: {self.searchSlug}")
+        leafly_items = scrape_leafly(self.searchSlug)
+        
+        if leafly_items:
+            # Map Leafly items to our structure
+            # Since Apify returns a list of items, we'll group them by a dummy ID or store ID if present
+            self.allMenuItems['leafly_export'] = leafly_items
+            self.menuItemsFound = len(leafly_items)
+            logger.info(f"Successfully integrated {self.menuItemsFound} Leafly items.")
+        else:
+            logger.warning("No data retrieved from Leafly.")
+
+    def getCannMenusData(self):
+        """
+        Fetch data from CannMenus using their official API.
+        """
+        slug = self.searchSlug
+        if not slug or not isinstance(slug, str):
+            logger.error("No valid search slug provided for CannMenus!")
+            return
+
+        logger.info(f"Starting CannMenus integration for state: {slug}")
+        client = CannMenusClient()
+        
+        # CannMenus uses 2-letter state codes usually, let's assume slug might be one or we need to map it
+        # For now, we'll try to pass the slug directly
+        # Since we check self.searchSlug above, this is safe, but explicit check 
+        # avoids linting issues.
+        search_term = slug.upper()
+        if not search_term:
+            logger.error("No valid search term for CannMenus.")
+            return
+
+        retailers = client.get_retailers(search_term)
+        
+        if not retailers:
+            logger.warning(f"No retailers found on CannMenus for: {self.searchSlug}")
+            return
+
+        for shop in retailers:
+            shop_id = shop.get('id')
+            shop_name = shop.get('name')
+            logger.info(f"Fetching menu for {shop_name} from CannMenus...")
+            menu = client.get_menu(shop_id)
+            
+            if menu:
+                self.allMenuItems[shop_id] = menu
+                self.menuItemsFound += len(menu)
+                # Mock a listing entry for totalLocations
+                self.totalLocations.append(shop)
+        
+        logger.info(f"Finished CannMenus integration. Total items: {self.menuItemsFound}")
+
     def organize_into_clean_list(self):
+        """
+        Flatten nested menu item dictionaries into uniform CSV-ready format.
+        
+        This method transforms the hierarchical menu data structure into a flat
+        list of dictionaries where:
+        1. All nested keys are flattened with dot notation (e.g., 'price.amount')
+        2. All items have the same set of keys (missing keys filled with 'None')
+        3. All values are converted to strings for CSV compatibility
+        
+        Process:
+            1. Flatten each menu item dictionary using flatten_dictionary()
+            2. Collect all unique keys across all items
+            3. Create uniform dictionaries with all keys present
+            4. Fill missing keys with 'None' value
+            
+        Side Effects:
+            - Updates self.finishedMenuItems with flattened, uniform data
+            
+        Example:
+            Input:  {'name': 'Product', 'price': {'amount': 10}}
+            Output: {'name': 'Product', 'price.amount': '10'}
+        """
         # Grab the data from allMenuItems
         listings = self.allMenuItems
 
@@ -287,50 +447,60 @@ class CanaData:
                 # Add the flat dataset to our flatDictList
                 flatDictList.append(flatData)
 
-        # This list will be all possible keys
-        all_keys = []
-        # This list will house all data after each key has been filled out if it wasn't present before
-        ready_list = []
-
-        # Loop through the flatDictList and grab all the keys
+        # This set will collect all possible keys
+        all_keys_set = set()
         for item in flatDictList:
-            # for each key in each menu item dictionary
-            for key in item.keys():
-                # If we haven't grabbed the key already
-                if key not in all_keys:
-                    # Add the key to our all_keys list
-                    all_keys.append(key)
+            all_keys_set.update(item.keys())
+        
+        all_keys = sorted(list(all_keys_set))
+
+        # This list will house all data after each key has been filled out
+        ready_list = []
 
         # Loop through the flatDictList to update any missing keys
         for item in flatDictList:
-            # New dicitonary the dataset will be put into
-            flat_ordered_dict = {}
-            # List of current keys in the dictionary
-            current_keys = list(item.keys())
-            # Loop through the list of all_keys
-            for all_key in all_keys:
-                # if one of the all_keys is not present in this dicitonary's key list, add it with value
-                if all_key in current_keys:
-                    flat_ordered_dict[all_key] = str(item[all_key])
-                # IF the key is not present in the dictionary's key list, add it with value as "None"
-                else:
-                    flat_ordered_dict[all_key] = 'None'
-            # Add our ordered dict to the Ready List
+            # Create a dictionary with all keys initialized to 'None'
+            flat_ordered_dict = {key: 'None' for key in all_keys}
+            # Update with actual values, converting to string
+            for key, value in item.items():
+                flat_ordered_dict[key] = str(value)
+            
             ready_list.append(flat_ordered_dict)
 
         # Replace our finished menu items list with our flat, ordered, dictionary list
         self.finishedMenuItems = ready_list
 
-    # My special dictionary flattening function.
-    # Magic is magic
     def flatten_dictionary(self, d):
+        """
+        Recursively flatten a nested dictionary using dot notation for keys.
+        
+        This is a custom iterative implementation using a stack-based approach
+        to handle arbitrarily nested dictionaries and lists. It converts:
+        - Nested dicts: {'a': {'b': 'c'}} → {'a.b': 'c'}
+        - Lists of dicts: {'a': [{'b': 'c'}]} → {'a.b': 'c'}
+        - Lists of strings: {'a': ['x', 'y']} → {'a': 'x.y'}
+        - Empty values: {'a': []} → {'a': 'None'}
+        
+        Args:
+            d (dict): Nested dictionary to flatten
+            
+        Returns:
+            dict: Flattened dictionary with dot-notation keys and string values
+            
+        Algorithm:
+            Uses a stack to track nested levels and a keys list to build
+            dot-notation paths. Handles lists, dicts, and primitive values
+            with special logic for empty containers.
+        """
+        # Custom iterative implementation using a stack to handle recursion without recursion depth issues
         result = {}
-        stack = [iter(d.items())]
-        keys = []
+        stack = [iter(d.items())] # Stack contains iterators of dictionary items
+        keys = []                 # Tracks the current path in the dictionary (e.g., ['price', 'amount'])
         while stack:
             for k, v in stack[-1]:
                 keys.append(k)
                 if isinstance(v, list):
+                    # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
                     if len(v) > 0:
                         for item in v:
                             if item:
@@ -338,11 +508,14 @@ class CanaData:
                                     if len(item.keys()) < 1:
                                         result['.'.join(keys)] = 'None'
                                     else:
+                                        # Push the nested dict onto the stack
                                         stack.append(iter(item.items()))
                                 elif isinstance(item, list):
+                                    # Fallback for nested lists (semi-unsupported)
                                     result['.'.join(keys)] = '.'.join(item)
                                     keys.pop()
                                 else:
+                                    # Primitives in a list are joined by dot notation
                                     result['.'.join(keys)] = ''.join(str(v))
                                     keys.pop()
                                     break
@@ -351,16 +524,20 @@ class CanaData:
                         result['.'.join(keys)] = 'None'
                         keys.pop()
                 elif isinstance(v, dict):
+                    # Handle nested dictionaries
                     if len(v.keys()) < 1:
                         result['.'.join(keys)] = 'None'
                         keys.pop()
                     else:
+                        # Push the nested dict onto the stack
                         stack.append(iter(v.items()))
                         break
                 else:
+                    # Leaf node: Store the value as a string
                     result['.'.join(keys)] = str(v)
                     keys.pop()
             else:
+                # Finished processing an iterator: pop the path segment and the iterator itself
                 if keys:
                     keys.pop()
                 stack.pop()
@@ -371,8 +548,28 @@ class CanaData:
         # Set searchSlug to City/State provided
         self.searchSlug = search
 
-    # Function recieves a filename & dataset (list of dictionaries)
     def csv_maker(self, filename, data, preorganized=False):
+        """
+        Export a list of dictionaries to a CSV file with timestamp.
+        
+        Creates a dated folder (CanaData_MM-DD-YYYY) and writes the data
+        to a CSV file with headers from the first dictionary's keys.
+        
+        Args:
+            filename (str): Base name for the CSV file (without extension)
+            data (list): List of dictionaries with uniform keys
+            preorganized (bool): Unused parameter (legacy)
+            
+        Side Effects:
+            - Creates CanaData_[date] folder if it doesn't exist
+            - Writes CSV file to that folder
+            - Prints success message with item count
+            
+        File Format:
+            - First row: column headers (dictionary keys)
+            - Subsequent rows: dictionary values in same order
+            - UTF-8 encoding for special characters
+        """
         today = datetime.today().strftime('%m-%d-%Y')
         # Variable on where to save the file
         home_dir = f'{path[0]}/CanaData_{today}'
@@ -401,72 +598,123 @@ class CanaData:
             # Print visual notification of finished export & number of items seen
             print(f'Successfully exported ({str(len(data))} items) to CSV -> {filename}.csv')
 
-    # Function determines whether or not a CSV should be made
     def dataToCSV(self):
+        """
+        Main entry point for triggering CSV generation.
+        
+        This method decides whether to export data based on the current state
+        (NonGreenState) and attempts to export both the detailed menu items 
+        and the high-level listing information.
+        
+        Side Effects:
+            - Calls csv_maker twice (if data exists)
+            - Prints summary statistics to the console
+        """
         # If the state was not friendly for listings, skip making CSV
         if self.NonGreenState is True:
             return
 
-        # Try to make a CSV of the dataset, try because sometimes will fail if Locations exist with 0 menu items
+        # Attempt detailed results export
         try:
             self.csv_maker(f'{self.searchSlug}_results', self.finishedMenuItems)
         except Exception as e:
             print(f'Error: {str(e)}')
             print('^^ Probably were no actual items (if error says \'list index out of range\')')
 
-        # Listing dataset typically has values regardless of empty menus, turn that dataset into a CSV
+        # Attempt high-level listings export
         try:
             self.csv_maker(f'{self.searchSlug}_total_listings', self.totalLocations)
         except Exception as e:
             print(f'Error: {str(e)}')
             print('^^ Musta been a bad search query? (if error says \'list index out of range\')')
 
+        # Attempt Brands export
+        if self.brands:
+            try:
+                self.csv_maker('all_brands', self.brands)
+            except Exception as e:
+                print(f'Error exporting brands: {str(e)}')
+
+        # Attempt Strains export
+        if self.strains:
+            try:
+                self.csv_maker('all_strains', self.strains)
+            except Exception as e:
+                print(f'Error exporting strains: {str(e)}')
+
+        # Attempt Extracted Strains export (Menu-based)
+        if self.extractedStrains:
+            try:
+                # Convert dict values to list for CSV
+                extracted_list = list(self.extractedStrains.values())
+                # Use current search slug in filename if available
+                filename = f'{self.searchSlug}_extracted_strains' if self.searchSlug else 'extracted_strains'
+                self.csv_maker(filename, extracted_list)
+                print(f'- Exported {len(extracted_list)} unique strains found in menus.')
+            except Exception as e:
+                print(f'Error exporting extracted strains: {str(e)}')
+
         print(f'\n\nResults for -> {self.searchSlug}:\n- {str(self.locationsFound)} Locations\n- {str(len(self.allMenuItems.keys()))} Menus\n- {str(len(self.emptyMenus.keys()))} Empty Menus\n- {str(self.menuItemsFound)} Menu Items')
 
-    # Since we loop through states in the "All" option, we have to reset some values
     def resetDataSets(self):
-        # Reset the search slug
+        """
+        Reset stateful attributes before processing the next search slug.
+        
+        Crucial for the "all" or "mylist" modes to ensure data from one 
+        state doesn't bleed into the next one.
+        """
+        # Reset identifiers and counters
         self.searchSlug = None
-        # Reset the number of locations found
         self.locationsFound = 0
-        # Reset the max number of locations
         self.maxLocations = None
-        # Reset the locations dataset
+        
+        # Clear data collections
         self.locations = []
-        # Reset the list of Menu Items
         self.allMenuItems = {}
-        # Reset the list of Finished Menu Items
         self.finishedMenuItems = []
-        # Reset the list of Total Locations
         self.totalLocations = []
-        # Reset the NonGreenState Status to False
+        
+        # We don't reset brands and strains here as they are global metadata
+        # potentially fetched once per run.
+        
+        # Reset status flags
         self.NonGreenState = False
+        self.extractedStrains = {}
 
-    # Function to announce the # of non Cannabis friendly states (0 listings in state)
+
     def identifyNaughtyStates(self):
+        """
+        Print a summary of slugs that returned no results.
+        """
         if len(self.unFriendlyStates) > 0:
-            print(f'\nThese States were found to have 0 listings!\n{", ".join(self.unFriendlyStates)}')
+            # Ensure all items are strings
+            slugs = [str(s) for s in self.unFriendlyStates]
+            print(f'\nThese States were found to have 0 listings!\n{", ".join(slugs)}')
 
-    # Function to determine if we are searching for Dispensary data or Delivery Data (can be both)
     def identifyDataTypes(self):
-        # Ask the user to put y/yes or we wont search dispensaries
+        """
+        Interactive prompt to toggle storefront vs delivery scraping.
+        """
+        # Default is True for both; user can opt-out here
         dispensaryChoice = input('\n\nAre we pulling Dispensary Info? (No/n or hit enter for yes)\n\n--').lower()
         if 'n' in dispensaryChoice or 'no' in dispensaryChoice:
-            # Set self value to False so dispensaries are included in datasets
             self.storefronts = False
 
-        # Ask the user to put y/yes or we wont search deliveries
         deliveriesChoice = input('\n\nAre we pulling Deliveries Info? (No/N or hit enter for yes)\n\n--').lower()
-        if 'n' in deliveriesChoice or 'no' in dispensaryChoice:
-            # Set self value to False so deliveries are included in datasets
+        if 'n' in deliveriesChoice or 'no' in deliveriesChoice:
             self.deliveries = False
 
-    # Sets the self attribute for grabbing slugs within a search
     def slugs(self):
+        """
+        Enable slug recording mode (unused in current main loop).
+        """
         print('Set slugGrab to true!')
         self.slugGrab = True
 
     def TestMode(self):
+        """
+        Enable troubleshooting mode for more verbose output.
+        """
         print('Set Troubleshooting Mode to True')
         self.testMode = True
 
@@ -532,7 +780,7 @@ if __name__ == '__main__':
     # Ask them for a slug then determine if its one of our preset 3 or a regular search
     else:
         # Ask the user for what City they'd like to run
-        answer = input(f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\nWhat city slug or state slug would you like to search? Can put all for all states or mylist for your custom list or slugs for the list of custom slugs from slugs.txt!\n\nKnown State Options:\n{", ".join(allStatesSlugs)}\n\nKnown Slug Options:\n{", ".join(knownSlugs)}\n\nKnown Mylist Options:\n{", ".join(mySlugList)}\n\n-- ').lower()
+        answer = input(f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\nWhat city slug or state slug would you like to search? Can put all for all states or mylist for your custom list or slugs for the list of custom slugs from slugs.txt!\n\nOptions:\n- Use -go <slug> for quick run\n- Use -leafly with a slug for Leafly data\n- Use -cannmenus with a state code for CannMenus data\n\nKnown State Options:\n{", ".join(allStatesSlugs)}\n\nKnown Slug Options:\n{", ".join(knownSlugs)}\n\nKnown Mylist Options:\n{", ".join(mySlugList)}\n\n-- ').lower()
 
         # Check if user asked for all
         if answer == 'all':
@@ -550,16 +798,37 @@ if __name__ == '__main__':
 
     # This Loop fires no matter what to process all search slugs provided either manually or through a .txt file!
     # Fun functions against them all!
+    
+    # Global data fetch (if requested)
+    if '-brands' in argList:
+        cana.getBrands()
+    if '-strains' in argList:
+        cana.getStrains()
+
     for slug in searchSlugs:
         if len(slug) > 0:
             # Visual queue of starting a state
             print(f'\n\nStarting on {slug}')
             # Set our searchSlug to the State we are working on
             cana.setCitySlug(slug)
-            # Get the locations for the given slug
-            cana.getLocations()
-            # Get the Menus for the locations found
-            cana.getMenus()
+            
+            # Skip location/menu scraping if only fetching global metadata
+            if '-brands' in argList or '-strains' in argList:
+                if not any(arg in argList for arg in ['-go', 'all', 'mylist', 'slugs']) and len(searchSlugs) == 1 and str(searchSlugs[0]) == str(answer if 'answer' in locals() else None):
+                     # If user just typed something but also wants brands/strains, maybe they want both
+                     pass
+
+            if '-leafly' in argList:
+                cana.getLeaflyData()
+            elif '-cannmenus' in argList:
+                cana.getCannMenusData()
+            else:
+                # Default to Weedmaps
+                # Get the locations for the given slug
+                cana.getLocations()
+                # Get the Menus for the locations found
+                cana.getMenus()
+            
             # Convert our Datasets to CSV's (1 for Menu Items & 1 for Listing Info)
             cana.dataToCSV()
             # Reset the self variables to avoid using old data from other states/slugs

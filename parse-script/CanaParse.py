@@ -1,933 +1,648 @@
-import os, sys
+import os
+import sys
 import csv
-from datetime import datetime
-from yattag import Doc
-from yattag import indent
 import re
 import json
-from operator import itemgetter
+import logging
+import argparse
+import glob
+from datetime import datetime
+from typing import List, Any, Dict, Optional
+from yattag import Doc, indent
+from dotenv import load_dotenv
+from typing import List, Any
 
-class FlowerFilter(object):
-     pass
+# Load environment variables
+load_dotenv()
 
-half_gram = 'prices.half_gram'
-gram = 'prices.gram'
-two_grams = 'prices.two_grams'
-eighth = 'prices.eighth'
-quarter = 'prices.quarter'
-half_ounce = 'prices.half_ounce'
-ounce = 'prices.ounce'
+# Configure logging
+logging.basicConfig(
+    level=os.getenv('LOG_LEVEL', 'INFO'),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-### editable ###
+class FlowerFilter:
+    """
+    Configuration for filtering cannabis products.
+    """
+    def __init__(self, filter_data=None):
+        self.table_sort_col = ""
+        self.limit_results_amt = -1
+        self.limit_results_amt_email = -1
+        self.name = ""
+        self.key = ""
+        self.compare = ""
+        self.price = 0.0
+        self.categories = []
+        self.brands = []
+        self.stores = []
+        self.strains = []
+        self.bad_words = []
+        self.good_words = []
+        self.priority_words = []
+        self.thc_floor = 0
+        self.cbd_floor = 0.0
+        self.thc_floor_strict = False
+        self.cbd_floor_strict = False
+        self.terpenes = []
 
-csv_folder = "../"+"CanaData_" + str(datetime.today().strftime('%m-%d-%Y'))
-#csv_file = "vermont_results.csv"
-#csv_file = "washington_results.csv"
-#csv_file = "washington-dc_results.csv"
-csv_file = "colorado_results.csv"
-#csv_file = "arizona_results.csv"
-#csv_file = "maine_results.csv"
-#csv_file = "nevada_results.csv"
+        if filter_data:
+            self.load_from_dict(filter_data)
 
-flower_filters = []
-with open('./flower-filters.json') as json_file:
-    data = json.load(json_file)
-    for filter in data['filters']:
-        flower_filter = FlowerFilter()
-        flower_filter.table_sort_col = str(filter["table_sort_col"]) #used for view
-        flower_filter.limit_results_amt = int(filter["limit_results_amt"]) #used for view
-        flower_filter.limit_results_amt_email = int(filter["limit_results_amt_email"]) #used for view
-        flower_filter.name = str(filter["name"]) #used for view
-        flower_filter.key = str(filter["key"]) #most important var
-        flower_filter.compare = str(filter["compare"]) #disregards zero amts
-        flower_filter.price = float(filter["price"]) #float max price
-        flower_filter.categories = filter["categories"]
-        flower_filter.brands = filter["brands"]
-        flower_filter.stores = filter["stores"]
-        flower_filter.strains = filter["strains"]
-        flower_filter.bad_words = filter["bad_words"]
-        if 'good_words' in filter:
-            flower_filter.good_words = filter["good_words"]
-        flower_filter.priority_words = filter["priority_words"]
-        flower_filter.thc_floor = int(filter["thc_floor"]) #float experimental: scans all output for any percentagex and tries to figure out if it's THC. If set to 0 it will disregard filter. It will disregard all results that do not have THC info.
-        if 'cbd_floor' in filter:
-            flower_filter.cbd_floor = float(filter["cbd_floor"]) #float same as above
-        else:
-            flower_filter.cbd_floor = 0
-        flower_filter.thc_floor_strict = bool(filter["thc_floor_strict"]) #Allows items with no avail THC info
-        flower_filter.cbd_floor_strict = bool(filter["cbd_floor_strict"]) #Allows items with no avail THC info
+    def load_from_dict(self, data):
+        """Populate filter attributes from a dictionary."""
+        self.table_sort_col = str(data.get("table_sort_col", ""))
+        self.limit_results_amt = int(data.get("limit_results_amt", -1))
+        self.limit_results_amt_email = int(data.get("limit_results_amt_email", -1))
+        self.name = str(data.get("name", ""))
+        self.key = str(data.get("key", ""))
+        self.compare = str(data.get("compare", ""))
+        self.price = float(data.get("price", 0.0))
+        self.categories = data.get("categories", [])
+        self.brands = data.get("brands", [])
+        self.stores = data.get("stores", [])
+        self.strains = data.get("strains", [])
+        self.bad_words = data.get("bad_words", [])
+        self.good_words = data.get("good_words", [])
+        self.priority_words = data.get("priority_words", [])
+        self.thc_floor = int(data.get("thc_floor", 0))
+        self.cbd_floor = float(data.get("cbd_floor", 0.0))
+        self.thc_floor_strict = bool(data.get("thc_floor_strict", False))
+        self.cbd_floor_strict = bool(data.get("cbd_floor_strict", False))
+        self.terpenes = data.get("terpenes", [])
 
-        if 'terpenes' in filter:
-            flower_filter.terpenes = filter["terpenes"]
-        else:
-            flower_filter.terpenes = []
+class CanaParse:
+    """
+    Main class for parsing CanaData CSV results and generating HTML reports.
+    """
+    def __init__(self, csv_file=None, csv_folder=None, no_filter=False):
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.csv_file = csv_file or os.getenv('CSV_FILE', 'colorado_results.csv')
+        self.csv_folder = csv_folder or os.getenv('CSV_FOLDER', os.path.join(base_dir, f"CanaData_{datetime.today().strftime('%m-%d-%Y')}"))
+        self.no_filter = no_filter
+        self.filters = []
+        self.raw_data: List[List[Any]] = []
+        self.filtered_tables: List[List[List[Any]]] = []
+        
+        self.load_filters()
 
-        flower_filters.append(flower_filter)
-### non editable ###
+    def load_filters(self):
+        """Load filters from flower-filters.json or create a default one."""
+        if self.no_filter:
+            # Create a single catch-all filter
+            default_filter = FlowerFilter()
+            default_filter.name = "All Results"
+            default_filter.key = "prices.eighth" # Default sort/price column
+            self.filters = [default_filter]
+            logger.info("No-filter mode enabled: Included all results.")
+            return
 
-def getComparisonVal(op,val1,val2):
-    if(op == '>='):
-        if(val1 >= val2):
-            return 1
-        else:
-            return 0
-    if(op == '<='):
-        if(val1 > 0 and val1 <= val2):
-            return 1
-        else:
-            return 0
-    if(op == '=='):
-        if(val1 == val2):
-            return 1
-        else:
-            return 0
-    if(op == '>'):
-        if(val1 > val2):
-            return 1
-        else:
-            return 0
-    if(val1 > 0 and op == '<'):
-        if(val1 < val2):
-            return 1
-        else:
-            return 0
-    else:
+        filters_path = os.path.join(os.path.dirname(__file__), 'flower-filters.json')
+        try:
+            with open(filters_path, 'r') as f:
+                data = json.load(f)
+                self.filters = [FlowerFilter(f_data) for f_data in data.get('filters', [])]
+            logger.info(f"Loaded {len(self.filters)} filters from {filters_path}")
+        except Exception as e:
+            logger.error(f"Failed to load filters: {str(e)}")
+
+    def load_csv_data(self):
+        """Read the CSV file and pre-filter rows with pricing data."""
+        file_path = os.path.join(self.csv_folder, self.csv_file)
+        
+        # Fallback: If specific file not found, look for any result CSV in the folder
+        if not os.path.exists(file_path):
+            logger.warning(f"Primary CSV file not found: {file_path}. Searching for fallbacks...")
+            fallback_pattern = os.path.join(self.csv_folder, "*_results.csv")
+            fallbacks = glob.glob(fallback_pattern)
+            if fallbacks:
+                # Use the most recent fallback
+                file_path = max(fallbacks, key=os.path.getmtime)
+                logger.info(f"Using fallback CSV file: {file_path}")
+            else:
+                logger.error(f"No valid CSV data found in {self.csv_folder}")
+                return False
+
+        logger.info(f"Reading data from: {file_path}")
+        try:
+            with open(file_path, encoding="utf8") as f:
+                reader = csv.reader(f)
+                # Skip rows that don't have at least one numeric price column (indices 9-15)
+                self.raw_data = [
+                    row for row in reader 
+                    if len(row) > 15 and any(
+                        str(row[i]).replace('.', '', 1).isdigit() and float(row[i]) > 0 
+                        for i in range(9, 16)
+                    )
+                ]
+            logger.info(f"Loaded {len(self.raw_data)} rows with pricing data.")
+            return True
+        except Exception as e:
+            logger.error(f"Error reading CSV: {str(e)}")
+            return False
+
+    def apply_filters(self):
+        """
+        Iterate through all filters and apply them to the raw data.
+        """
+        if not self.raw_data:
+            if not self.load_csv_data():
+                return
+
+        self.filtered_tables = []
+        for f in self.filters:
+            logger.info(f"Filtering for: {f.name}")
+            
+            # Identify the column index for the price key (gram, eighth, etc.)
+            price_col = self.get_col_by_key(f.key)
+            
+            # Apply filters
+            filtered: List[Any] = [
+                row[:] for row in self.raw_data # copy row to avoid mutating raw_data
+                if self.is_match(row, f, price_col)
+            ]
+            
+            # Handle result limits and sorting
+            if f.limit_results_amt > -1 and len(filtered) > f.limit_results_amt:
+                filtered = sorted(filtered, key=lambda x: float(str(x[price_col])) if str(x[price_col]).replace('.','',1).isdigit() else 999999)
+                filtered = filtered[:f.limit_results_amt]
+                
+            self.filtered_tables.append(filtered)
+            logger.info(f"Filter '{f.name}' yielded {len(filtered)} results.")
+
+    def get_col_by_key(self, key):
+        """Map price keys to CSV column indices."""
+        mapping = {
+            'prices.gram': 9,
+            'prices.two_grams': 10,
+            'prices.eighth': 11,
+            'prices.quarter': 12,
+            'prices.half_ounce': 13,
+            'prices.ounce': 14,
+            'prices.half_gram': 15
+        }
+        return mapping.get(key, 9)
+
+    def is_match(self, row, f, price_col):
+        """
+        Check if a single CSV row matches the filter criteria.
+        """
+        # 1. Price Comparison
+        if f.price:
+            row_price_raw = str(row[price_col])
+            row_price = float(row_price_raw) if row_price_raw.replace('.','',1).isdigit() else 0
+            if not getComparisonVal(f.compare, row_price, f.price):
+                return False
+
+        # 2. Categories (Index 20)
+        if f.categories:
+            if str(row[20]).lower() not in [c.lower() for c in f.categories]:
+                return False
+
+        # 3. Join row for word-based searches
+        row_str = " ".join([str(x) for x in row]).lower()
+
+        # 4. Brands
+        if f.brands:
+            if not any(brand.lower() in row_str for brand in f.brands):
+                return False
+
+        # 5. Strains
+        if f.strains:
+            if not any(strain.lower() in row_str for strain in f.strains):
+                return False
+
+        # 6. Stores (Index 29)
+        if f.stores:
+            if not any(store.lower() in str(row[29]).lower() for store in f.stores):
+                return False
+
+        # 7. Bad Words (Exclusion)
+        if f.bad_words:
+            if any(word.lower() in row_str for word in f.bad_words):
+                return False
+
+        # 8. Good Words (Required)
+        if f.good_words:
+            if not any(word.lower() in row_str for word in f.good_words):
+                return False
+
+        # 9. THC Floor
+        if f.thc_floor > 0:
+            thc_val = self.extract_cannabinoid(row_str, 'thc')
+            if thc_val < f.thc_floor:
+                if f.thc_floor_strict: return False
+            else:
+                row.append(f"thc+{thc_val}")
+
+        # 10. CBD Floor
+        if f.cbd_floor > 0.001:
+            cbd_val = self.extract_cannabinoid(row_str, 'cbd')
+            if cbd_val < f.cbd_floor:
+                if f.cbd_floor_strict: return False
+            else:
+                row.append(f"cbd+{cbd_val}")
+
+        return True
+
+    def extract_cannabinoid(self, text, type_name):
+        """Extract numeric value for THC or CBD from text."""
+        pattern = rf"{type_name}[:\s-]*(\d+\.?\d*)"
+        match = re.search(pattern, text)
+        if match:
+            try: return float(match.group(1))
+            except: pass
         return 0
 
-hasWeightArr = []
-with open(csv_folder+"/"+csv_file, encoding="utf8") as csvDataFile:
-    csvReader = csv.reader(csvDataFile)
+    def as_currency(self, amount):
+        """Format number as USD currency."""
+        try: return '${:,.2f}'.format(float(amount))
+        except: return str(amount)
 
-    for row in csvReader:
-        if(row[9].replace('.','',1).isdigit() and float(row[9]) > 0  \
-        or row[10].replace('.','',1).isdigit() and float(row[10]) > 0 \
-        or row[11].replace('.','',1).isdigit() and float(row[11]) > 0 \
-        or row[12].replace('.','',1).isdigit() and float(row[12]) > 0 \
-        or row[13].replace('.','',1).isdigit() and float(row[13]) > 0 \
-        or row[14].replace('.','',1).isdigit() and float(row[14]) > 0 \
-        or row[15].replace('.','',1).isdigit() and float(row[15]) > 0):
-            hasWeightArr.append(row)
-
-class GetOutOfLoop( Exception ):
-    pass
-
-def find_between( s, first, last ):
-    try:
-        start = s.index( first ) + len( first )
-        end = s.index( last, start )
-        return s[start:end]
-    except ValueError:
+    def as_percentage(self, amount):
+        """Format number as percentage."""
+        try:
+            val = float(amount)
+            if 0 <= val <= 100: return '{:,.2f}%'.format(val)
+        except: pass
         return ""
 
-def find_between_r( s, first, last ):
-    try:
-        start = s.rindex( first ) + len( first )
-        end = s.rindex( last, start )
-        return s[start:end]
-    except ValueError:
-        return ""
+    def clean_html(self, raw_html):
+        """Remove HTML tags from a string."""
+        cleanr = re.compile('<.*?>')
+        return re.sub(cleanr, '', str(raw_html))
 
-def extract_float_from_str(str):
-    mgarr = []
-    for idx, char in enumerate(str):
-        if not str.isdigit() and idx is not 0:
-            if str is ".":
-                mgarr.append(str)
-            else:
-                break
-                #we've reached the end of the amt
+    def generate_html(self):
+        """Build the full HTML dashboard."""
+        doc, tag, text = Doc().tagtext()
 
-        elif str.isspace() and idx is 0:
-            pass
-        else:
-            mgarr.append(str)
-
-    return ''.join(mgarr)
-
-filtered_tables = []
-for filter in flower_filters:
-    arr = hasWeightArr.copy()
-
-    intToUse = 9
-    if(filter.key == gram):
-        intToUse = 9
-    if(filter.key == two_grams):
-        intToUse = 10
-    if(filter.key == eighth):
-        intToUse = 11
-    if(filter.key == quarter):
-        intToUse = 12
-    if(filter.key == half_ounce):
-        intToUse = 13
-    if(filter.key == ounce):
-        intToUse = 14
-    if(filter.key == half_gram):
-        intToUse = 15
-
-    for row in hasWeightArr:
-
-        if(filter.price):
-            if(getComparisonVal(filter.compare,float(row[intToUse]),float(filter.price)) == 0):
-                try:
-                    arr.remove(row)
-                    continue
-                except:
-                    pass
-                continue
-
-        if(len(filter.categories)):
-            if(row[20].lower() not in str(filter.categories).lower()):
-                try:
-                    arr.remove(row)
-                    continue
-                except:
-                    pass
-                continue
-
-        if(len(filter.brands)):
-            res = [ele for ele in filter.brands if(ele.lower() in " ".join(row).lower())] 
-            if (bool(res) is False):
-                try:
-                    arr.remove(row)
-                    continue
-                except:
-                    pass
-                continue
-
-        if(len(filter.strains)):
-
-            res = [ele for ele in filter.strains if(ele.lower() in " ".join(row).lower())] 
-            if (bool(res) is False):
-                try:
-                    arr.remove(row)
-                    continue
-                except:
-                    pass
-                continue
-
-        if(len(filter.stores)):
-            res = [ele for ele in filter.stores if(ele.lower() in " ".join(row).lower())] 
-            if (bool(res) is False):
-                try:
-                    arr.remove(row)
-                    continue
-                except:
-                    pass
-                continue
-
-        
-        if hasattr(filter, 'bad_words') and len(filter.bad_words):
-            breaker = False
-            for word in filter.bad_words:
-                for subrow in row:
-                    if(word.lower() in subrow.lower()):
-                        try:
-                            arr.remove(row)
-                            continue
-                        except:
-                            pass
-                        breaker = True 
-                        break
-                    else:
-
-                        continue
-                if breaker:
-                    break
-
-
-        if hasattr(filter, 'good_words') and len(filter.good_words):
-            if any(ext in " ".join(row).lower() for ext in filter.good_words):
-                pass
-            else:
-                print("removing non good_words item")
-                try:
-                    arr.remove(row)
-                    continue
-                except:
-                    pass
-
-                    
-
-        if(filter.thc_floor > 0):
-            if("THC".lower() not in " ".join(row).lower()):
-                if(filter.thc_floor_strict):
-                    try:
-                        arr.remove(row)
-                        continue
-                    except:
-                        pass
-                else:
-                    pass
-            else:
-                for subrow in row:
-                    if('thc' in str(subrow).lower()):
-                        ind = subrow.lower().find('THC'.lower())
-                        result = 0
-
-                        #If the first char is a digit, let's ussume it's THC
-                        if(subrow[0].isdigit()):
-                            result = subrow[0:7]
-                        #THC:
-                        if "THC:" in subrow:
-                            result = subrow.split("THC:")[1][0:7]
-
-                        if len(re.findall(r"[-+]?\d*\.\d+|\d+", str(result) )) > 0:
-                            result = re.findall(r"[-+]?\d*\.\d+|\d+", str(result) )[0]
-                        
-                        if str(result).replace('.','',1).isdigit():
-                            if(float(result) < float(filter.thc_floor)):
-                                try:
-                                    arr.remove(row)
-                                    break
-                                except:
-                                    pass
-                                
-                                break
-                            else:
-                                strtoadd = str('thc'+"+"+str(result))
-                                row.append( strtoadd )
-                                break
-
-        if(filter.cbd_floor > 0.001):
-            if("CBD".lower() not in " ".join(row).lower()):
-                if(filter.cbd_floor_strict):
-                    try:
-                        arr.remove(row)
-                        continue
-                    except:
-                        pass
-                else:
-                    pass
-            else:
-                for subrow in row:
-
-                    if('cbd' in str(subrow).lower()):
-                        ind = subrow.lower().find('CBD'.lower())
-                        result = 0
-                        if(find_between(subrow, "CBD: ", "%").replace('.','',1).isdigit()):
-                            result = find_between(subrow, "CBD: ", "%")
-                        if(find_between(subrow, "CBD - ", "%").replace('.','',1).isdigit()):
-                            result = find_between(subrow, "CBD - ", "%")
-                        if(find_between(subrow, ": ", "% CBD").replace('.','',1).isdigit()):
-                            result = find_between(subrow, ": ", "% CBD")
-                        if( subrow.split('% CBD')[0][len(subrow.split('% CBD')[0])-4:len(subrow.split('% CBD')[0])].replace('.','',1).isdigit() ):
-                            result = subrow.split('% CBD')[0][len(subrow.split('% CBD')[0])-4:len(subrow.split('% CBD')[0])]
-                            
-                        if( subrow.split('% CBD')[0].replace('.','',1).isdigit() ):
-                            result = subrow.split('% CBD')[0]
-                            
-                        if(float(result) < filter.cbd_floor):
-                            try:
-                                arr.remove(row)
-                                break
-                            except:
-                                pass
-                            
-                            break
-                        else:
-                            strtoadd = str("cbd"+"+"+str(result))
-                            row.append(str(strtoadd))
-                            break
-        if(len(filter.terpenes)):
-            for terp in filter.terpenes:
-                if(str(terp["name"].lower()) not in " ".join(row).lower()):
-                    if(terp["floor_strict"]):
-                        try:
-                            arr.remove(row)
-                            continue
-                        except:
-                            pass
-                    else:
-                        pass
-                else:
-                    for subrow in row:
-
-                        if(terp["name"].lower() in str(subrow).lower()):
-                            ind = subrow.lower().find(terp["name"].lower())
-                            result = 0
-                            if(find_between(subrow, terp["name"].lower()+": ", "%").replace('.','',1).isdigit()):
-                                result = find_between(subrow.lower(), terp["name"].lower()+": ", "%")
-
-                            if(len(subrow.lower().split(terp["name"].lower())[1])):
-                                if(subrow.lower().split(terp["name"].lower())[1][0] == ":"):
-                                    result = subrow.lower().split(terp["name"].lower())[1][1]
-
-                                    if(subrow.lower().split(terp["name"].lower())[1][1].isspace()):
-
-                                        result = subrow.lower().split(terp["name"].lower())[1][2:7]
-
-                                    elif( (subrow.lower().split(terp["name"].lower())[1][1]).isdigit() ):
-
-                                        result = subrow.lower().split(terp["name"].lower())[1][1:7]
-                                        pass
-                                
-                                    
-                                elif(subrow.lower().split(terp["name"].lower())[1][0].isspace() \
-                                    and len(subrow.lower().split(terp["name"].lower())[1]) > 1 ):
-                                    if(subrow.lower().split(terp["name"].lower())[1][1] == "-"):
-                                        result = subrow.lower().split(terp["name"].lower())[1][3:7]
-                                    elif(subrow.lower().split(terp["name"].lower())[1][1].isdigit()):
-                                        result = subrow.lower().split(terp["name"].lower())[1][1:7]
-
-                                if len(re.findall(r"[-+]?\d*\.\d+|\d+", str(result) )) > 0:
-                                    result = re.findall(r"[-+]?\d*\.\d+|\d+", str(result) )[0]
-
-                            if str(result).replace('.','',1).isdigit():
-                                if(float(result) < float(terp["floor"])):
-                                    try:
-                                        arr.remove(row)
-                                        break
-                                    except:
-                                        pass
-                                    
-                                    break
-                                else:
-                                    strtoadd = str(terp["name"].lower()+"+"+str(result))
-
-                                    row.append( strtoadd )
-
-                                    break
-
-                                
-    if(filter.limit_results_amt > -1 and len(arr) > filter.limit_results_amt):
-        
-        #sorting by price before snipping
-        arr = sorted(arr, key=lambda x: (x[1]))
-        arr = arr[-filter.limit_results_amt:]
-    filtered_tables.append(arr)
-
-csvfile = "./output/filtered.csv"
-
-#with open(csvfile, "w") as output:
-#    writer = csv.writer(output, lineterminator='\n')
-#    writer.writerows(filteredItemsArr)  
-
-def translate_amnt_to_col(amnt):
-    if(amnt == gram):
-        return 9
-    if(amnt == two_grams):
-        return 10
-    if(amnt == eighth):
-        return 11
-    if(amnt == quarter):
-        return 12
-    if(amnt == half_ounce):
-        return 13
-    if(amnt == ounce):
-        return 14
-    if(amnt == half_gram):
-        return 15
-
-def as_currency(amount):
-    if amount >= 0:
-        return '${:,.2f}'.format(amount)
-    else:
-        return amount
-
-def as_percentage(amount):
-    if amount >= 0 and amount < 101:
-        return '{:,.2f}%'.format(amount)
-    else:
-        return ""
-
-def cleanhtml(raw_html):
-    cleanr = re.compile('<.*?>')
-    cleantext = re.sub(cleanr, '', raw_html)
-    return cleantext
-
-def generate_html( ):
-    priorityClass = ""
-    doc, tag, text = Doc().tagtext()
-
-    doc.asis('<!DOCTYPE html>')
-    with tag('html', lang="en"):
-        with tag('head'):
-            doc.asis('<meta charset="utf-8">')
-            doc.asis('<meta name="viewport" content="width=device-width, initial-scale=1">')
-            doc.asis('<link rel="shortcut icon" href="./favicon.ico" />')
-            doc.asis('<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">')
-            doc.asis('<link href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css" rel="stylesheet" />')
-            doc.asis('<link href="./css/theme.bootstrap.min.css" type="text/css" rel="stylesheet" />')
-            doc.asis('<link href="./css/styles.css" type="text/css" rel="stylesheet" />')
-            with tag('script', src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"):
-                pass
-            with tag('script', src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"):
-                pass
-            with tag('script', src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"):
-                pass
-            with tag('script', src="./js/jquery.tablesorter.min.js"):
-                pass
-            with tag('script', src="./js/jquery.tablesorter.widgets.min.js"):
-                pass
-            with tag('script', src="./js/scripts.js"):
-                pass
+        doc.asis('<!DOCTYPE html>')
+        with tag('html', lang="en"):
+            with tag('head'):
+                self._add_html_head(doc)
             with tag('body'):
                 with tag('div', klass="container-fluid main"):
-                    with tag('nav', klass="navbar navbar-expand-lg navbar-light bg-light"):
-                        with tag('a', klass="navbar-brand"):
-                            doc.stag('img', src="./img/logo.jpg", klass="img logo")
-                            text("FLOWER FILTER")
-                        with tag('div', klass="collapse navbar-collapse", id="navbarSupportedContent"):
-                            with tag('ul', klass="navbar-nav mr-auto"):
-                                for navitem in flower_filters:
-                                    with tag('li', klass="nav-item"):
-                                        with tag('a', href='#'+navitem.name.replace(" ", "_").lower()):
-                                            text(navitem.name)
-                            with tag('small',klass="text-secondary"):
-                                text(csv_folder+"/"+csv_file)
-                        with tag('small',klass="text-danger"):
-                                now = datetime.now().strftime("%b %d %Y %I:%M %p").lstrip("0").replace(" 0", " ")
-                                text("Updated: ")
-                                doc.asis('<br>')
-                                text(now)
-                    for i in range(len(flower_filters)):
+                    self._generate_navbar(doc, tag, text)
+                    for i, f in enumerate(self.filters):
+                        self._generate_filter_section(doc, tag, text, i, f)
+                    self._generate_footer(doc, tag, text)
 
-                        with tag('h3', id=flower_filters[i].name.replace(" ", "_").lower()):
-                            text(flower_filters[i].name)
-                            with tag('span', klass="results-amt text-danger"):
-                                text(" (" + str(len(filtered_tables[i])) +" Results)" )
+        return indent(doc.getvalue())
 
-                        with tag('small'):
-                            with tag("strong"):
-                                text("Applied filters: ")
+    def _add_html_head(self, doc):
+        """Append metadata and script links to head."""
+        doc.asis('<meta charset="utf-8">')
+        doc.asis('<meta name="viewport" content="width=device-width, initial-scale=1">')
+        doc.asis('<link rel="preconnect" href="https://fonts.googleapis.com">')
+        doc.asis('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>')
+        doc.asis('<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">')
+        doc.asis('<link href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" rel="stylesheet">')
+        
+        # Premium Glassmorphism CSS
+        css = """
+        :root {
+            --primary: #00ffa3;
+            --secondary: #00d4ff;
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #f59e0b;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
 
-                            for key, value in dict((name, getattr(flower_filters[i], name)) for name in dir(flower_filters[i]) if not name.startswith('__')).items():
-                                with tag("span", klass="text-danger"):
-                                    text(key)
-                                if(isinstance(value, list)):
-                                    with tag("span", klass="text-secondary"):
-                                        text(json.dumps(value))
-                                else:
-                                    with tag("span", klass="text-secondary"):
-                                        text(value)
-                        with tag('table', klass='col-12 table table-hover'):
-                            with tag('thead', klass='table-info'):
-                                with tag('tr'):
-                                    with tag('th', ('data-sort', 'int')): #id
-                                        text('Id')
-                                    with tag('th', ('data-sort', 'float')): #price
-                                        text('Price')
-                                    with tag('th'):
-                                        text('Image')
-                                    with tag('th', ('data-sort', 'string')):
-                                        text('Strain')
-                                    with tag('th', ('data-sort', 'string')):
-                                        text('Category')
-                                    with tag('th', ('data-sort', 'float'), klass="canabinoid"):
-                                            text('THC')
-                                    if(flower_filters[i].cbd_floor > 0):
-                                        with tag('th', ('data-sort', 'float'), klass="canabinoid"):
-                                                text('CBD')
-                                    if(len(flower_filters[i].terpenes)):
-                                        for terp in flower_filters[i].terpenes:
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-                                            with tag('th', ('data-sort', 'float'), klass="canabinoid"):
-                                                    text(terp['name'])
+        body {
+            font-family: 'Outfit', 'Inter', sans-serif;
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(0, 255, 163, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(0, 212, 255, 0.05) 0%, transparent 40%);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem;
+        }
 
-                                    with tag('th', ('data-sort', 'string')):
-                                        text('Dispensary')
-                                    with tag('th', width="30%"):
-                                        text('Info')
-                            with tag('tbody',klass=""):
-                                for row in filtered_tables[i]:
-                                    
-                                    if(len(flower_filters[i].priority_words)):
+        /* Navbar / Header */
+        .navbar {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
 
-                                        res = [ele for ele in flower_filters[i].priority_words if(ele.lower() in "".join(row).lower())]
-                                        if (bool(res) is True):
-                                            priorityClass = "priority"
-                                        else:
-                                            priorityClass = ""
-                                    with tag('tr', klass=priorityClass):
-                                        with tag('th', scope='row'):
-                                            with tag("small"):
-                                                text(row[0])
-                                        with tag('td'):
-                                            with tag('strong'):
-                                                text(as_currency(float(row[translate_amnt_to_col(flower_filters[i].key)])))
-                                        with tag('td', klass="thumb"):
-                                            with tag('a', ('data-fancybox', 'gallery'), href=row[17]):
-                                                doc.stag('img', src=row[17], klass="img img-thumbnail", width="140", onerror="this.src='./img/logo.jpg';")
-                                        with tag('td'):
-                                            line = re.sub('[#]', '', row[28])
-                                            url = 'https://weedmaps.com'+line
-                                            with tag('a', href=url, target="_blank"):
-                                                text(row[2])
-                                        with tag('td'):
-                                            text(row[20])
-                                        with tag('td'):
-                                            if(len(" ".join(row).split("thc"+"+")) > 1):
-                                                colorClass = ""
-                                                amt = " ".join(row).split("thc"+"+")[1].split(' ')[0]
-                                                if float(amt) >= 28:
-                                                    colorClass = "text-danger font-weight-bold"
-                                                with tag('span', klass=colorClass):
-                                                    text( as_percentage( float(amt) ) )
-                                                
-                                        if(flower_filters[i].cbd_floor > 0):
-                                            with tag('td'):
-                                                if(len(" ".join(row).split("cbd"+"+")) > 1):
-                                                    amt = " ".join(row).split("cbd"+"+")[1].split(' ')[0]
-                                                    text( as_percentage( float(amt) ) )
-                                        if(flower_filters[i].terpenes):
-                                            for terp in flower_filters[i].terpenes:
-                                                
-                                                with tag('td'):
-                                                    if(len(" ".join(row).lower().split(terp["name"].lower()+"+")) > 1):
-                                                        amt = " ".join(row).lower().split(terp["name"].lower()+"+")[1].split(' ')[0]
-                                                        text( as_percentage( float(amt) ) )
-                                        with tag('td'):
-                                            text(row[29])
-                                        with tag('td'):
-                
-                                            text(cleanhtml(row[1]))
-                    doc.asis('''<!-- Footer -->
-                    <footer class="page-footer font-small blue pt-4">
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
 
-                      <!-- Footer Links -->
-                      <div class="container-fluid text-center text-md-left">
+        .navbar-nav {
+            display: flex;
+            gap: 1.5rem;
+            list-style: none;
+        }
 
-                        <!-- Grid row -->
-                        <div class="row">
+        .nav-link {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
 
-                          <!-- Grid column -->
-                          <div class="col-md-6 mt-md-0 mt-3">
+        .nav-link:hover {
+            background: rgba(0, 255, 163, 0.1);
+            color: var(--primary);
+        }
 
-                            <!-- Content -->
-                            <h5 class="text-uppercase">About The Project</h5>
-                            <p>This project is made to handle the data that is available from weedmaps, etc, etc.</p>
+        /* Section Headers */
+        h3 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
 
-                          </div>
-                          <!-- Grid column -->
+        .badge {
+            background: var(--primary);
+            color: var(--bg);
+            padding: 0.25rem 0.75rem;
+            border-radius: 100px;
+            font-size: 0.9rem;
+            font-weight: 800;
+        }
 
-                          <hr class="clearfix w-100 d-md-none pb-3">
+        /* Table Styles */
+        .table-container {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 3rem;
+            overflow-x: auto;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            color: var(--text);
+        }
+        
+        th {
+            text-align: left;
+            padding: 1rem;
+            color: var(--primary);
+            font-weight: 600;
+            border-bottom: 1px solid var(--glass-border);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+            vertical-align: middle;
+        }
+        
+        tr:last-child td { border-bottom: none; }
+        
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+            transition: background 0.2s;
+        }
+        
+        .price-tag {
+            font-weight: 700;
+            color: var(--accent);
+            font-family: monospace;
+            font-size: 1.1rem;
+        }
+        
+        .img-thumbnail {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 2px solid var(--glass-border);
+            background: var(--glass);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        
+        .img-thumbnail:hover {
+            transform: scale(1.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 255, 163, 0.3);
+        }
+        
+        a {
+            color: var(--secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        a:hover {
+            color: var(--primary);
+            text-shadow: 0 0 8px rgba(0, 255, 163, 0.4);
+        }
 
-                          <!-- Grid column -->
-                          <div class="col-md-3 mb-md-0 mb-3">
+        .info-cell {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            max-width: 300px;
+        }
 
-                            <!-- Links -->
-                            <h5 class="text-uppercase">Links</h5>
+        .footer {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 2rem;
+            margin-top: 4rem;
+            border-top: 1px solid var(--glass-border);
+        }
 
-                            <ul class="list-unstyled">
-                              <li>
-                                <a href="https://weedmaps.com/" target="_blank">weedmaps.com</a>
-                              </li>
-                              <li>
-                                <a href="https://www.cannabinoidclinical.com/science-cannabinoids" target="_blank">Cannabis Science</a>
-                              </li>
-                              <li>
-                                <a href="https://www.leafly.com/news/cannabis-101/list-major-cannabinoids-cannabis-effects" target="_blank">Cannabinoids Info</a>
-                              </li>
-                              <li>
-                                <a href="https://www.sclabs.com/terpenes/" target="_blank">Terpenes</a>
-                              </li>
-                            </ul>
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--card-bg); border-radius: 5px; border: 1px solid var(--glass-border); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--glass-border); }
+        """
+        
+        with doc.tag('style'):
+            doc.asis(css)
 
-                          </div>
-                          <!-- Grid column -->
+        # Scripts
+        doc.asis('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>')
+        doc.asis('<script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>')
+        # Note: Sorting script removed for now as it relied on old jquery tablesorter. 
+        # Could re-add a modern vanilla JS sorter later.
 
-                          <!-- Grid column -->
-                          <div class="col-md-3 mb-md-0 mb-3">
-
-                            <!-- Links -->
-                            <h5 class="text-uppercase">Links</h5>
-
-                            <ul class="list-unstyled">
-                              <li>
-                                <a href="https://www.reddit.com/r/trees" target="_blank">/r/trees</a>
-                              </li>
-                            </ul>
-
-                          </div>
-                          <!-- Grid column -->
-
-                        </div>
-                        <!-- Grid row -->
-
-                      </div>
-                      <!-- Footer Links -->
-
-                      <!-- Copyright -->
-                      <div class="footer-copyright text-center py-3">©420 <a href="#">CanaData + CanaParse</a>
-                      </div>
-                      <!-- Copyright -->
-
-                    </footer>
-                    <!-- Footer -->''')
-
-    return indent(doc.getvalue()) 
-
-def generate_html_email( ):
-
-    priorityClass = ""
-    doc, tag, text = Doc().tagtext()
-
-    doc.asis('<!DOCTYPE html>')
-    with tag('html', lang="en"):
-        with tag('head'):
-            doc.asis('<meta charset="utf-8">')
-            doc.asis('<meta name="viewport" content="width=device-width, initial-scale=1">')
-            doc.asis('<link rel="shortcut icon" href="./favicon.ico" />')
-            doc.asis('<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">')
-            doc.asis('<link href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css" rel="stylesheet" />')
-            doc.asis('<link href="./css/theme.bootstrap.min.css" type="text/css" rel="stylesheet" />')
-            doc.asis('<link href="./css/styles.css" type="text/css" rel="stylesheet" />')
-            with tag('script', src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"):
-                pass
-            with tag('script', src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"):
-                pass
-            with tag('script', src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"):
-                pass
-            with tag('script', src="./js/jquery.tablesorter.min.js"):
-                pass
-            with tag('script', src="./js/jquery.tablesorter.widgets.min.js"):
-                pass
-            with tag('script', src="./js/scripts.js"):
-                pass
-            with tag('body',style="font-size:10px;"):
-                with tag('div', klass="container main", style="margin:0 auto;max-width:600px;"):
-                    with tag('nav', klass="navbar navbar-expand-lg navbar-light bg-light"):
-                        with tag('a', klass="navbar-brand"):
-                            doc.stag('img', src="https://github.com/justinemter/CanaData/blob/master/parse-script/output/img/logo.jpg?raw=true", klass="img logo")
-
-                    for i in range(len(flower_filters)):
-
-                        with tag('h1', id=flower_filters[i].name.replace(" ", "_").lower()):
-                            text(flower_filters[i].name)
-
-                        with tag('table', klass='col-12 table table-hover', align="center", width="100%", border="0", cellspacing="0", cellpadding="0"):
-                            with tag('thead', klass='table-info'):
-                                with tag('tr'):
-                                    with tag('th', ('data-sort', 'float')): #price
-                                        text('Price')
-                                    with tag('th'):
-                                        text('Image')
-                                    with tag('th', ('data-sort', 'string')):
-                                        text('Strain')
-                                    with tag('th', ('data-sort', 'string')):
-                                        text('Category')
-                                    with tag('th', ('data-sort', 'float'), klass="canabinoid"):
-                                            text('THC')
-                                    with tag('th', ('data-sort', 'string')):
-                                        text('Dispensary')
-
-                            with tag('tbody',klass=""):
-                                idx = 0
-                                for row in filtered_tables[i]:
-                                    if flower_filters[i].limit_results_amt_email > -1 and idx > flower_filters[i].limit_results_amt_email:
-                                        print(flower_filters[i].limit_results_amt_email)
-                                        break
-                                    idx += 1
-                                    if(len(flower_filters[i].priority_words)):
-
-                                        res = [ele for ele in flower_filters[i].priority_words if(ele.lower() in "".join(row).lower())]
-                                        if (bool(res) is True):
-                                            priorityClass = "priority"
-                                        else:
-                                            priorityClass = ""
-                                    with tag('tr', klass=priorityClass):
-                                        with tag('th'):
-                                            with tag('strong'):
-                                                text(as_currency(float(row[translate_amnt_to_col(flower_filters[i].key)])))
-                                        with tag('td', klass="thumb"):
-                                            with tag('a', ('data-fancybox', 'gallery'), href=row[17]):
-                                                doc.stag('img', src=row[17], klass="img img-thumbnail", width="140", onerror="this.src='https://github.com/justinemter/CanaData/blob/master/parse-script/output/img/logo.jpg?raw=true';")
-                                        with tag('td'):
-                                            line = re.sub('[#]', '', row[28])
-                                            url = 'https://weedmaps.com'+line
-                                            with tag('a', href=url, target="_blank"):
-                                                text(row[2])
-                                        with tag('td'):
-                                            text(row[20])
-                                        with tag('td'):
-                                            if(len(" ".join(row).split("thc"+"+")) > 1):
-                                                colorClass = ""
-                                                amt = " ".join(row).split("thc"+"+")[1].split(' ')[0]
-                                                if float(amt) >= 28:
-                                                    colorClass = "text-danger font-weight-bold"
-                                                with tag('span', klass=colorClass):
-                                                    text( as_percentage( float(amt) ) )
-                                        with tag('td'):
-                                            text(row[29])
-
-    return indent(doc.getvalue())
-
-
-def generate_shell_html( ):
-    priorityClass = ""
-    doc, tag, text = Doc().tagtext()
-
-    doc.asis('<!DOCTYPE html>')
-    with tag('html', lang="en"):
-        with tag('head'):
-            doc.asis('<meta charset="utf-8">')
-            doc.asis('<meta name="viewport" content="width=device-width, initial-scale=1">')
-            doc.asis('<link rel="shortcut icon" href="./favicon.ico" />')
-            doc.asis('<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">')
-            doc.asis('<link href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css" rel="stylesheet" />')
-            doc.asis('<link href="./css/theme.bootstrap.min.css" type="text/css" rel="stylesheet" />')
-            doc.asis('<link href="./css/styles.css" type="text/css" rel="stylesheet" />')
-            with tag('script', src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"):
-                pass
-            with tag('script', src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"):
-                pass
-            with tag('script', src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"):
-                pass
-            with tag('script', src="./js/jquery.tablesorter.min.js"):
-                pass
-            with tag('script', src="./js/jquery.tablesorter.widgets.min.js"):
-                pass
-            with tag('script', src="./js/scripts.js"):
-                pass
-            with tag('body',klass="shell"):
-                doc.asis('''<div class="modal" tabindex="-1" role="dialog">
-                          <div class="modal-dialog" role="document">
-                            <div class="modal-content">
-                              <div class="modal-header">
-                                <h5 class="modal-title">Modal title</h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                  <span aria-hidden="true">&times;</span>
-                                </button>
-                              </div>
-                              <div class="modal-body">
-                                <p>Modal body text goes here.</p>
-                              </div>
-                              <div class="modal-footer">
-                                <button type="button" class="btn btn-primary">Save changes</button>
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>''')
-                with tag('div', klass="container-fluid main"):
-                    with tag('nav', klass="navbar navbar-expand-lg navbar-light bg-light"):
-                        with tag('a', klass="navbar-brand"):
-                            doc.stag('img', src="./img/logo.jpg", klass="img logo")
-                            text("FLOWER FILTER SHELL")
-                        with tag('div', klass="collapse navbar-collapse", id="navbarSupportedContent"):
-                            
-                            with tag('div', klass="dropdown show"):
-                                with tag('a', ("data-toggle","dropdown"), klass="btn btn-secondary dropdown-toggle", href="#", role="button", id="dropdownMenuLink"):
-                                        text(csv_folder+"/"+csv_file)
-                                with tag('div', klass="dropdown-menu"):
-                                    with tag('a', klass="dropdown-item"):
-                                        text(csv_folder+"/"+csv_file)
-                                    with tag('a', klass="dropdown-item"):
-                                        text(csv_folder+"/"+csv_file)
-                    for i in range(len(flower_filters)):
-
-                        with tag('h3', id=flower_filters[i].key):
-                            text(flower_filters[i].name)
-
-                        with tag('small'):
-                            with tag("strong"):
-                                text("Applied filters: ")
-                            with tag("span"):
-                                text("key: ")
-                            text(flower_filters[i].key)
-                            with tag("span"):
-                                text("compare: ")
-                            text(flower_filters[i].compare)
-                            with tag("span"):
-                                text("price: ")
-                            text(as_currency(float(flower_filters[i].price)))
-                            if(len(flower_filters[i].categories)):
-                                with tag("span"):
-                                    text("categories: ")
-                                text("/".join(flower_filters[i].categories))
-                            if(len(flower_filters[i].strains)):
-                                with tag("span"):
-                                    text("strains: ")
-                                text("/".join(flower_filters[i].strains))
-                            if(len(flower_filters[i].brands)):
-                                with tag("span"):
-                                    text("brands: ")
-                                text("/".join(flower_filters[i].brands))
-                            if(len(flower_filters[i].stores)):
-                                with tag("span"):
-                                    text("stores: ")
-                                text("/".join(flower_filters[i].stores))
-                            if(len(flower_filters[i].bad_words)):
-                                with tag("span"):
-                                    text("bad_words: ")
-                                text("/".join(flower_filters[i].bad_words))
-                            if(flower_filters[i].thc_floor):
-                                with tag("span"):
-                                    text("thc_floor: ")
-                                text(as_percentage(float(flower_filters[i].thc_floor)))
-                            if(flower_filters[i].thc_floor_strict):
-                                with tag("span"):
-                                    text("thc_floor_strict: ")
-                                text(flower_filters[i].thc_floor_strict)
-                        with tag('table', klass='col-12 table table-hover'):
-                            with tag('thead', klass='table-info'):
-                                with tag('tr'):
-                                    with tag('th', ('data-sort', 'int')):
-                                        text('Id')
-                                    with tag('th', ('data-sort', 'float')):
-                                        text('Price')
-                                    with tag('th'):
-                                        text('Image')
-                                    with tag('th', ('data-sort', 'string')):
-                                        text('Strain')
-                                    with tag('th', ('data-sort', 'string')):
-                                        text('Category')
-                                    with tag('th', ('data-sort', 'float')):
-                                            text('THC')
-                                    with tag('th', ('data-sort', 'string')):
-                                        text('Dispensary')
-                                    with tag('th', width="30%"):
-                                        text('Info')
-                            with tag('tbody'):
-                                for row in filtered_tables[i]:
-                                    
-                                    if(len(flower_filters[i].priority_words)):
-
-                                        res = [ele for ele in flower_filters[i].priority_words if(ele.lower() in "".join(row).lower())]
-                                        if (bool(res) is True):
-                                            priorityClass = "priority"
-                                        else:
-                                            priorityClass = ""
-                                    with tag('tr', klass=priorityClass):
-                                        with tag('th', scope='row'):
-                                            with tag("small"):
-                                                text(row[0])
-                                        with tag('td'):
-                                            with tag('strong'):
-                                                text(as_currency(float(row[translate_amnt_to_col(flower_filters[i].key)])))
-                                        with tag('td', klass="thumb"):
-                                            with tag('a', ('data-fancybox', 'gallery'), href=row[17]):
-                                                doc.stag('img', src=row[17], klass="img img-thumbnail", width="140")
-                                        with tag('td'):
-                                            line = re.sub('[#]', '', row[28])
-                                            url = 'https://weedmaps.com'+line
-                                            with tag('a', href=url, target="_blank"):
-                                                text(row[2])
-                                        with tag('td'):
-                                            text(row[20])
-                                        with tag('td'):
-                                            try:
-                                                text(as_percentage(float(row[36]))) #THC
-                                            except:
-                                                text("n/a") #THC
-                                        with tag('td'):
-                                            text(row[29])
-                                        with tag('td'):
-                                            text(row[1])
-    return indent(doc.getvalue()) 
-
-def write_html_to_file(data, filename="index.html"):
-
-    now = datetime.now()
-    fileName = "./output/"+filename
-    writepath = './'
-    mode = 'w'
-    with open(writepath+fileName, mode, encoding='utf-8') as f:
-        f.write(data)
-
-write_html_to_file(generate_html())
-write_html_to_file(generate_shell_html(), "flower-filter-shell.html")
-write_html_to_file(generate_html_email(), "flower-filter-email.html")
-print("Done.")
-                
+    def _generate_navbar(self, doc, tag, text):
+        """Generate common navigation bar."""
+        with tag('nav', klass="navbar"):
+            with tag('div', klass="navbar-brand"):
+                text("CANADATA ANALYTICS")
             
+            with tag('div'):
+                with tag('ul', klass="navbar-nav"):
+                    for f in self.filters:
+                        with tag('li'):
+                            with tag('a', klass="nav-link", href=f'#{f.name.replace(" ", "_").lower()}'):
+                                text(f.name)
+            
+            with tag('div', style="text-align: right"):
+                with tag('div', style="font-size: 0.8rem; color: var(--text-muted)"):
+                    text(f"Source: {self.csv_file}")
+                with tag('div', style="font-size: 0.8rem; color: var(--accent)"):
+                    now = datetime.now().strftime("%b %d, %Y")
+                    text(f"Updated: {now}")
+
+    def _generate_filter_section(self, doc, tag, text, i, f):
+        """Generate a table for a specific filter."""
+        results = self.filtered_tables[i]
+        section_id = f.name.replace(" ", "_").lower()
+        
+        with tag('div', id=section_id):
+            with tag('h3'):
+                text(f.name)
+                with tag('span', klass="badge"):
+                    text(str(len(results)))
+
+            if not results:
+                with tag('p', style="color: var(--text-muted); padding: 1rem;"): text("No results found for this filter.")
+                return
+
+            with tag('div', klass='table-container'):
+                with tag('table'):
+                    with tag('thead'):
+                        with tag('tr'):
+                            # Define headers based on data content
+                            headers = ['Price', 'Image', 'Product', 'Category', 'THC']
+                            if f.cbd_floor > 0: headers.append('CBD')
+                            headers.extend(['Dispensary', 'Details'])
+                            
+                            for label in headers:
+                                with tag('th'): text(label)
+                    
+                    with tag('tbody'):
+                        for row in results:
+                            self._generate_row(doc, tag, text, row, f)
+
+    def _generate_row(self, doc, tag, text, row, f):
+        """Generate a single table row."""
+        price_col = self.get_col_by_key(f.key)
+        with tag('tr'):
+            # Price
+            with tag('td'): 
+                with tag('div', klass="price-tag"): text(self.as_currency(row[price_col]))
+            
+            # Image
+            with tag('td', klass="thumb"):
+                img_url = str(row[17]) if len(row) > 17 else ""
+                if img_url:
+                    with tag('a', ('data-fancybox', 'gallery'), href=img_url):
+                        doc.stag('img', src=img_url, klass="img-thumbnail", onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';")
+                else:
+                    text("-")
+            
+            # Strain Name + Link
+            with tag('td'):
+                slug = str(row[28]) if len(row) > 28 else ""
+                url = f'https://weedmaps.com{slug.replace("#", "")}'
+                with tag('a', href=url, target="_blank", style="font-weight: 600; display: block; margin-bottom: 4px;"):
+                    text(str(row[2]))
+                # Brand (assumed index 4 based on typical CSV layout, checking correctness)
+                # Actually index 4 is usually brand in CanaData export
+                brand = str(row[4]) if len(row) > 4 else ""
+                if brand:
+                    with tag('span', style="font-size: 0.8rem; color: var(--text-muted);"): text(brand)
+
+            # Category
+            with tag('td'): 
+                with tag('span', style="background: rgba(0, 212, 255, 0.1); color: var(--secondary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;"):
+                    text(str(row[20]))
+            
+            # THC
+            thc_val = next((str(s).split("+")[1] for s in row if str(s).startswith("thc+")), "0")
+            with tag('td'): text(self.as_percentage(thc_val))
+            
+            # CBD
+            if f.cbd_floor > 0:
+                cbd_val = next((str(s).split("+")[1] for s in row if str(s).startswith("cbd+")), "0")
+                with tag('td'): text(self.as_percentage(cbd_val))
+            
+            # Dispensary
+            with tag('td'): 
+                text(str(row[29]))
+            
+            # Info (Cleaned)
+            with tag('td', klass="info-cell"): 
+                desc = self.clean_html(row[1])
+                # Truncate if too long
+                if len(desc) > 100: desc = desc[:100] + "..."
+                text(desc)
+
+    def _generate_footer(self, doc, tag, text):
+        """Add footer boilerplate."""
+        with tag('div', klass="footer"):
+            text("© 2026 CanaData Analytics • Generated with ❤️ and ☕")
+
+    def save_html(self, output_path="output/index.html"):
+        """Save generated HTML to file."""
+        html_content = self.generate_html()
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        logger.info(f"HTML report saved to: {output_path}")
+
+def getComparisonVal(op, val1, val2):
+    """Evaluate a comparison operation."""
+    try:
+        if op == '>=': return 1 if val1 >= val2 else 0
+        if op == '<=': return 1 if 0 < val1 <= val2 else 0
+        if op == '==': return 1 if val1 == val2 else 0
+        if op == '>':  return 1 if val1 > val2 else 0
+        if op == '<':  return 1 if 0 < val1 < val2 else 0
+    except: pass
+    return 0
+
+def main():
+    """Execution entry point."""
+    parser_args = argparse.ArgumentParser(description="CanaParse: Filter and generate HTML reports from CanaData CSVs.")
+    parser_args.add_argument("--file", help="Specific CSV file name (e.g., results.csv)")
+    parser_args.add_argument("--folder", help="Specific folder containing the CSV file")
+    parser_args.add_argument("--output", default="output/index.html", help="Path to save the HTML report")
+    parser_args.add_argument("--no-filter", action="store_true", help="Include all results without filtering")
+    
+    args = parser_args.parse_args()
+
+    parser = CanaParse(csv_file=args.file, csv_folder=args.folder, no_filter=args.no_filter)
+    if parser.load_csv_data():
+        parser.apply_filters()
+        parser.save_html(output_path=args.output)
+    else:
+        logger.error("Skipping report generation due to missing data.")
+
+if __name__ == "__main__":
+    main()

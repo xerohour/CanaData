@@ -1,0 +1,11 @@
+{
+    "python.defaultInterpreterPath": ".venv\\Scripts\\python.exe",
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/.venv": true,
+        "**/__pycache__": true
+    },
+    "antigravity-storage-manager.showCreditsBalance": true,
+    "roo-cline.vsCodeLmModelSelector": {}
+}

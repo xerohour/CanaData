@@ -1,0 +1,129 @@
+{
+  "meta": {
+    "total_brands": 2818
+  },
+  "data": {
+    "brands": [
+      {
+        "id": 98555,
+        "name": "Zurpz",
+        "slug": "zurpz",
+        "position": 999,
+        "is_premium": false,
+        "is_claimed": true,
+        "rating": 3.882352828979492,
+        "reviews_count": 17,
+        "favorites_count": 62,
+        "avatar_image": {
+          "small_url": "https://images.weedmaps.com/brands/000/098/555/avatar/1755618710-media_kit_zurpz_design",
+          "medium_url": "https://images.weedmaps.com/brands/000/098/555/avatar/1755618710-media_kit_zurpz_design",
+          "large_url": "https://images.weedmaps.com/brands/000/098/555/avatar/1755618710-media_kit_zurpz_design",
+          "original_url": "https://images.weedmaps.com/brands/000/098/555/avatar/1755618710-media_kit_zurpz_design"
+        },
+        "products_count": 9,
+        "best_of_weedmaps_years": [],
+        "best_of_weedmaps_nominee_years": [],
+        "best_of_weedmaps": false,
+        "best_of_weedmaps_nominee": false,
+        "badges": [],
+        "preferred_organizations": []
+      },
+      {
+        "id": 3865,
+        "name": "Zur Bl\u00fcte",
+        "slug": "zur-blute",
+        "position": 999,
+        "is_premium": false,
+        "is_claimed": true,
+        "rating": 0.0,
+        "reviews_count": 0,
+        "favorites_count": 67,
+        "avatar_image": {
+          "small_url": "https://images.weedmaps.com/brands/000/003/865/avatar/1543947811-23131641_147424319212789_3673986248748673931_n.jpg",
+          "medium_url": "https://images.weedmaps.com/brands/000/003/865/avatar/1543947811-23131641_147424319212789_3673986248748673931_n.jpg",
+          "large_url": "https://images.weedmaps.com/brands/000/003/865/avatar/1543947811-23131641_147424319212789_3673986248748673931_n.jpg",
+          "original_url": "https://images.weedmaps.com/brands/000/003/865/avatar/1543947811-23131641_147424319212789_3673986248748673931_n.jpg"
+        },
+        "products_count": 26,
+        "best_of_weedmaps_years": [],
+        "best_of_weedmaps_nominee_years": [],
+        "best_of_weedmaps": false,
+        "best_of_weedmaps_nominee": false,
+        "badges": [],
+        "preferred_organizations": []
+      },
+      {
+        "id": 4124,
+        "name": "Zorba Seeds",
+        "slug": "zobra-seeds",
+        "position": 999,
+        "is_premium": false,
+        "is_claimed": true,
+        "rating": 0.0,
+        "reviews_count": 0,
+        "favorites_count": 27,
+        "avatar_image": {
+          "small_url": "https://images.weedmaps.com/brands/000/004/124/avatar/1520865576-logo.jpg",
+          "medium_url": "https://images.weedmaps.com/brands/000/004/124/avatar/1520865576-logo.jpg",
+          "large_url": "https://images.weedmaps.com/brands/000/004/124/avatar/1520865576-logo.jpg",
+          "original_url": "https://images.weedmaps.com/brands/000/004/124/avatar/1520865576-logo.jpg"
+        },
+        "products_count": 11,
+        "best_of_weedmaps_years": [],
+        "best_of_weedmaps_nominee_years": [],
+        "best_of_weedmaps": false,
+        "best_of_weedmaps_nominee": false,
+        "badges": [],
+        "preferred_organizations": []
+      },
+      {
+        "id": 100989,
+        "name": "Zooted Brandz - MI",
+        "slug": "zooted-mi",
+        "position": 999,
+        "is_premium": false,
+        "is_claimed": true,
+        "rating": 5.0,
+        "reviews_count": 3,
+        "favorites_count": 75,
+        "avatar_image": {
+          "small_url": "https://images.weedmaps.com/brands/000/100/989/avatar/1770414411-3wr3.jpg",
+          "medium_url": "https://images.weedmaps.com/brands/000/100/989/avatar/1770414411-3wr3.jpg",
+          "large_url": "https://images.weedmaps.com/brands/000/100/989/avatar/1770414411-3wr3.jpg",
+          "original_url": "https://images.weedmaps.com/brands/000/100/989/avatar/1770414411-3wr3.jpg"
+        },
+        "products_count": 44,
+        "best_of_weedmaps_years": [],
+        "best_of_weedmaps_nominee_years": [],
+        "best_of_weedmaps": false,
+        "best_of_weedmaps_nominee": false,
+        "badges": [],
+        "preferred_organizations": []
+      },
+      {
+        "id": 41051,
+        "name": "Zooted",
+        "slug": "pivot-naturals-llc",
+        "position": 999,
+        "is_premium": false,
+        "is_claimed": true,
+        "rating": 4.4347825050354,
+        "reviews_count": 46,
+        "favorites_count": 93,
+        "avatar_image": {
+          "small_url": "https://images.weedmaps.com/brands/000/041/051/avatar/1681498145-3777385480698992938.jpg",
+          "medium_url": "https://images.weedmaps.com/brands/000/041/051/avatar/1681498145-3777385480698992938.jpg",
+          "large_url": "https://images.weedmaps.com/brands/000/041/051/avatar/1681498145-3777385480698992938.jpg",
+          "original_url": "https://images.weedmaps.com/brands/000/041/051/avatar/1681498145-3777385480698992938.jpg"
+        },
+        "products_count": 37,
+        "best_of_weedmaps_years": [],
+        "best_of_weedmaps_nominee_years": [],
+        "best_of_weedmaps": false,
+        "best_of_weedmaps_nominee": false,
+        "badges": [],
+        "preferred_organizations": []
+      }
+    ]
+  }
+}

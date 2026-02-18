@@ -2,15 +2,30 @@
 
 ![CanaParse.py](https://i.imgur.com/Qsb5Go0.png)
 
-Open up `flower-filters.json` to view/edit the filter options.
+Edit your filter options in `flower-filters.json`.
 
-Edit two variables in `CanaParse.py`:`csv_file` and `csv_folder` to point to your CSV.
+Then run the script:
 
-Then:
+```bash
+# Install dependencies
+pip3 install -r requirements.txt
 
-`pip3 install -r requirements.txt`
+# Run with default settings (finds the most recent CSV in the default folder)
+python3 ./CanaParse.py
 
-`python3 ./CanaParse.py`
+# Run with a specific CSV file and folder
+python3 ./CanaParse.py --file my_results.csv --folder /path/to/data
+
+# Run without filtering (shows all results)
+python3 ./CanaParse.py --no-filter
+```
+
+### Configuration
+You can also configure defaults using a `.env` file in this directory:
+```bash
+CSV_FILE=colorado_results.csv
+CSV_FOLDER=/path/to/data
+```
 
 ## Filter Examples (the default)
 Create/edit filters by opening the `flower-filters.json` file and following my lead: 

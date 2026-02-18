@@ -1,0 +1,258 @@
+{
+  "data": {
+    "categories": [
+      {
+        "id": 2,
+        "name": "Flower",
+        "slug": "flower",
+        "description": "Cannabis flower is the smokable or vapable, trichome-covered part of the cannabis plant.",
+        "facet_type": "category",
+        "uuid": "a780af3d-bdfe-41ce-a782-20f2519fd7be",
+        "image_url": "https://images.weedmaps.com/categories/000/000/002/avatar/1696970773-274048750-ca7d26ed-f403-43a1-a570-e0c0b49614f7.jpg",
+        "product_image_url": "https://images.weedmaps.com/categories/000/000/002/avatar/1696970773-274048750-ca7d26ed-f403-43a1-a570-e0c0b49614f7.jpg"
+      },
+      {
+        "id": 185,
+        "name": "Pre-rolls",
+        "slug": "pre-roll",
+        "description": "Pre rolls, also called pre rolled joints, are rolled cannabis cigarettes, prepared by a dispensary or brand.",
+        "facet_type": "category",
+        "uuid": "b74eb425-04b9-4d44-9890-6d505bed678c",
+        "image_url": "https://images.weedmaps.com/categories/000/000/185/avatar/1696970886-274048760-65c760af-b78a-4f0f-8e9e-b637f3278f0a.jpg",
+        "product_image_url": "https://images.weedmaps.com/categories/000/000/185/avatar/1696970886-274048760-65c760af-b78a-4f0f-8e9e-b637f3278f0a.jpg"
+      },
+      {
+        "id": 186,
+        "name": "Infused Pre-rolls",
+        "slug": "infused-pre-roll",
+        "description": "",
+        "facet_type": "category",
+        "uuid": "af1da756-f390-4a05-8f59-3addb33ed1db",
+        "image_url": "https://images.weedmaps.com/categories/000/000/186/avatar/1698789578-279502960-8b47eee5-ae30-4e02-b3ad-be786efd7e10.jpg",
+        "product_image_url": "https://images.weedmaps.com/categories/000/000/186/avatar/1698789578-279502960-8b47eee5-ae30-4e02-b3ad-be786efd7e10.jpg"
+      },
+      {
+        "id": 4,
+        "name": "Vape Pens",
+        "slug": "vape-pens",
+        "description": "A handheld, battery-powered device used to consume vaporized cannabis concentrate.",
+        "facet_type": "category",
+        "uuid": "f12d28a5-dc36-41d2-98f8-56d6cf2d8225",
+        "image_url": "https://images.weedmaps.com/categories/000/000/004/avatar/1696971059-274048763-b0e1df09-20fe-486f-a71b-1b7677eeec31.jpg",
+        "product_image_url": "https://images.weedmaps.com/categories/000/000/004/avatar/1696971059-274048763-b0e1df09-20fe-486f-a71b-1b7677eeec31.jpg"
+      },
+      {
+        "id": 3,
+        "name": "Concentrates",
+        "slug": "concentrates",
+        "description": "Products from the cannabis plant that have been processed to extract the cannabinoids and terpenes.",
+        "facet_type": "category",
+        "uuid": "4a284200-870b-466a-bd95-db521d2c5e69",
+        "image_url": "https://images.weedmaps.com/categories/000/000/003/avatar/1696968105-274048742-0d9fa73f-fcee-4e58-abf3-8e5aa426af07.jpg",
+        "product_image_url": "https://images.weedmaps.com/categories/000/000/003/avatar/1696968105-274048742-0d9fa73f-fcee-4e58-abf3-8e5aa426af07.jpg"
+      },
+      {
+        "id": 5,
+        "name": "Edibles",
+        "slug": "edibles",
+        "description": "Edibles are food items made with cannabis flower or concentrate.",
+        "facet_type": "category",
+        "uuid": "3dce0614-7c15-428f-8c32-fd6802d0b75e",
+        "image_url": "https://images.weedmaps.com/categories/000/000/005/avatar/1696970730-274048747-183baad3-990d-42dc-a0e2-de0b771b9c00.jpg",
+        "product_image_url": "https://images.weedmaps.com/categories/000/000/005/avatar/1696970730-274048747-183baad3-990d-42dc-a0e2-de0b771b9c00.jpg"
+      },
+      {
+        "id": 33,
+        "name": "Drinks",
+        "slug": "beverages",
+        "description": "Cannabis drinks are any prepared liquid or elixir infused with cannabis extract or cannabis-derived terpenes.",
+        "facet_type": "category",
+        "uuid": "03d1a014-df0c-446d-9069-aa6f8ba9fe63",
+        "image_url": "https://images.weedmaps.com/categories/000/000/033/avatar/1698789371-279502944-91b67218-763e-4b9c-9f25-8e0c65cca3cc.jpg",
+        "product_image_url": "https://images.weedmaps.com/categories/000/000/033/avatar/1698789371-279502944-91b67218-763e-4b9c-9f25-8e0c65cca3cc.jpg"
+      },
+      {
+        "id": 467,
+        "name": "Wellness",
+        "slug": "wellness",
+        "description": "",
+        "facet_type": "category",
+        "uuid": "691fd00a-9572-474b-9ab4-190602e62737",
+        "image_url": "https://images.weedmaps.com/categories/000/000/467/avatar/1752562450-1752087784-wellness_2x.jpg",
+        "product_image_url": "https://images.weedmaps.com/categories/000/000/467/avatar/1752562450-1752087784-wellness_2x.jpg"
+      },
+      {
+        "id": 52,
+        "name": "CBD",
+        "slug": "cbd",
+        "description": "CBD products are any cannabis-derived product containing CBD oil, also called tinctures, or CBD flower.",
+        "facet_type": "tag",
+        "uuid": "727bd616-2e29-4c8a-9fd8-9db906add6af",
+        "image_url": "https://images.weedmaps.com/categories/000/000/052/avatar/1699392718-281188038-533792e1-1d7c-412f-8ce0-a62c4fadfd5b.jpg",
+        "product_image_url": "https://images.weedmaps.com/categories/000/000/052/avatar/1699392718-281188038-533792e1-1d7c-412f-8ce0-a62c4fadfd5b.jpg"
+      },
+      {
+        "id": 234,
+        "name": "Gear",
+        "slug": "gear",
+        "description": "Products and accessories for cannabis consumption.",
+        "facet_type": "category",
+        "uuid": "e7556557-af8b-4be5-8083-41f3a47940a2",
+        "image_url": "https://images.weedmaps.com/categories/000/000/234/avatar/1698870350-279791499-6eeb98f5-aaec-4ba2-aa0b-2ae78d547ca7.jpg",
+        "product_image_url": "https://images.weedmaps.com/categories/000/000/234/avatar/1698870350-279791499-6eeb98f5-aaec-4ba2-aa0b-2ae78d547ca7.jpg"
+      },
+      {
+        "id": 249,
+        "name": "Cultivation",
+        "slug": "cultivation",
+        "description": "The process of planting, caring for, and harvesting live cannabis plants.",
+        "facet_type": "category",
+        "uuid": "dacac328-78c3-4043-be91-a3c28d3b990c",
+        "image_url": "https://images.weedmaps.com/categories/000/000/249/avatar/1696970639-274048746-1ce4c6b4-56d5-4416-8a36-6f867e1f6ba8.jpg",
+        "product_image_url": "https://images.weedmaps.com/categories/000/000/249/avatar/1696970639-274048746-1ce4c6b4-56d5-4416-8a36-6f867e1f6ba8.jpg"
+      }
+    ],
+    "client_categories": [
+      {
+        "id": 51,
+        "name": "Flower",
+        "level": 1,
+        "slug": "flower-category-pages",
+        "context": "CATEGORY_PAGES",
+        "parent_id": null,
+        "category_slug": "flower",
+        "category_uuid": "a780af3d-bdfe-41ce-a782-20f2519fd7be",
+        "category_avatar_image_url": "https://images.weedmaps.com/categories/000/000/002/avatar/1696970773-274048750-ca7d26ed-f403-43a1-a570-e0c0b49614f7.jpg",
+        "context_slug": "flower",
+        "subcategories": [],
+        "total_products_count": null
+      },
+      {
+        "id": 54,
+        "name": "Pre-rolls",
+        "level": 1,
+        "slug": "pre-rolls-category-pages",
+        "context": "CATEGORY_PAGES",
+        "parent_id": null,
+        "category_slug": "pre-roll",
+        "category_uuid": "b74eb425-04b9-4d44-9890-6d505bed678c",
+        "category_avatar_image_url": "https://images.weedmaps.com/categories/000/000/185/avatar/1696970886-274048760-65c760af-b78a-4f0f-8e9e-b637f3278f0a.jpg",
+        "context_slug": "pre-roll",
+        "subcategories": [],
+        "total_products_count": null
+      },
+      {
+        "id": 55,
+        "name": "Infused Pre-rolls",
+        "level": 1,
+        "slug": "infused-pre-rolls-category-pages",
+        "context": "CATEGORY_PAGES",
+        "parent_id": null,
+        "category_slug": "infused-pre-roll",
+        "category_uuid": "af1da756-f390-4a05-8f59-3addb33ed1db",
+        "category_avatar_image_url": "https://images.weedmaps.com/categories/000/000/186/avatar/1698789578-279502960-8b47eee5-ae30-4e02-b3ad-be786efd7e10.jpg",
+        "context_slug": "infused-pre-roll",
+        "subcategories": [],
+        "total_products_count": null
+      },
+      {
+        "id": 72,
+        "name": "Vape pens",
+        "level": 1,
+        "slug": "vape-pens-category-pages",
+        "context": "CATEGORY_PAGES",
+        "parent_id": null,
+        "category_slug": "vape-pens",
+        "category_uuid": "f12d28a5-dc36-41d2-98f8-56d6cf2d8225",
+        "category_avatar_image_url": "https://images.weedmaps.com/categories/000/000/004/avatar/1696971059-274048763-b0e1df09-20fe-486f-a71b-1b7677eeec31.jpg",
+        "context_slug": "vape-pens",
+        "subcategories": [],
+        "total_products_count": null
+      },
+      {
+        "id": 57,
+        "name": "Concentrates",
+        "level": 1,
+        "slug": "concentrates-category-pages",
+        "context": "CATEGORY_PAGES",
+        "parent_id": null,
+        "category_slug": "concentrates",
+        "category_uuid": "4a284200-870b-466a-bd95-db521d2c5e69",
+        "category_avatar_image_url": "https://images.weedmaps.com/categories/000/000/003/avatar/1696968105-274048742-0d9fa73f-fcee-4e58-abf3-8e5aa426af07.jpg",
+        "context_slug": "concentrates",
+        "subcategories": [],
+        "total_products_count": null
+      },
+      {
+        "id": 77,
+        "name": "Edibles",
+        "level": 1,
+        "slug": "edibles-category-pages",
+        "context": "CATEGORY_PAGES",
+        "parent_id": null,
+        "category_slug": "edibles",
+        "category_uuid": "3dce0614-7c15-428f-8c32-fd6802d0b75e",
+        "category_avatar_image_url": "https://images.weedmaps.com/categories/000/000/005/avatar/1696970730-274048747-183baad3-990d-42dc-a0e2-de0b771b9c00.jpg",
+        "context_slug": "edibles",
+        "subcategories": [],
+        "total_products_count": null
+      },
+      {
+        "id": 86,
+        "name": "Drinks",
+        "level": 1,
+        "slug": "drinks-category-pages",
+        "context": "CATEGORY_PAGES",
+        "parent_id": null,
+        "category_slug": "beverages",
+        "category_uuid": "03d1a014-df0c-446d-9069-aa6f8ba9fe63",
+        "category_avatar_image_url": "https://images.weedmaps.com/categories/000/000/033/avatar/1698789371-279502944-91b67218-763e-4b9c-9f25-8e0c65cca3cc.jpg",
+        "context_slug": "beverages",
+        "subcategories": [],
+        "total_products_count": null
+      },
+      {
+        "id": 232,
+        "name": "Wellness",
+        "level": 1,
+        "slug": "wellness-category-pages",
+        "context": "CATEGORY_PAGES",
+        "parent_id": null,
+        "category_slug": "wellness",
+        "category_uuid": "691fd00a-9572-474b-9ab4-190602e62737",
+        "category_avatar_image_url": "https://images.weedmaps.com/categories/000/000/467/avatar/1752562450-1752087784-wellness_2x.jpg",
+        "context_slug": "wellness",
+        "subcategories": [],
+        "total_products_count": null
+      },
+      {
+        "id": 97,
+        "name": "Accessories",
+        "level": 1,
+        "slug": "accessories-category-pages",
+        "context": "CATEGORY_PAGES",
+        "parent_id": null,
+        "category_slug": "gear",
+        "category_uuid": "e7556557-af8b-4be5-8083-41f3a47940a2",
+        "category_avatar_image_url": "https://images.weedmaps.com/categories/000/000/234/avatar/1698870350-279791499-6eeb98f5-aaec-4ba2-aa0b-2ae78d547ca7.jpg",
+        "context_slug": "gear",
+        "subcategories": [],
+        "total_products_count": null
+      },
+      {
+        "id": 109,
+        "name": "Genetics",
+        "level": 1,
+        "slug": "genetics-category-pages",
+        "context": "CATEGORY_PAGES",
+        "parent_id": null,
+        "category_slug": "cultivation",
+        "category_uuid": "dacac328-78c3-4043-be91-a3c28d3b990c",
+        "category_avatar_image_url": "https://images.weedmaps.com/categories/000/000/249/avatar/1696970639-274048746-1ce4c6b4-56d5-4416-8a36-6f867e1f6ba8.jpg",
+        "context_slug": "cultivation",
+        "subcategories": [],
+        "total_products_count": null
+      }
+    ]
+  }
+}

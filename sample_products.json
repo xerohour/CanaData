@@ -1,0 +1,451 @@
+{
+  "meta": {
+    "total_products_count": 10000,
+    "personalized": false,
+    "deduced": null
+  },
+  "data": {
+    "products": [
+      {
+        "id": 132352,
+        "feature_order": null,
+        "name": "Marionberry Indica Enhanced Gummies 100mg",
+        "slug": "wyld-marionberry-indica-enhanced-gummies-100mg",
+        "variant_slug": "marionberry-i-100mg-gummies-wyld-d0edcb4c-26d9-4c1f-8edb-8bf1b2036ca0",
+        "brand": {
+          "avatar_image_url": "https://images.weedmaps.com/brands/000/000/898/avatar/1654546712-wyld_logo_black.png",
+          "name": "WYLD",
+          "description": "<p></p><p>Wyld is the culture we choose to embrace; it is how we live.</p><p><br></p><p><br></p><p>Wyld explores, pushes depths, questions what cannot be done, innovates and maintains an open mind. Wyld respects what others have accomplished while continuing to pioneer each day. Wyld celebrates what our Pacific Northwest provides us by creating treats that coincide with our ambitions and adventurous lifestyles. Climb cliffs and hike trails, explore our rivers, lakes, oceans, and mountains. Enjoy what brings us together and let Wyld keep us coming back.</p><p><br></p><p><br></p><p><strong><em>We are proud to be a Climate Neutral Certified brand. </em></strong></p>",
+          "id": 898,
+          "slug": "wyld",
+          "favorites_count": 60306
+        },
+        "is_badged": true,
+        "avatar_image_url": "https://images.weedmaps.com/products/000/132/352/avatar/1637790586-wyld_marionberry_gummies_az-reflct.png",
+        "edge_category": {
+          "uuid": "d1934663-b03c-440f-a4fa-a3857d6ec56f",
+          "name": "Gummies",
+          "slug": "gummies",
+          "ancestors": [
+            {
+              "uuid": "3dce0614-7c15-428f-8c32-fd6802d0b75e",
+              "name": "Edibles",
+              "slug": "edibles"
+            }
+          ]
+        },
+        "reviews_count": 805,
+        "affiliate_link": "",
+        "rating": 4.8,
+        "favorites_count": 8846,
+        "price_stats": {
+          "min": 16.0,
+          "max": 16.0
+        },
+        "online_ordering": {
+          "deliverable": false,
+          "pickup": true
+        },
+        "variant": {
+          "slug": "marionberry-i-100mg-gummies-wyld-d0edcb4c-26d9-4c1f-8edb-8bf1b2036ca0",
+          "price": {
+            "id": null,
+            "unit": "unit",
+            "quantity": "1",
+            "label": "each",
+            "compliance_net_mg": null,
+            "price": 11.96,
+            "on_sale": false,
+            "original_price": 11.96,
+            "discount_label": null
+          },
+          "price_visibility": "cheapest",
+          "price_visibility_title": null,
+          "price_visibility_description": null,
+          "listing": {
+            "name": "Magnolia Road Cannabis Co. - Colorado Springs",
+            "wmid": 666468770,
+            "distance": 7.536752406347754,
+            "slug": "magnolia-road-cannabis-co-3",
+            "type": "dispensary",
+            "region_id": 138,
+            "license_type": "recreational",
+            "state": "Colorado",
+            "lat_lon": {
+              "lon": -104.75644,
+              "lat": 38.79709
+            },
+            "is_brand_preferred_listing": false,
+            "preferred_organization_position": null,
+            "enabled_for_static_dsa": false
+          },
+          "menu_item_id": 211587392,
+          "aggregate_metrics": {
+            "cbd": 0.0,
+            "terpenes": 0.0,
+            "thc": 100.0,
+            "cbd_unit": "%",
+            "terpenes_unit": "%",
+            "thc_unit": "mg"
+          },
+          "current_deal_title": null,
+          "deal_ids": [],
+          "promo_code": null
+        }
+      },
+      {
+        "id": 132344,
+        "feature_order": null,
+        "name": "Raspberry Sativa Enhanced Gummies 100mg",
+        "slug": "wyld-raspberry-sativa-enhanced-gummies-100mg",
+        "variant_slug": "wyld-gummies-raspberry-sativa-962bc461-beeb-4206-adfb-2a062304225a",
+        "brand": {
+          "avatar_image_url": "https://images.weedmaps.com/brands/000/000/898/avatar/1654546712-wyld_logo_black.png",
+          "name": "WYLD",
+          "description": "<p></p><p>Wyld is the culture we choose to embrace; it is how we live.</p><p><br></p><p><br></p><p>Wyld explores, pushes depths, questions what cannot be done, innovates and maintains an open mind. Wyld respects what others have accomplished while continuing to pioneer each day. Wyld celebrates what our Pacific Northwest provides us by creating treats that coincide with our ambitions and adventurous lifestyles. Climb cliffs and hike trails, explore our rivers, lakes, oceans, and mountains. Enjoy what brings us together and let Wyld keep us coming back.</p><p><br></p><p><br></p><p><strong><em>We are proud to be a Climate Neutral Certified brand. </em></strong></p>",
+          "id": 898,
+          "slug": "wyld",
+          "favorites_count": 60306
+        },
+        "is_badged": true,
+        "avatar_image_url": "https://images.weedmaps.com/products/000/132/344/avatar/1637791116-wyld_raspberry_gummies_az-reflct.png",
+        "edge_category": {
+          "uuid": "d1934663-b03c-440f-a4fa-a3857d6ec56f",
+          "name": "Gummies",
+          "slug": "gummies",
+          "ancestors": [
+            {
+              "uuid": "3dce0614-7c15-428f-8c32-fd6802d0b75e",
+              "name": "Edibles",
+              "slug": "edibles"
+            }
+          ]
+        },
+        "reviews_count": 705,
+        "affiliate_link": "",
+        "rating": 4.9,
+        "favorites_count": 7238,
+        "price_stats": {
+          "min": 16.0,
+          "max": 16.0
+        },
+        "online_ordering": {
+          "deliverable": false,
+          "pickup": true
+        },
+        "variant": {
+          "slug": "wyld-gummies-raspberry-sativa-962bc461-beeb-4206-adfb-2a062304225a",
+          "price": {
+            "id": null,
+            "unit": "unit",
+            "quantity": "1",
+            "label": "each",
+            "compliance_net_mg": null,
+            "price": 13.3,
+            "on_sale": false,
+            "original_price": 13.3,
+            "discount_label": null
+          },
+          "price_visibility": "cheapest",
+          "price_visibility_title": null,
+          "price_visibility_description": null,
+          "listing": {
+            "name": "NuVue - Colorado Springs",
+            "wmid": 397381581,
+            "distance": 6.015544433419043,
+            "slug": "nuvue-colorado-springs",
+            "type": "dispensary",
+            "region_id": 138,
+            "license_type": "hybrid",
+            "state": "Colorado",
+            "lat_lon": {
+              "lon": -104.787375,
+              "lat": 38.837144
+            },
+            "is_brand_preferred_listing": false,
+            "preferred_organization_position": null,
+            "enabled_for_static_dsa": false
+          },
+          "menu_item_id": 210273551,
+          "aggregate_metrics": {
+            "cbd": 0.0,
+            "terpenes": 0.0,
+            "thc": 100.0,
+            "cbd_unit": "%",
+            "terpenes_unit": "%",
+            "thc_unit": "mg"
+          },
+          "current_deal_title": null,
+          "deal_ids": [],
+          "promo_code": null
+        }
+      },
+      {
+        "id": 223977,
+        "feature_order": null,
+        "name": "Elderberry 2:1 CBN + Indica Enhanced Gummies 100mg:50mg",
+        "slug": "wyld-elderberry-2-1-thc-cbn-enhanced-gummies-100mg",
+        "variant_slug": "elderberry-2-1-cbn-indica-enhanced-gummies-100mg-thc-50mg-cbn",
+        "brand": {
+          "avatar_image_url": "https://images.weedmaps.com/brands/000/000/898/avatar/1654546712-wyld_logo_black.png",
+          "name": "WYLD",
+          "description": "<p></p><p>Wyld is the culture we choose to embrace; it is how we live.</p><p><br></p><p><br></p><p>Wyld explores, pushes depths, questions what cannot be done, innovates and maintains an open mind. Wyld respects what others have accomplished while continuing to pioneer each day. Wyld celebrates what our Pacific Northwest provides us by creating treats that coincide with our ambitions and adventurous lifestyles. Climb cliffs and hike trails, explore our rivers, lakes, oceans, and mountains. Enjoy what brings us together and let Wyld keep us coming back.</p><p><br></p><p><br></p><p><strong><em>We are proud to be a Climate Neutral Certified brand. </em></strong></p>",
+          "id": 898,
+          "slug": "wyld",
+          "favorites_count": 60310
+        },
+        "is_badged": true,
+        "avatar_image_url": "https://images.weedmaps.com/products/000/223/977/avatar/1637790264-wyld_elderberry_gummies_az-reflct.png",
+        "edge_category": {
+          "uuid": "d1934663-b03c-440f-a4fa-a3857d6ec56f",
+          "name": "Gummies",
+          "slug": "gummies",
+          "ancestors": [
+            {
+              "uuid": "3dce0614-7c15-428f-8c32-fd6802d0b75e",
+              "name": "Edibles",
+              "slug": "edibles"
+            }
+          ]
+        },
+        "reviews_count": 684,
+        "affiliate_link": "",
+        "rating": 4.9,
+        "favorites_count": 6245,
+        "price_stats": {
+          "min": 20.0,
+          "max": 20.0
+        },
+        "online_ordering": {
+          "deliverable": false,
+          "pickup": true
+        },
+        "variant": {
+          "slug": "elderberry-2-1-cbn-indica-enhanced-gummies-100mg-thc-50mg-cbn",
+          "price": {
+            "id": null,
+            "unit": "unit",
+            "quantity": "1",
+            "label": "each",
+            "compliance_net_mg": null,
+            "price": 14.99,
+            "on_sale": true,
+            "original_price": 19.99,
+            "discount_label": "-25%"
+          },
+          "price_visibility": "cheapest",
+          "price_visibility_title": null,
+          "price_visibility_description": null,
+          "listing": {
+            "name": "Maggies Farm Pueblo North - Pi\u00f1on",
+            "wmid": 389022373,
+            "distance": 32.72628492804379,
+            "slug": "maggies-farm-pueblo-north",
+            "type": "dispensary",
+            "region_id": 173,
+            "license_type": "recreational",
+            "state": "Colorado",
+            "lat_lon": {
+              "lon": -104.608941,
+              "lat": 38.432966
+            },
+            "is_brand_preferred_listing": false,
+            "preferred_organization_position": null,
+            "enabled_for_static_dsa": false
+          },
+          "menu_item_id": 200899460,
+          "aggregate_metrics": {
+            "cbd": 0.0,
+            "terpenes": 0.0,
+            "thc": 100.0,
+            "cbd_unit": "%",
+            "terpenes_unit": "%",
+            "thc_unit": "mg"
+          },
+          "current_deal_title": null,
+          "deal_ids": [],
+          "promo_code": null
+        }
+      },
+      {
+        "id": 38842,
+        "feature_order": null,
+        "name": "Strawberry 20:1 CBD + Hybrid Enhanced Gummies 200:10mg",
+        "slug": "wyld-strawberry-high-cbd-gummies",
+        "variant_slug": "strawberry-20-1-cbd-thc-10mg-gummies-wyld-edbdb10e-e91a-482f-88c7-7954d8874d83",
+        "brand": {
+          "avatar_image_url": "https://images.weedmaps.com/brands/000/000/898/avatar/1654546712-wyld_logo_black.png",
+          "name": "WYLD",
+          "description": "<p></p><p>Wyld is the culture we choose to embrace; it is how we live.</p><p><br></p><p><br></p><p>Wyld explores, pushes depths, questions what cannot be done, innovates and maintains an open mind. Wyld respects what others have accomplished while continuing to pioneer each day. Wyld celebrates what our Pacific Northwest provides us by creating treats that coincide with our ambitions and adventurous lifestyles. Climb cliffs and hike trails, explore our rivers, lakes, oceans, and mountains. Enjoy what brings us together and let Wyld keep us coming back.</p><p><br></p><p><br></p><p><strong><em>We are proud to be a Climate Neutral Certified brand. </em></strong></p>",
+          "id": 898,
+          "slug": "wyld",
+          "favorites_count": 60306
+        },
+        "is_badged": true,
+        "avatar_image_url": "https://images.weedmaps.com/products/000/038/842/avatar/1637791216-wyld_strawberry_gummies_az-reflct.png",
+        "edge_category": {
+          "uuid": "d1934663-b03c-440f-a4fa-a3857d6ec56f",
+          "name": "Gummies",
+          "slug": "gummies",
+          "ancestors": [
+            {
+              "uuid": "3dce0614-7c15-428f-8c32-fd6802d0b75e",
+              "name": "Edibles",
+              "slug": "edibles"
+            }
+          ]
+        },
+        "reviews_count": 298,
+        "affiliate_link": "",
+        "rating": 4.7,
+        "favorites_count": 6023,
+        "price_stats": {
+          "min": 16.0,
+          "max": 16.0
+        },
+        "online_ordering": {
+          "deliverable": false,
+          "pickup": true
+        },
+        "variant": {
+          "slug": "strawberry-20-1-cbd-thc-10mg-gummies-wyld-edbdb10e-e91a-482f-88c7-7954d8874d83",
+          "price": {
+            "id": null,
+            "unit": "unit",
+            "quantity": "1",
+            "label": "each",
+            "compliance_net_mg": null,
+            "price": 11.96,
+            "on_sale": false,
+            "original_price": 11.96,
+            "discount_label": null
+          },
+          "price_visibility": "cheapest",
+          "price_visibility_title": null,
+          "price_visibility_description": null,
+          "listing": {
+            "name": "Magnolia Road Cannabis Co. - Colorado Springs",
+            "wmid": 666468770,
+            "distance": 7.536752406347754,
+            "slug": "magnolia-road-cannabis-co-3",
+            "type": "dispensary",
+            "region_id": 138,
+            "license_type": "recreational",
+            "state": "Colorado",
+            "lat_lon": {
+              "lon": -104.75644,
+              "lat": 38.79709
+            },
+            "is_brand_preferred_listing": false,
+            "preferred_organization_position": null,
+            "enabled_for_static_dsa": false
+          },
+          "menu_item_id": 214354522,
+          "aggregate_metrics": {
+            "cbd": 200.0,
+            "terpenes": 0.0,
+            "thc": 10.0,
+            "cbd_unit": "mg",
+            "terpenes_unit": "%",
+            "thc_unit": "mg"
+          },
+          "current_deal_title": null,
+          "deal_ids": [],
+          "promo_code": null
+        }
+      },
+      {
+        "id": 101504,
+        "feature_order": null,
+        "name": "Peach 2:1 CBD + Hybrid Enhanced Gummies 100:50mg",
+        "slug": "wyld-peach-gummies",
+        "variant_slug": "wyld-gummies-peach-2-1-hybrid-8eabdce7-7de6-4370-9c7f-ffbafd819b6b",
+        "brand": {
+          "avatar_image_url": "https://images.weedmaps.com/brands/000/000/898/avatar/1654546712-wyld_logo_black.png",
+          "name": "WYLD",
+          "description": "<p></p><p>Wyld is the culture we choose to embrace; it is how we live.</p><p><br></p><p><br></p><p>Wyld explores, pushes depths, questions what cannot be done, innovates and maintains an open mind. Wyld respects what others have accomplished while continuing to pioneer each day. Wyld celebrates what our Pacific Northwest provides us by creating treats that coincide with our ambitions and adventurous lifestyles. Climb cliffs and hike trails, explore our rivers, lakes, oceans, and mountains. Enjoy what brings us together and let Wyld keep us coming back.</p><p><br></p><p><br></p><p><strong><em>We are proud to be a Climate Neutral Certified brand. </em></strong></p>",
+          "id": 898,
+          "slug": "wyld",
+          "favorites_count": 60306
+        },
+        "is_badged": true,
+        "avatar_image_url": "https://images.weedmaps.com/products/000/101/504/avatar/1637790756-wyld_peach_gummies_az-reflct.png",
+        "edge_category": {
+          "uuid": "d1934663-b03c-440f-a4fa-a3857d6ec56f",
+          "name": "Gummies",
+          "slug": "gummies",
+          "ancestors": [
+            {
+              "uuid": "3dce0614-7c15-428f-8c32-fd6802d0b75e",
+              "name": "Edibles",
+              "slug": "edibles"
+            }
+          ]
+        },
+        "reviews_count": 277,
+        "affiliate_link": "",
+        "rating": 4.8,
+        "favorites_count": 6748,
+        "price_stats": {
+          "min": 16.0,
+          "max": 16.0
+        },
+        "online_ordering": {
+          "deliverable": false,
+          "pickup": true
+        },
+        "variant": {
+          "slug": "wyld-gummies-peach-2-1-hybrid-8eabdce7-7de6-4370-9c7f-ffbafd819b6b",
+          "price": {
+            "id": null,
+            "unit": "unit",
+            "quantity": "1",
+            "label": "each",
+            "compliance_net_mg": null,
+            "price": 13.3,
+            "on_sale": false,
+            "original_price": 13.3,
+            "discount_label": null
+          },
+          "price_visibility": "cheapest",
+          "price_visibility_title": null,
+          "price_visibility_description": null,
+          "listing": {
+            "name": "NuVue - Pueblo North",
+            "wmid": 804987977,
+            "distance": 40.32121926666508,
+            "slug": "nuvue-pueblo",
+            "type": "dispensary",
+            "region_id": 173,
+            "license_type": "hybrid",
+            "state": "Colorado",
+            "lat_lon": {
+              "lon": -104.612093,
+              "lat": 38.321461
+            },
+            "is_brand_preferred_listing": false,
+            "preferred_organization_position": null,
+            "enabled_for_static_dsa": false
+          },
+          "menu_item_id": 211466748,
+          "aggregate_metrics": {
+            "cbd": 100.0,
+            "terpenes": 0.0,
+            "thc": 50.0,
+            "cbd_unit": "mg",
+            "terpenes_unit": "%",
+            "thc_unit": "mg"
+          },
+          "current_deal_title": null,
+          "deal_ids": [
+            1384946
+          ],
+          "promo_code": null
+        }
+      }
+    ],
+    "facets": {
+      "tag_groups": null
+    }
+  }
+}
