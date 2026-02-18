@@ -1,9 +1,15 @@
 #!/usr/bin/python3
+import time
+import random
+import pickle
+import hashlib
 from datetime import datetime
 from os import path as ospath
 from os import makedirs
 from sys import path
 from sys import argv
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
 import requests
 import json
 import csv
@@ -47,27 +53,72 @@ class CanaData:
         # Sets whether or not we grab the slugs for the search
         self.slugGrab = False
 
+        # Concurrency & Performance settings
+        self.maxWorkers = 5
+        self.rateLimitDelay = 1.0  # seconds between requests per worker
+        self.cacheDir = '.cache'
+        self.cacheExpiry = 86400  # 24 hours
+        if not ospath.exists(self.cacheDir):
+            makedirs(self.cacheDir)
+
+    # Simple disk-based cache implementation
+    def _get_cache(self, key):
+        cache_file = ospath.join(self.cacheDir, hashlib.md5(key.encode()).hexdigest())
+        if ospath.exists(cache_file):
+            if time.time() - ospath.getmtime(cache_file) < self.cacheExpiry:
+                try:
+                    with open(cache_file, 'rb') as f:
+                        return pickle.load(f)
+                except:
+                    pass
+        return None
+
+    def _set_cache(self, key, data):
+        cache_file = ospath.join(self.cacheDir, hashlib.md5(key.encode()).hexdigest())
+        try:
+            with open(cache_file, 'wb') as f:
+                pickle.dump(data, f)
+        except:
+            pass
+
     # This function recieves a URL (string) and makes an HTTP request to it
     # If successul, converts the response to JSON and returns the dataset
-    def do_request(self, url):
-        # Make the request to the URL (no authentication)
-        req = requests.get(url)
-        # If status was success
-        if req.status_code == 200:
-            # Convert dataset to JSON
-            reqJson = req.json()
-            # Return JSON dataset
-            return reqJson
-        elif req.status_code == 422:
-            print(req.text)
-            exit()
-            return 'break'
-        else:
-            # Print the error into the terminal
-            print(req.text)
-            exit()
-            # Return False to signal issues
-            return False
+    def do_request(self, url, retry_count=3):
+        cache_data = self._get_cache(url)
+        if cache_data:
+            return cache_data
+
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+        }
+
+        for attempt in range(retry_count):
+            try:
+                # Make the request to the URL (no authentication)
+                req = requests.get(url, headers=headers, timeout=30)
+                # If status was success
+                if req.status_code == 200:
+                    # Convert dataset to JSON
+                    reqJson = req.json()
+                    self._set_cache(url, reqJson)
+                    # Return JSON dataset
+                    return reqJson
+                elif req.status_code == 422:
+                    print(req.text)
+                    return 'break'
+                elif req.status_code == 503:
+                    print(f"503 Service Unavailable for {url}, retrying in {2**attempt}s...")
+                    time.sleep(2 ** attempt + random.random())
+                    continue
+                else:
+                    # Print the error into the terminal
+                    print(f"Error {req.status_code}: {req.text}")
+                    return False
+            except requests.exceptions.RequestException as e:
+                print(f"Request failed: {e}, retrying in {2**attempt}s...")
+                time.sleep(2 ** attempt + random.random())
+
+        return False
 
     # This function takes no input but uses the self variables to make its requests
     # Looping through to get all Locations for a given City/State slug
@@ -84,6 +135,9 @@ class CanaData:
             # If we are returning deliveries our URL needs extra parameters
             if self.deliveries is True:
                 url += f'&filter[any_retailer_services][]=delivery&filter[region_slug[deliveries]]={self.searchSlug}'
+
+            # Add a timestamp to bypass some cache layers if needed, though Discovery API is usually fine
+            url += f'&curr_time={int(time.time())}'
 
             # Make the http request and get back either data or False
             locations = self.do_request(url)
@@ -148,124 +202,61 @@ class CanaData:
         if self.NonGreenState is True:
             return
 
+        print(f"Starting concurrent menu retrieval for {len(self.locations)} locations using {self.maxWorkers} workers...")
+        
+        lock = Lock()
         location_count = 0
 
-        seen_locations = []
-
-        # If the city/state slug is friendly, then loop through the listings one by one
-        for location in self.locations:
-            finished = False
-
-            while finished is False:
-                try:
-                    # Craft a URL variable which pulls all menu items for a location
-                    url = f'https://weedmaps.com/api/web/v1/listings/{location["slug"]}/menu?type={location["type"]}'
-
-                    # Print visual queue the location is being worked on
-                    print(f'\nWorking on menu ({str(location_count)}/{str(len(self.locations))}) --> {location["slug"]}')
-                    if self.testMode is True:
-                        print(f'Using url: {url}\n(for troubleshooting in browser)')
-
-                    # Get the menu data from the URL
-                    menuData = requests.get(url)
-
-                    if menuData.status_code == 503:
-                        print('First Byte error. Unsure of what this means but skipping for now! Please reach out in discord.')
-                        finished = True
-                        break
-
-                    # If that was successful
-                    if menuData.status_code == 200:
-                        print('Successfully retrieved!')
-                        # Convert the menu data to JSON to work with
-                        menuJsonData = menuData.json()
-
-                        # Add to our count of Listing Progress
-                        location_count += 1
-
-                        # Clean dictionary to house the finished encoded items + reorganizes them all into right order
-                        clean_listing = {}
-
-                        # Integer to count # of menu items for listing
-                        menu_items = 0
-
-                        # Loop through values of the Listing Data (not menu items) to clean them with encoding!
-                        for listingKey in menuJsonData['listing'].keys():
-                            clean_listing[listingKey] = str(menuJsonData['listing'][listingKey]).encode('utf-8')
-
-                        if len(menuJsonData["categories"]) == 0:
-                            print('No Categories means no items, moving on!\nGrabbed the listing info though')
-                            # Add the listing to our totalLocations list
-                            self.totalLocations.append(menuJsonData['listing'])
-                            # Dictionary of Empty Location Menus added to the EmptyMenus Dictionary
-                            self.emptyMenus[menuJsonData["listing"]["id"]] = menuJsonData["listing"]
-                            print(f'Added to Total Locations (empty menu)! {str(len(self.totalLocations))}')
-                            finished = True
-                            break
-                        else:
-                            # Print visual of how many Categories exist in this menu
-                            print(f'There are {str(len(menuJsonData["categories"]))} Categories in the Menu!')
-
-                        # Create a string representation of the Listing (this should be what each item refers to in listing_url)
-                        if menuJsonData["listing"]["_type"] == 'delivery':
-                            listing_type = 'deliveries'
-                        elif menuJsonData["listing"]["_type"] == 'dispensary':
-                            listing_type = 'dispensaries'
-                        else:
-                            print(menuJsonData['listing']['_type'])
-
-                        listing_url = f'/{listing_type}/{menuJsonData["listing"]["slug"]}'
-                        # print(f'-- The listing URL is: {listing_url}')
-
-                        self.allMenuItems[menuJsonData["listing"]["id"]] = []
-
-                        # Loop through each menu category
-                        for menuItemCategory in menuJsonData['categories']:
-                            for menuItem in menuItemCategory['items']:
-                                menuItem['locations_found_at'] = [listing_url]
-                                menuItem['listing_id'] = menuJsonData["listing"]["id"]
-                                menuItem['listing_wmid'] = menuJsonData["listing"]["wmid"]
-                                # Add the menu item to our allMenuItems dictionary
-                                self.allMenuItems[menuJsonData["listing"]["id"]].append(menuItem)
-                                menu_items += 1
-                                self.menuItemsFound += 1
-
-                        # Visual progress of Listing's items amount
-                        finished_statement = f'#{str(menu_items)} Items in the Menu!'
-                        if menu_items == 0:
-                            finished_statement += '  <--- Will be on Listings CSV but no items on Menu Results!'
-                        # print(finished_statement)
-
-                        # Add # of menu items to listing Info!
-                        menuJsonData['listing']['num_menu_items'] = str(menu_items)
-
-                        # print(f'#{str(self.menuItemsFound)} Total Items Processed!!')
-
-                        # Add the listing to our totalLocations list
-                        self.totalLocations.append(menuJsonData['listing'])
-                        print(f'Added to Total Locations (normal)! {str(len(self.totalLocations))}')
-
-                        # print(f'#{str(len(self.allMenuItems.keys()))} Total Menus Processed!!')
-
-                        finished = True
-
+        def process_location(location):
+            nonlocal location_count
+            # Try web API first, then try the mobile-style discovery API if web fails
+            url = f'https://weedmaps.com/api/web/v1/listings/{location["slug"]}/menu?type={location["type"]}'
+            
+            # Simple rate limiting per worker
+            time.sleep(self.rateLimitDelay + random.random())
+            
+            menuData = self.do_request(url)
+            
+            if menuData and menuData != 'break':
+                with lock:
+                    location_count += 1
+                    current_count = location_count
+                
+                print(f'Working on menu ({str(current_count)}/{str(len(self.locations))}) --> {location["slug"]} - Successfully retrieved!')
+                
+                menu_items = 0
+                if len(menuData["categories"]) == 0:
+                    with lock:
+                        self.totalLocations.append(menuData['listing'])
+                        self.emptyMenus[menuData["listing"]["id"]] = menuData["listing"]
+                else:
+                    if menuData["listing"]["_type"] == 'delivery':
+                        listing_type = 'deliveries'
                     else:
-                        print('Issue with retrieval:\n')
-                        print(menuData.text)
-                        skip_check = input('Issue with menu retrival, see issue and hit Enter to retry or enter "Skip" to continue\n\n- ').lower()
-                        if 'skip' in skip_check.lower():
-                            print('Ok, skipping that locations items!')
-                            finished = True
-                        continue
+                        listing_type = 'dispensaries'
 
-                except Exception as e:
-                    print('Caught an error on the Try function:\n')
-                    print(e)
-                    skip_check = input('Issue with menu retrival, see issue and hit Enter to retry or enter "Skip" to continue\n\n- ').lower()
-                    if 'skip' in skip_check.lower():
-                        print('Ok, skipping that locations items!')
-                        finished = True
-                    continue
+                    listing_url = f'/{listing_type}/{menuData["listing"]["slug"]}'
+                    
+                    items_to_add = []
+                    for menuItemCategory in menuData['categories']:
+                        for menuItem in menuItemCategory['items']:
+                            menuItem['locations_found_at'] = [listing_url]
+                            menuItem['listing_id'] = menuData["listing"]["id"]
+                            menuItem['listing_wmid'] = menuData["listing"]["wmid"]
+                            items_to_add.append(menuItem)
+                            menu_items += 1
+                    
+                    with lock:
+                        self.allMenuItems[menuData["listing"]["id"]] = items_to_add
+                        self.menuItemsFound += menu_items
+                        menuData['listing']['num_menu_items'] = str(menu_items)
+                        self.totalLocations.append(menuData['listing'])
+            else:
+                print(f"Skipping {location['slug']} due to retrieval issues.")
+
+        with ThreadPoolExecutor(max_workers=self.maxWorkers) as executor:
+            executor.map(process_location, self.locations)
+
         print('\n\nFinished grabbing all the Menus & Items! \n\nOrganizing now into clean lists for export!\n(up to a couple minutes on those big exports (5k+) looking at you California)\n')
         # Special function to flatten all our Menu items!
         self.organize_into_clean_list()
@@ -501,6 +492,18 @@ if __name__ == '__main__':
 
     if '-tshoot' in argList:
         cana.TestMode()
+
+    if '-workers' in argList:
+        try:
+            cana.maxWorkers = int(argList[argList.index('-workers') + 1])
+        except:
+            pass
+
+    if '-delay' in argList:
+        try:
+            cana.rateLimitDelay = float(argList[argList.index('-delay') + 1])
+        except:
+            pass
 
     # Check if arguments were passed
     if len(argList) > 1:
