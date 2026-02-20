@@ -47,6 +47,19 @@ python CanaData.py
 ### Environment Configuration:
 The script now supports extensive configuration through environment variables. See `.env.example` for all available options.
 
+### Desktop GUI (Recommended for non-CLI use)
+Launch the cross-platform GUI wrapper:
+
+```bash
+python scripts/gui_app.py
+```
+
+GUI highlights:
+- Guided run setup (source, slug scope, metadata toggles)
+- Non-blocking execution with live logs and progress
+- Safe cancellation between processing steps
+- One-click open for output folder
+
 ### Performance Features:
 - **Concurrent Processing**: Process multiple locations simultaneously (configurable via `MAX_WORKERS`).
 - **Rate Limiting**: Prevent API bans with configurable delays (`RATE_LIMIT`).

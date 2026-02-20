@@ -2,7 +2,7 @@ import requests
 import json
 import time
 
-def test_endpoint(name, url):
+def check_endpoint(name, url):
     print(f"\n--- Testing: {name} ---")
     print(f"URL: {url}")
     headers = {
@@ -34,10 +34,10 @@ def test_endpoint(name, url):
 if __name__ == "__main__":
     # 1. Test EXACT URL from README
     readme_url = "https://api-g.weedmaps.com/discovery/v1/listings?filter[any_retailer_services][]=storefront&filter[any_retailer_services][]=delivery&filter[region_slug[deliveries]]=washington-dc&filter[region_slug[dispensaries]]=washington-dc&page_size=100&size=100"
-    test_endpoint("README CURL Example", readme_url)
+    check_endpoint("README CURL Example", readme_url)
     
     # 2. Test Region Discovery again without custom User-Agent (let requests use default)
     # Actually, let's try with a more 'browser-like' set of headers if the above fails.
     
     # 3. Test the Menu endpoint which uses weedmaps.com (not api-g)
-    test_endpoint("Web Menu API", "https://weedmaps.com/api/web/v1/listings/metropolitan-wellness-center/menu?type=dispensary")
+    check_endpoint("Web Menu API", "https://weedmaps.com/api/web/v1/listings/metropolitan-wellness-center/menu?type=dispensary")

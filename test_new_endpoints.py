@@ -1,7 +1,7 @@
 import requests
 import json
 
-def test_endpoint(url):
+def check_endpoint(url):
     print(f"Testing URL: {url}")
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
@@ -41,8 +41,8 @@ def test_endpoint(url):
 
 if __name__ == "__main__":
     # Test strains
-    test_endpoint("https://api-g.weedmaps.com/discovery/v1/strains?page_size=10")
+    check_endpoint("https://api-g.weedmaps.com/discovery/v1/strains?page_size=10")
     # Test brands
-    test_endpoint("https://api-g.weedmaps.com/discovery/v1/brands?page_size=10")
+    check_endpoint("https://api-g.weedmaps.com/discovery/v1/brands?page_size=10")
     # Test listings
-    test_endpoint("https://api-g.weedmaps.com/discovery/v1/listings?page_size=10")
+    check_endpoint("https://api-g.weedmaps.com/discovery/v1/listings?page_size=10")

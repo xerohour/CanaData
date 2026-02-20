@@ -3,17 +3,16 @@ import json
 import csv
 import logging
 import os
+import subprocess
 from datetime import datetime
 from os import path as ospath
 from os import makedirs
 from sys import path, argv
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, List, Dict, Any
 from dotenv import load_dotenv
 from LeaflyScraper import scrape_leafly
 from CannMenusClient import CannMenusClient
-import concurrent.futures
 import threading
-import time
 from concurrent_processor import ConcurrentMenuProcessor
 from cache_manager import CacheManager
 from cached_api_client import CachedAPIClient
@@ -64,7 +63,14 @@ class CanaData:
         NonGreenState (bool): Flag indicating current slug has no locations
         slugGrab (bool): Whether to save discovered slugs
     """
-    def __init__(self, max_workers: int = 10, rate_limit: float = 1.0, cache_enabled: bool = True, optimize_processing: bool = True):
+    def __init__(
+        self,
+        max_workers: int = 10,
+        rate_limit: float = 1.0,
+        cache_enabled: bool = True,
+        optimize_processing: bool = True,
+        interactive_mode: bool = True,
+    ):
         # Where the Magic happens
         self.baseUrl: str = os.getenv('WEEDMAPS_BASE_URL', 'https://api-g.weedmaps.com/discovery/v1/listings')
         self.brandsBaseUrl: str = os.getenv('WEEDMAPS_BRANDS_URL', 'https://api-g.weedmaps.com/discovery/v1/brands')
@@ -111,6 +117,15 @@ class CanaData:
         # Concurrent processing configuration
         self.max_workers = max_workers
         self.rate_limit = rate_limit
+        self._menu_data_lock = threading.Lock()
+        self.default_headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Origin': 'https://weedmaps.com',
+            'Referer': 'https://weedmaps.com/'
+        }
+        self.interactive_mode = interactive_mode
         
         # Caching configuration
         self.cache_enabled = cache_enabled
@@ -162,7 +177,7 @@ class CanaData:
         
         # Direct request without cache
         try:
-            req = requests.get(url, timeout=30)
+            req = requests.get(url, headers=self.default_headers, timeout=30)
             if req.status_code == 200:
                 return req.json()
             elif req.status_code == 422:
@@ -173,16 +188,60 @@ class CanaData:
                     logger.error(f"Validation Error (422): {req.text}")
                 return 'break'
             elif req.status_code == 406:
-                logger.error(f"Not Acceptable (406): This is likely due to bot detection. Try updating headers.")
+                logger.warning("Not Acceptable (406) from requests. Trying curl fallback.")
+                curl_result = self._do_curl_request(url)
+                if curl_result is not False:
+                    return curl_result
+                logger.error("Curl fallback also failed for 406 response.")
                 return False
             else:
                 logger.warning(f"Request failed with status {req.status_code}: {req.text}")
                 return False
         except requests.exceptions.RequestException as e:
             logger.error(f"Network error occurred: {str(e)}")
+            return self._do_curl_request(url)
+
+    def _do_curl_request(self, url: str):
+        """Fallback HTTP GET using curl for anti-bot 406 responses."""
+        curl_cmd = [
+            'curl', '-sS', '-L', '-g',
+            '-H', f"User-Agent: {self.default_headers['User-Agent']}",
+            '-H', f"Accept: {self.default_headers['Accept']}",
+            '-H', f"Accept-Language: {self.default_headers['Accept-Language']}",
+            '-H', f"Origin: {self.default_headers['Origin']}",
+            '-H', f"Referer: {self.default_headers['Referer']}",
+            '-w', '\n__STATUS__:%{http_code}',
+            url,
+        ]
+
+        try:
+            completed = subprocess.run(curl_cmd, capture_output=True, timeout=45)
+            output = (completed.stdout or b'').decode('utf-8', 'replace')
+            if '__STATUS__:' not in output:
+                logger.error("Curl output missing status marker")
+                return False
+
+            body, status = output.rsplit('__STATUS__:', 1)
+            status_code = int(status.strip())
+            body = body.strip()
+
+            if status_code == 200:
+                return json.loads(body)
+            if status_code == 422:
+                try:
+                    error_detail = json.loads(body).get('errors', [{}])[0].get('detail', body)
+                    logger.error(f"Validation Error (422 via curl): {error_detail}")
+                except Exception:
+                    logger.error(f"Validation Error (422 via curl): {body}")
+                return 'break'
+
+            logger.warning(f"Curl request failed with status {status_code}: {body[:200]}")
+            return False
+        except Exception as e:
+            logger.error(f"Curl fallback failed: {e}")
             return False
 
-    def getLocations(self, lat=None, long=None):
+    def getLocations(self, lat: Optional[float] = None, long: Optional[float] = None) -> None:
         """
         Retrieve all dispensary/delivery locations for the current search slug.
         """
@@ -224,8 +283,13 @@ class CanaData:
 
                 for location in locations['data']['listings']:
                     self.locations.append({
+                        'id': location.get('id'),
+                        'wmid': location.get('wmid'),
+                        'name': location.get('name'),
                         'slug': location['slug'],
-                        'type': location['type']
+                        'type': location['type'],
+                        'state': location.get('state'),
+                        'city': location.get('city')
                     })
                     self.locationsFound += 1
 
@@ -233,12 +297,17 @@ class CanaData:
                     logger.info('Retrieved all locations! Moving to pull Menus')
                     break
             else:
+                if not self.interactive_mode:
+                    logger.error("Issue with page request; exiting location fetch in non-interactive mode.")
+                    self.NonGreenState = True
+                    break
+
                 retry = input('Issue with Page. Retry? (n/no or hit enter)\n\n- ').lower()
                 if 'n' in retry:
                     self.NonGreenState = True
                     break
 
-    def getMenus(self):
+    def getMenus(self) -> None:
         """
         Fetch and process menu data for all retrieved locations.
         """
@@ -257,36 +326,8 @@ class CanaData:
         """Original sequential menu fetching implementation"""
         for i, location in enumerate(self.locations):
             location_slug = location["slug"]
-            location_type = location["type"]
-            finished = False
-
-            while not finished:
-                try:
-                    url = f'https://weedmaps.com/api/web/v1/listings/{location_slug}/menu?type={location_type}'
-                    logger.info(f"Processing menu ({i+1}/{len(self.locations)}) --> {location_slug}")
-                    
-                    if self.testMode:
-                        logger.debug(f"Menu URL: {url}")
-
-                    resp = requests.get(url, timeout=30)
-                    if resp.status_code == 503:
-                        logger.warning(f"503 Service Unavailable for {location_slug}. Skipping.")
-                        finished = True
-                        break
-
-                    if resp.status_code == 200:
-                        self.process_menu_json(resp.json())
-                        finished = True
-                    else:
-                        logger.error(f"Failed to fetch menu for {location_slug}: {resp.status_code}")
-                        skip = input("Press enter to retry or type 'skip': ").lower()
-                        if 'skip' in skip:
-                            finished = True
-                except Exception as e:
-                    logger.error(f"Error processing {location_slug}: {str(e)}")
-                    skip = input("Press enter to retry or type 'skip': ").lower()
-                    if 'skip' in skip:
-                        finished = True
+            logger.info(f"Processing menu ({i+1}/{len(self.locations)}) --> {location_slug}")
+            self._fetch_and_process_menu(location)
 
         logger.info("Finished gathering menus. Organizing for export...")
         self.organize_into_clean_list()
@@ -322,33 +363,72 @@ class CanaData:
     def _fetch_and_process_menu(self, location: Dict[str, Any]) -> bool:
         """Fetch and process menu for a single location"""
         location_slug = location["slug"]
-        location_type = location["type"]
+        location_type = location.get("type", "dispensary")
         
         try:
-            url = f'https://weedmaps.com/api/web/v1/listings/{location_slug}/menu?type={location_type}'
-            
+            listing_path_type = self._to_listing_path_type(location_type)
+            discovery_items = self._fetch_discovery_menu_items(location_slug, listing_path_type)
+            if discovery_items is not None:
+                self.process_menu_items_json(discovery_items, location)
+                return True
+
+            # Fallback to legacy endpoint if discovery menu items fail.
+            legacy_url = f'https://weedmaps.com/api/web/v1/listings/{location_slug}/menu?type={location_type}'
             if self.testMode:
-                logger.debug(f"Menu URL: {url}")
-            
-            resp = requests.get(url, timeout=30)
-            
-            if resp.status_code == 503:
-                logger.warning(f"503 Service Unavailable for {location_slug}. Skipping.")
-                return False
-            
+                logger.debug(f"Legacy menu URL: {legacy_url}")
+
+            resp = requests.get(legacy_url, headers=self.default_headers, timeout=30)
             if resp.status_code == 200:
-                # Process the menu data using the existing method
                 self.process_menu_json(resp.json())
                 return True
-            else:
-                logger.error(f"Failed to fetch menu for {location_slug}: {resp.status_code}")
-                return False
-                
+
+            logger.error(f"Failed to fetch menu for {location_slug}: {resp.status_code}")
+            return False
+                 
         except Exception as e:
             logger.error(f"Error processing {location_slug}: {str(e)}")
             return False
 
-    def getBrands(self):
+    def _to_listing_path_type(self, location_type: str) -> str:
+        """Map listing type to discovery path segment."""
+        if location_type == 'delivery':
+            return 'deliveries'
+        return 'dispensaries'
+
+    def _fetch_discovery_menu_items(self, location_slug: str, listing_path_type: str) -> Optional[Dict[str, Any]]:
+        """Fetch paginated menu items from discovery endpoint."""
+        page = 1
+        page_size = int(os.getenv('MENU_PAGE_SIZE', 100))
+        all_items: List[Dict[str, Any]] = []
+        meta: Dict[str, Any] = {}
+
+        while True:
+            url = (
+                f"{self.baseUrl}/{listing_path_type}/{location_slug}/menu_items"
+                f"?page={page}&page_size={page_size}&size={page_size}"
+            )
+            if self.testMode:
+                logger.debug(f"Discovery menu URL: {url}")
+
+            data = self.do_request(url, use_cache=False)
+            if not data or data == 'break':
+                return None
+
+            page_items = data.get('data', {}).get('menu_items', [])
+            if not isinstance(page_items, list):
+                return None
+
+            all_items.extend(page_items)
+            meta = data.get('meta', {})
+            total_items = int(meta.get('total_menu_items', len(all_items)))
+
+            if len(page_items) < page_size or len(all_items) >= total_items:
+                break
+            page += 1
+
+        return {'meta': meta, 'data': {'menu_items': all_items}}
+
+    def getBrands(self) -> None:
         """
         Retrieve all brands from Weedmaps discovery API.
         """
@@ -375,7 +455,7 @@ class CanaData:
                 break
         logger.info(f"Retrieved {self.brandsFound} brands.")
 
-    def getStrains(self):
+    def getStrains(self) -> None:
         """
         Retrieve all strains from Weedmaps discovery API.
         NOTE: This endpoint is currently unreliable (often 404/406).
@@ -410,54 +490,134 @@ class CanaData:
                 break
         logger.info(f"Retrieved {self.strainsFound} strains.")
 
-    def process_menu_json(self, menu_json):
+    def process_menu_json(self, menu_json: Dict[str, Any]) -> None:
         """
         Process the JSON response for a single location's menu.
         """
         listing = menu_json.get('listing', {})
         listing_id = listing.get('id')
         listing_slug = listing.get('slug')
+        if listing_id is None:
+            logger.warning(f"Skipping menu without listing id for {listing_slug}")
+            return
+
         listing_type = 'deliveries' if listing.get('_type') == 'delivery' else 'dispensaries'
         listing_url = f'/{listing_type}/{listing_slug}'
         
         categories = menu_json.get('categories', [])
         menu_items_count = 0
+        local_menu_items: List[Dict[str, Any]] = []
+        local_extracted_strains: Dict[str, Any] = {}
+        is_empty_menu = not categories
 
-        self.allMenuItems[listing_id] = []
-
-        if not categories:
+        if is_empty_menu:
             logger.info(f"Location {listing_slug} has no categories.")
-            self.emptyMenus[listing_id] = listing
         else:
             for category in categories:
                 for item in category.get('items', []):
-                    item.update({
+                    item_copy = dict(item)
+                    item_copy.update({
                         'locations_found_at': [listing_url],
                         'listing_id': listing_id,
                         'listing_wmid': listing.get('wmid')
                     })
-                    
+
                     # Extract strain data if present
-                    if 'strain_data' in item:
-                        strain = item['strain_data']
-                        slug = strain.get('slug')
-                        if slug and slug not in self.extractedStrains:
-                            self.extractedStrains[slug] = strain
-                    elif 'strain' in item:
-                        # Sometimes it's just 'strain' and might be a dict or ID
-                        strain = item['strain']
+                    if 'strain_data' in item_copy:
+                        strain = item_copy['strain_data']
                         if isinstance(strain, dict):
                             slug = strain.get('slug')
-                            if slug and slug not in self.extractedStrains:
-                                self.extractedStrains[slug] = strain
+                            if slug:
+                                local_extracted_strains[slug] = strain
+                    elif 'strain' in item_copy:
+                        # Sometimes it's just 'strain' and might be a dict or ID
+                        strain = item_copy['strain']
+                        if isinstance(strain, dict):
+                            slug = strain.get('slug')
+                            if slug:
+                                local_extracted_strains[slug] = strain
 
-                    self.allMenuItems[listing_id].append(item)
+                    local_menu_items.append(item_copy)
                     menu_items_count += 1
-                    self.menuItemsFound += 1
 
-        listing['num_menu_items'] = str(menu_items_count)
-        self.totalLocations.append(listing)
+        listing_copy = dict(listing)
+        listing_copy['num_menu_items'] = str(menu_items_count)
+
+        with self._menu_data_lock:
+            self.allMenuItems[listing_id] = local_menu_items
+            if is_empty_menu:
+                self.emptyMenus[listing_id] = listing_copy
+
+            for slug, strain in local_extracted_strains.items():
+                if slug not in self.extractedStrains:
+                    self.extractedStrains[slug] = strain
+
+            self.menuItemsFound += menu_items_count
+            self.totalLocations.append(listing_copy)
+
         logger.info(f"Processed {menu_items_count} items for {listing_slug}")
+
+    def process_menu_items_json(self, menu_json: Dict[str, Any], location: Dict[str, Any]) -> None:
+        """Process discovery/v1/listings/{type}/{slug}/menu_items payload."""
+        listing_slug = location.get('slug')
+        listing_type = self._to_listing_path_type(location.get('type', 'dispensary'))
+        listing_url = f'/{listing_type}/{listing_slug}'
+        listing_id = location.get('id') or location.get('wmid') or listing_slug
+        listing_wmid = location.get('wmid')
+
+        menu_items = menu_json.get('data', {}).get('menu_items', [])
+        if not isinstance(menu_items, list):
+            logger.warning(f"Unexpected menu_items payload for {listing_slug}")
+            return
+
+        menu_items_count = 0
+        local_menu_items: List[Dict[str, Any]] = []
+        local_extracted_strains: Dict[str, Any] = {}
+
+        for item in menu_items:
+            if not isinstance(item, dict):
+                continue
+
+            item_copy = dict(item)
+            item_copy.update({
+                'locations_found_at': [listing_url],
+                'listing_id': listing_id,
+                'listing_wmid': listing_wmid,
+            })
+
+            strain_data = item_copy.get('strain_data')
+            if isinstance(strain_data, dict):
+                slug = strain_data.get('slug')
+                if slug:
+                    local_extracted_strains[slug] = strain_data
+
+            local_menu_items.append(item_copy)
+            menu_items_count += 1
+
+        listing_copy = {
+            'id': location.get('id'),
+            'wmid': location.get('wmid'),
+            'slug': listing_slug,
+            'name': location.get('name'),
+            'state': location.get('state'),
+            'city': location.get('city'),
+            'type': location.get('type'),
+            'num_menu_items': str(menu_items_count),
+        }
+
+        with self._menu_data_lock:
+            self.allMenuItems[listing_id] = local_menu_items
+            if menu_items_count == 0:
+                self.emptyMenus[listing_id] = listing_copy
+
+            for slug, strain in local_extracted_strains.items():
+                if slug not in self.extractedStrains:
+                    self.extractedStrains[slug] = strain
+
+            self.menuItemsFound += menu_items_count
+            self.totalLocations.append(listing_copy)
+
+        logger.info(f"Processed {menu_items_count} items for {listing_slug} via discovery menu_items")
 
     def getLeaflyData(self):
         """
@@ -594,7 +754,7 @@ class CanaData:
         # Replace our finished menu items list with our flat, ordered, dictionary list
         self.finishedMenuItems = ready_list
 
-    def flatten_dictionary(self, d):
+    def flatten_dictionary(self, d: Dict[str, Any]) -> Dict[str, str]:
         """
         Recursively flatten a nested dictionary using dot notation for keys.
         
@@ -640,7 +800,7 @@ class CanaData:
                                     keys.pop()
                                 else:
                                     # Primitives in a list are joined by dot notation
-                                    result['.'.join(keys)] = ''.join(str(v))
+                                    result['.'.join(keys)] = '.'.join(str(x) for x in v)
                                     keys.pop()
                                     break
                         break
@@ -668,11 +828,11 @@ class CanaData:
         return result
 
     # Function recieves a city name and sets to searchSlug
-    def setCitySlug(self, search):
+    def setCitySlug(self, search: str) -> None:
         # Set searchSlug to City/State provided
         self.searchSlug = search
 
-    def csv_maker(self, filename, data, preorganized=False):
+    def csv_maker(self, filename: str, data: List[Dict[str, Any]], preorganized: bool = False) -> None:
         """
         Export a list of dictionaries to a CSV file with timestamp.
         
@@ -703,6 +863,12 @@ class CanaData:
             # If not exist, create
             makedirs(home_dir)
 
+        # Handle empty data case
+        if not data:
+            logger.warning(f"No data to export for {filename}.csv")
+            print(f'No data to export for {filename}.csv')
+            return
+
         # Create CSV file as outfile
         with open(f'{home_dir}/{filename}.csv', 'w', newline='', encoding='utf-8') as outfile:
             # Setup csv writer with file
@@ -722,7 +888,7 @@ class CanaData:
             # Print visual notification of finished export & number of items seen
             print(f'Successfully exported ({str(len(data))} items) to CSV -> {filename}.csv')
 
-    def dataToCSV(self):
+    def dataToCSV(self) -> None:
         """
         Main entry point for triggering CSV generation.
         
@@ -780,7 +946,7 @@ class CanaData:
 
         print(f'\n\nResults for -> {self.searchSlug}:\n- {str(self.locationsFound)} Locations\n- {str(len(self.allMenuItems.keys()))} Menus\n- {str(len(self.emptyMenus.keys()))} Empty Menus\n- {str(self.menuItemsFound)} Menu Items')
 
-    def resetDataSets(self):
+    def resetDataSets(self) -> None:
         """
         Reset stateful attributes before processing the next search slug.
         
@@ -806,7 +972,7 @@ class CanaData:
         self.extractedStrains = {}
 
 
-    def identifyNaughtyStates(self):
+    def identifyNaughtyStates(self) -> None:
         """
         Print a summary of slugs that returned no results.
         """
@@ -815,7 +981,7 @@ class CanaData:
             slugs = [str(s) for s in self.unFriendlyStates]
             print(f'\nThese States were found to have 0 listings!\n{", ".join(slugs)}')
 
-    def identifyDataTypes(self):
+    def identifyDataTypes(self) -> None:
         """
         Interactive prompt to toggle storefront vs delivery scraping.
         """
@@ -828,19 +994,56 @@ class CanaData:
         if 'n' in deliveriesChoice or 'no' in deliveriesChoice:
             self.deliveries = False
 
-    def slugs(self):
+    def slugs(self) -> None:
         """
         Enable slug recording mode (unused in current main loop).
         """
         print('Set slugGrab to true!')
         self.slugGrab = True
 
-    def TestMode(self):
+    def TestMode(self) -> None:
         """
         Enable troubleshooting mode for more verbose output.
         """
         print('Set Troubleshooting Mode to True')
         self.testMode = True
+
+    # Snake_case aliases for consistency with Python naming conventions.
+    def set_city_slug(self, search: str) -> None:
+        self.setCitySlug(search)
+
+    def get_locations(self, lat: Optional[float] = None, long: Optional[float] = None) -> None:
+        self.getLocations(lat=lat, long=long)
+
+    def get_menus(self) -> None:
+        self.getMenus()
+
+    def get_brands(self) -> None:
+        self.getBrands()
+
+    def get_strains(self) -> None:
+        self.getStrains()
+
+    def get_leafly_data(self) -> None:
+        self.getLeaflyData()
+
+    def get_cannmenus_data(self) -> None:
+        self.getCannMenusData()
+
+    def data_to_csv(self) -> None:
+        self.dataToCSV()
+
+    def reset_data_sets(self) -> None:
+        self.resetDataSets()
+
+    def identify_naughty_states(self) -> None:
+        self.identifyNaughtyStates()
+
+    def identify_data_types(self) -> None:
+        self.identifyDataTypes()
+
+    def test_mode(self) -> None:
+        self.TestMode()
 
 
 if __name__ == '__main__':
@@ -929,6 +1132,17 @@ if __name__ == '__main__':
     if '-strains' in argList:
         cana.getStrains()
 
+    metadata_only = (
+        ('-brands' in argList or '-strains' in argList)
+        and '-leafly' not in argList
+        and '-cannmenus' not in argList
+    )
+
+    if metadata_only:
+        cana.setCitySlug('global')
+        cana.dataToCSV()
+        raise SystemExit(0)
+
     for slug in searchSlugs:
         if len(slug) > 0:
             # Visual queue of starting a state
@@ -936,12 +1150,6 @@ if __name__ == '__main__':
             # Set our searchSlug to the State we are working on
             cana.setCitySlug(slug)
             
-            # Skip location/menu scraping if only fetching global metadata
-            if '-brands' in argList or '-strains' in argList:
-                if not any(arg in argList for arg in ['-go', 'all', 'mylist', 'slugs']) and len(searchSlugs) == 1 and str(searchSlugs[0]) == str(answer if 'answer' in locals() else None):
-                     # If user just typed something but also wants brands/strains, maybe they want both
-                     pass
-
             if '-leafly' in argList:
                 cana.getLeaflyData()
             elif '-cannmenus' in argList:
