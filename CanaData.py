@@ -16,7 +16,6 @@ import threading
 from concurrent_processor import ConcurrentMenuProcessor
 from cache_manager import CacheManager
 from cached_api_client import CachedAPIClient
-from optimized_data_processor import OptimizedDataProcessor
 
 # Load environment variables
 load_dotenv()
@@ -143,11 +142,9 @@ class CanaData:
             self.api_client = None
             
         # Data processing optimization
+        # Deprecated: pandas-based optimization was slower and buggy.
+        # Now using optimized pure Python recursive flattening which is faster and correct.
         self.optimize_processing = optimize_processing
-        if optimize_processing:
-            self.data_processor = OptimizedDataProcessor(max_workers=max_workers)
-        else:
-            self.data_processor = None
 
     def do_request(self, url, use_cache: bool = True):
         """
@@ -703,25 +700,13 @@ class CanaData:
             Input:  {'name': 'Product', 'price': {'amount': 10}}
             Output: {'name': 'Product', 'price.amount': '10'}
         """
-        # Use optimized data processor if enabled
-        if self.optimize_processing and self.data_processor:
-            logger.info("Using optimized data processing pipeline")
-            self.finishedMenuItems = self.data_processor.process_menu_data(self.allMenuItems)
-        else:
-            # Fall back to original method
-            logger.info("Using original data processing method")
-            self._original_organize_into_clean_list()
-    
-    def _original_organize_into_clean_list(self):
-        """
-        Original data organization method for backward compatibility.
-        """
         # Grab the data from allMenuItems
         listings = self.allMenuItems
 
         # This is where our flat datasets will reside once finished
         flatDictList = []
 
+        logger.info("Flattening menu items...")
         # Loop through the Listings
         for listing in listings:
             # Loop through the menu item Dictionaries for each listings
@@ -754,78 +739,44 @@ class CanaData:
         # Replace our finished menu items list with our flat, ordered, dictionary list
         self.finishedMenuItems = ready_list
 
-    def flatten_dictionary(self, d: Dict[str, Any]) -> Dict[str, str]:
+    def flatten_dictionary(self, d: Dict[str, Any], parent_key: str = '', sep: str = '.') -> Dict[str, str]:
         """
         Recursively flatten a nested dictionary using dot notation for keys.
         
-        This is a custom iterative implementation using a stack-based approach
-        to handle arbitrarily nested dictionaries and lists. It converts:
-        - Nested dicts: {'a': {'b': 'c'}} → {'a.b': 'c'}
-        - Lists of dicts: {'a': [{'b': 'c'}]} → {'a.b': 'c'}
-        - Lists of strings: {'a': ['x', 'y']} → {'a': 'x.y'}
-        - Empty values: {'a': []} → {'a': 'None'}
+        Optimized recursive implementation that is significantly faster than the
+        old stack-based approach and correctly handles nested lists by JSON dumping
+        complex structures instead of buggy flattening.
         
         Args:
             d (dict): Nested dictionary to flatten
+            parent_key (str): Current key path prefix (for recursion)
+            sep (str): Separator for key path
             
         Returns:
             dict: Flattened dictionary with dot-notation keys and string values
-            
-        Algorithm:
-            Uses a stack to track nested levels and a keys list to build
-            dot-notation paths. Handles lists, dicts, and primitive values
-            with special logic for empty containers.
         """
-        # Custom iterative implementation using a stack to handle recursion without recursion depth issues
-        result = {}
-        stack = [iter(d.items())] # Stack contains iterators of dictionary items
-        keys = []                 # Tracks the current path in the dictionary (e.g., ['price', 'amount'])
-        while stack:
-            for k, v in stack[-1]:
-                keys.append(k)
-                if isinstance(v, list):
-                    # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
-                    if len(v) > 0:
-                        for item in v:
-                            if item:
-                                if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
-                                        result['.'.join(keys)] = 'None'
-                                    else:
-                                        # Push the nested dict onto the stack
-                                        stack.append(iter(item.items()))
-                                elif isinstance(item, list):
-                                    # Fallback for nested lists (semi-unsupported)
-                                    result['.'.join(keys)] = '.'.join(item)
-                                    keys.pop()
-                                else:
-                                    # Primitives in a list are joined by dot notation
-                                    result['.'.join(keys)] = '.'.join(str(x) for x in v)
-                                    keys.pop()
-                                    break
-                        break
-                    else:
-                        result['.'.join(keys)] = 'None'
-                        keys.pop()
-                elif isinstance(v, dict):
-                    # Handle nested dictionaries
-                    if len(v.keys()) < 1:
-                        result['.'.join(keys)] = 'None'
-                        keys.pop()
-                    else:
-                        # Push the nested dict onto the stack
-                        stack.append(iter(v.items()))
-                        break
+        items = []
+        for k, v in d.items():
+            new_key = f"{parent_key}{sep}{k}" if parent_key else k
+            if isinstance(v, dict):
+                if not v:
+                    items.append((new_key, 'None'))
                 else:
-                    # Leaf node: Store the value as a string
-                    result['.'.join(keys)] = str(v)
-                    keys.pop()
+                    items.extend(self.flatten_dictionary(v, new_key, sep=sep).items())
+            elif isinstance(v, list):
+                if not v:
+                     items.append((new_key, 'None'))
+                elif len(v) == 1 and isinstance(v[0], dict):
+                     # Single dict in list -> flatten it (preserve backward compat)
+                     items.extend(self.flatten_dictionary(v[0], new_key, sep=sep).items())
+                elif all(isinstance(x, (str, int, float, bool, type(None))) for x in v):
+                     items.append((new_key, sep.join(str(x) for x in v)))
+                else:
+                     # Complex list (multiple dicts or mixed) -> JSON dump for correctness
+                     items.append((new_key, json.dumps(v)))
             else:
-                # Finished processing an iterator: pop the path segment and the iterator itself
-                if keys:
-                    keys.pop()
-                stack.pop()
-        return result
+                items.append((new_key, str(v)))
+        return dict(items)
 
     # Function recieves a city name and sets to searchSlug
     def setCitySlug(self, search: str) -> None:

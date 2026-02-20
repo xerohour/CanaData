@@ -1,4 +1,5 @@
 import pytest
+import json
 import concurrent.futures
 from CanaData import CanaData
 
@@ -29,16 +30,26 @@ def test_flatten_dictionary_empty():
 
 def test_flatten_dictionary_list_of_dicts():
     cana = CanaData()
-    nested = {
+
+    # Case 1: Single dictionary in list (Backward Compatibility)
+    nested_single = {
+        'items': [
+            {'id': 1}
+        ]
+    }
+    flattened_single = cana.flatten_dictionary(nested_single)
+    assert flattened_single.get('items.id') == '1'
+
+    # Case 2: Multiple dictionaries in list (Correctness via JSON)
+    nested_multi = {
         'items': [
             {'id': 1},
             {'id': 2}
         ]
     }
-    # Current implementation joins/handles lists of dicts by pushing to stack
-    # Let's verify what it actually produces
-    flattened = cana.flatten_dictionary(nested)
-    assert flattened['items.id'] in ['1', '2'] # It gets one of them due to the logic
+    flattened_multi = cana.flatten_dictionary(nested_multi)
+    assert 'items' in flattened_multi
+    assert flattened_multi['items'] == json.dumps(nested_multi['items'])
 
 
 def _build_menu_payload(listing_id, slug, item_count=2, strain_slug='strain-a'):
