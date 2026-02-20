@@ -1,5 +1,6 @@
 import pytest
 import concurrent.futures
+import json
 from CanaData import CanaData
 
 def test_flatten_dictionary_simple():
@@ -27,19 +28,32 @@ def test_flatten_dictionary_empty():
     assert flattened['empty_dict'] == 'None'
     assert flattened['empty_list'] == 'None'
 
-def test_flatten_dictionary_list_of_dicts():
+def test_flatten_list_of_dicts_single_item():
     cana = CanaData()
     nested = {
         'items': [
-            {'id': 1},
-            {'id': 2}
+            {'id': 1, 'val': 'a'}
         ]
     }
-    # Current implementation joins/handles lists of dicts by pushing to stack
-    # Let's verify what it actually produces
     flattened = cana.flatten_dictionary(nested)
-    assert flattened['items.id'] in ['1', '2'] # It gets one of them due to the logic
+    assert flattened['items.id'] == '1'
+    assert flattened['items.val'] == 'a'
 
+def test_flatten_list_of_dicts_multiple_items():
+    cana = CanaData()
+    nested = {
+        'items': [
+            {'id': 1, 'val': 'a'},
+            {'id': 2, 'val': 'b'}
+        ]
+    }
+    flattened = cana.flatten_dictionary(nested)
+    # New behavior: dump as JSON string
+    assert 'items' in flattened
+    loaded = json.loads(flattened['items'])
+    assert len(loaded) == 2
+    assert loaded[0]['id'] == 1
+    assert loaded[1]['id'] == 2
 
 def _build_menu_payload(listing_id, slug, item_count=2, strain_slug='strain-a'):
     items = []
