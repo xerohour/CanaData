@@ -786,23 +786,20 @@ class CanaData:
                 if isinstance(v, list):
                     # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
                     if len(v) > 0:
-                        for item in v:
-                            if item:
-                                if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
-                                        result['.'.join(keys)] = 'None'
-                                    else:
-                                        # Push the nested dict onto the stack
-                                        stack.append(iter(item.items()))
-                                elif isinstance(item, list):
-                                    # Fallback for nested lists (semi-unsupported)
-                                    result['.'.join(keys)] = '.'.join(item)
-                                    keys.pop()
-                                else:
-                                    # Primitives in a list are joined by dot notation
-                                    result['.'.join(keys)] = '.'.join(str(x) for x in v)
-                                    keys.pop()
-                                    break
+                        first_item = v[0]
+                        if isinstance(first_item, dict):
+                            # List of dicts logic
+                            if len(v) == 1:
+                                # Single item, flatten it recursively
+                                stack.append(iter(first_item.items()))
+                            else:
+                                # Multiple items, convert to JSON string to preserve structure
+                                result['.'.join(keys)] = json.dumps(v)
+                                keys.pop()
+                        else:
+                            # Primitives in a list are joined by dot notation
+                            result['.'.join(keys)] = '.'.join(str(x) for x in v)
+                            keys.pop()
                         break
                     else:
                         result['.'.join(keys)] = 'None'
