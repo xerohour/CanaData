@@ -1,5 +1,6 @@
 import requests
 import os
+from urllib.parse import quote
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -59,7 +60,7 @@ class CannMenusClient:
             print("Error: CANNMENUS_API_TOKEN not found.")
             return []
 
-        url = f"{self.base_url}/retailers?state={state}"
+        url = f"{self.base_url}/retailers?state={quote(state, safe='')}"
         try:
             response = requests.get(url, headers=self.headers, timeout=30)
             response.raise_for_status()
