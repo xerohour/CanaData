@@ -1,3 +1,17 @@
 
 CanaData_*
 cities.txt
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+
+# Test caches
+.pytest_cache/
+
+# Local runtime outputs
+cache/
+
+# Local Claude tooling state
+.claude/
+.kiln/
