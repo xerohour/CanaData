@@ -4,6 +4,7 @@ import csv
 import logging
 import os
 import subprocess
+from urllib.parse import quote
 from datetime import datetime
 from os import path as ospath
 from os import makedirs
@@ -255,10 +256,10 @@ class CanaData:
 
             # Add filters based on user selection or defaults
             if self.storefronts:
-                url += f'&filter[any_retailer_services][]=storefront&filter[region_slug[dispensaries]]={self.searchSlug}'
+                url += f'&filter[any_retailer_services][]=storefront&filter[region_slug[dispensaries]]={quote(self.searchSlug, safe="")}'
 
             if self.deliveries:
-                url += f'&filter[any_retailer_services][]=delivery&filter[region_slug[deliveries]]={self.searchSlug}'
+                url += f'&filter[any_retailer_services][]=delivery&filter[region_slug[deliveries]]={quote(self.searchSlug, safe="")}'
 
             # Execute the request
             locations = self.do_request(url)
