@@ -1,9 +1,7 @@
-import os
-import json
 import time
 import pickle
 import hashlib
-from typing import Any, Optional, Dict, Union, cast
+from typing import Any, Optional, Dict
 from pathlib import Path
 import logging
 
@@ -31,6 +29,7 @@ class CacheManager:
         
         # Memory cache with TTL
         self.memory_cache: Dict[str, Dict[str, Any]] = {}
+        self.memory_cache_size = max(1, memory_cache_size)
         self.memory_cache_ttl = memory_cache_ttl
         
         # Disk cache settings
@@ -65,6 +64,7 @@ class CacheManager:
             entry = self.memory_cache[cache_key]
             if time.time() - entry['timestamp'] < self.memory_cache_ttl:
                 self.stats['memory_hits'] += 1
+                entry['timestamp'] = time.time()
                 logger.debug(f"Memory cache hit for {url}")
                 return entry['data']
             else:
@@ -83,6 +83,7 @@ class CacheManager:
                     'data': disk_data,
                     'timestamp': time.time()
                 }
+                self._prune_memory_cache()
                 logger.debug(f"Disk cache hit for {url}")
                 return disk_data
         
@@ -98,10 +99,17 @@ class CacheManager:
             'data': data,
             'timestamp': time.time()
         }
+        self._prune_memory_cache()
         
         # Store in disk cache if enabled
         if self.enable_disk_cache:
             self._set_to_disk(cache_key, data)
+
+    def _prune_memory_cache(self) -> None:
+        """Enforce memory cache size using oldest-entry eviction."""
+        while len(self.memory_cache) > self.memory_cache_size:
+            oldest_key = min(self.memory_cache, key=lambda key: self.memory_cache[key]['timestamp'])
+            self.memory_cache.pop(oldest_key, None)
     
     def _get_from_disk(self, cache_key: str) -> Optional[Any]:
         """Retrieve data from disk cache"""
@@ -160,7 +168,7 @@ class CacheManager:
     
     def get_stats(self) -> Dict[str, Any]:
         """Get cache performance statistics"""
-        total_requests = sum(self.stats.values())
+        total_requests = self.stats['memory_hits'] + self.stats['memory_misses']
         hit_rate = 0.0
         if total_requests > 0:
             hit_rate = (self.stats['memory_hits'] + self.stats['disk_hits']) / total_requests * 100

@@ -13,6 +13,16 @@ To run the scraper for a specific city:
 python CanaData.py -go "los-angeles"
 ```
 
+### GUI Usage
+
+For a desktop workflow (Windows/macOS/Linux), run:
+
+```bash
+python scripts/gui_app.py
+```
+
+The GUI runs CanaData in a background thread, streams logs live, and keeps the app responsive while scraping.
+
 ### Configuration via `.env`
 
 You can customize the scraping behavior by creating a `.env` file in the root directory:

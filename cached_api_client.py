@@ -1,6 +1,5 @@
 import requests
 import time
-import random
 import logging
 from typing import Dict, Any, Optional
 from cache_manager import CacheManager

@@ -1,7 +1,7 @@
 import requests
 import json
 
-def test_simple(url):
+def check_simple(url):
     print(f"Testing URL: {url}")
     try:
         resp = requests.get(url, timeout=30)
@@ -13,7 +13,7 @@ def test_simple(url):
     except Exception as e:
         print(f"Error: {e}")
 
-def test_inspect(url):
+def check_inspect(url):
     print(f"Inspecting URL: {url}")
     try:
         resp = requests.get(url, timeout=30)
@@ -40,5 +40,5 @@ def test_inspect(url):
         print(f"Error: {e}")
 
 if __name__ == "__main__":
-    test_inspect("https://api-g.weedmaps.com/discovery/v1/brands?page_size=1")
-    test_inspect("https://api-g.weedmaps.com/discovery/v1/listings?page_size=1")
+    check_inspect("https://api-g.weedmaps.com/discovery/v1/brands?page_size=1")
+    check_inspect("https://api-g.weedmaps.com/discovery/v1/listings?page_size=1")
