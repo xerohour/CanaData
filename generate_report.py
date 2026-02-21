@@ -231,6 +231,24 @@ def generate_html_report(data, region_name="Colorado"):
         box-shadow: 0 0 15px rgba(0, 255, 163, 0.4);
     }
 
+    .skip-link {
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--primary);
+        color: var(--bg);
+        padding: 8px;
+        z-index: 100;
+        transition: top 0.3s;
+        text-decoration: none;
+        font-weight: bold;
+        border-radius: 0 0 8px 0;
+    }
+
+    .skip-link:focus {
+        top: 0;
+    }
+
     @media (max-width: 768px) {
         body { padding: 1rem; }
         header { padding: 2rem 1rem; margin-bottom: 2rem; }
@@ -252,7 +270,8 @@ def generate_html_report(data, region_name="Colorado"):
         <style>{css}</style>
     </head>
     <body>
-        <div class="container">
+        <a href="#main-content" class="skip-link">Skip to content</a>
+        <div class="container" id="main-content">
             <header>
                 <h1>{region_name} Discovery</h1>
                 <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
@@ -286,7 +305,7 @@ def generate_html_report(data, region_name="Colorado"):
                         <div class="listing-info">
                             <h2>{item.get('name')}</h2>
                             <span class="badge badge-type">{item.get('type')}</span>
-                            <span class="badge badge-rating">★ {rating} ({reviews})</span>
+                            <span class="badge badge-rating" role="img" aria-label="Rating: {rating} stars based on {reviews} reviews">★ {rating} ({reviews})</span>
                             <span class="badge {status_class}">{status_text}</span>
                         </div>
                     </div>
@@ -317,7 +336,7 @@ def generate_html_report(data, region_name="Colorado"):
                     </div>
                     <div class="footer-actions">
                         <span style="font-size: 0.8rem; color: var(--text-muted)">{item.get('license_type', 'Recreational')}</span>
-                        <a href="{item.get('web_url')}" target="_blank" class="btn btn-primary">View on Weedmaps</a>
+                        <a href="{item.get('web_url')}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" aria-label="View {item.get('name')} on Weedmaps (opens in a new tab)">View on Weedmaps</a>
                     </div>
                 </div>
         """
