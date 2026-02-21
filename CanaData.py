@@ -16,7 +16,10 @@ import threading
 from concurrent_processor import ConcurrentMenuProcessor
 from cache_manager import CacheManager
 from cached_api_client import CachedAPIClient
-from optimized_data_processor import OptimizedDataProcessor
+try:
+    from optimized_data_processor import OptimizedDataProcessor
+except ImportError:
+    OptimizedDataProcessor = None
 
 # Load environment variables
 load_dotenv()
@@ -144,9 +147,11 @@ class CanaData:
             
         # Data processing optimization
         self.optimize_processing = optimize_processing
-        if optimize_processing:
+        if optimize_processing and OptimizedDataProcessor:
             self.data_processor = OptimizedDataProcessor(max_workers=max_workers)
         else:
+            if optimize_processing and not OptimizedDataProcessor:
+                logger.warning("Optimized processing requested but pandas not found. Falling back to default.")
             self.data_processor = None
 
     def do_request(self, url, use_cache: bool = True):
@@ -731,100 +736,54 @@ class CanaData:
                 # Add the flat dataset to our flatDictList
                 flatDictList.append(flatData)
 
-        # This set will collect all possible keys
-        all_keys_set = set()
-        for item in flatDictList:
-            all_keys_set.update(item.keys())
-        
-        all_keys = sorted(list(all_keys_set))
-
-        # This list will house all data after each key has been filled out
-        ready_list = []
-
-        # Loop through the flatDictList to update any missing keys
-        for item in flatDictList:
-            # Create a dictionary with all keys initialized to 'None'
-            flat_ordered_dict = {key: 'None' for key in all_keys}
-            # Update with actual values, converting to string
-            for key, value in item.items():
-                flat_ordered_dict[key] = str(value)
-            
-            ready_list.append(flat_ordered_dict)
-
-        # Replace our finished menu items list with our flat, ordered, dictionary list
-        self.finishedMenuItems = ready_list
+        # Directly set the flattened items.
+        # We no longer expand them to contain all keys here;
+        # csv_maker will handle sparse data efficiently using DictWriter.
+        self.finishedMenuItems = flatDictList
 
     def flatten_dictionary(self, d: Dict[str, Any]) -> Dict[str, str]:
         """
         Recursively flatten a nested dictionary using dot notation for keys.
         
-        This is a custom iterative implementation using a stack-based approach
-        to handle arbitrarily nested dictionaries and lists. It converts:
-        - Nested dicts: {'a': {'b': 'c'}} → {'a.b': 'c'}
-        - Lists of dicts: {'a': [{'b': 'c'}]} → {'a.b': 'c'}
-        - Lists of strings: {'a': ['x', 'y']} → {'a': 'x.y'}
-        - Empty values: {'a': []} → {'a': 'None'}
-        
-        Args:
-            d (dict): Nested dictionary to flatten
-            
-        Returns:
-            dict: Flattened dictionary with dot-notation keys and string values
-            
-        Algorithm:
-            Uses a stack to track nested levels and a keys list to build
-            dot-notation paths. Handles lists, dicts, and primitive values
-            with special logic for empty containers.
+        Optimized iterative implementation that maintains a prefix string
+        instead of re-joining keys at every step.
         """
-        # Custom iterative implementation using a stack to handle recursion without recursion depth issues
         result = {}
-        stack = [iter(d.items())] # Stack contains iterators of dictionary items
-        keys = []                 # Tracks the current path in the dictionary (e.g., ['price', 'amount'])
+        # Stack contains (iterator, prefix)
+        stack = [(iter(d.items()), "")]
+
         while stack:
-            for k, v in stack[-1]:
-                keys.append(k)
-                if isinstance(v, list):
-                    # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
-                    if len(v) > 0:
-                        for item in v:
-                            if item:
-                                if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
-                                        result['.'.join(keys)] = 'None'
-                                    else:
-                                        # Push the nested dict onto the stack
-                                        stack.append(iter(item.items()))
-                                elif isinstance(item, list):
-                                    # Fallback for nested lists (semi-unsupported)
-                                    result['.'.join(keys)] = '.'.join(item)
-                                    keys.pop()
-                                else:
-                                    # Primitives in a list are joined by dot notation
-                                    result['.'.join(keys)] = '.'.join(str(x) for x in v)
-                                    keys.pop()
-                                    break
-                        break
-                    else:
-                        result['.'.join(keys)] = 'None'
-                        keys.pop()
-                elif isinstance(v, dict):
-                    # Handle nested dictionaries
-                    if len(v.keys()) < 1:
-                        result['.'.join(keys)] = 'None'
-                        keys.pop()
-                    else:
-                        # Push the nested dict onto the stack
-                        stack.append(iter(v.items()))
-                        break
-                else:
-                    # Leaf node: Store the value as a string
-                    result['.'.join(keys)] = str(v)
-                    keys.pop()
-            else:
-                # Finished processing an iterator: pop the path segment and the iterator itself
-                if keys:
-                    keys.pop()
+            current_iter, prefix = stack[-1]
+
+            try:
+                k, v = next(current_iter)
+            except StopIteration:
                 stack.pop()
+                continue
+
+            # Construct new key
+            new_key = f"{prefix}.{k}" if prefix else k
+
+            if isinstance(v, dict) and v:
+                stack.append((iter(v.items()), new_key))
+            elif isinstance(v, list) and v:
+                # Check if list of dicts
+                if any(isinstance(i, dict) for i in v):
+                     # Treat as transparent container, merging items into parent
+                     for item in reversed(v):
+                         if isinstance(item, dict):
+                             if item:
+                                 stack.append((iter(item.items()), new_key))
+                             else:
+                                 result[new_key] = 'None'
+                else:
+                    # Join primitives
+                    result[new_key] = '.'.join(str(x) for x in v)
+            else:
+                # Leaf or empty dict/list
+                val = 'None' if (isinstance(v, (dict, list)) and not v) else str(v)
+                result[new_key] = val
+
         return result
 
     # Function recieves a city name and sets to searchSlug
@@ -869,21 +828,22 @@ class CanaData:
             print(f'No data to export for {filename}.csv')
             return
 
+        # Collect all unique keys to handle sparse data
+        all_keys = set()
+        for row in data:
+            all_keys.update(row.keys())
+        fieldnames = sorted(list(all_keys))
+
         # Create CSV file as outfile
         with open(f'{home_dir}/{filename}.csv', 'w', newline='', encoding='utf-8') as outfile:
-            # Setup csv writer with file
-            output = csv.writer(outfile)
+            # Setup csv DictWriter
+            writer = csv.DictWriter(outfile, fieldnames=fieldnames, restval='None')
 
-            # Row 1 Keys = first item in list's keys
-            all_keys = list(data[0].keys())
+            # Write header
+            writer.writeheader()
 
-            # Write row of keys
-            output.writerow(all_keys)
-
-            # Loop through the dataset
-            for row in data:
-                # Write row of item's values
-                output.writerow(row.values())
+            # Write all rows
+            writer.writerows(data)
 
             # Print visual notification of finished export & number of items seen
             print(f'Successfully exported ({str(len(data))} items) to CSV -> {filename}.csv')
