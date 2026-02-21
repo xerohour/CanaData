@@ -3,8 +3,10 @@ import json
 import csv
 import logging
 import os
+import re
 import subprocess
 from datetime import datetime
+from urllib.parse import quote
 from os import path as ospath
 from os import makedirs
 from sys import path, argv
@@ -254,11 +256,14 @@ class CanaData:
             url = f'{self.baseUrl}?offset={str(self.locationsFound)}{self.pageSize}'
 
             # Add filters based on user selection or defaults
+            # URL encode the search slug to prevent injection and handle special characters
+            encoded_slug = quote(self.searchSlug) if self.searchSlug else ''
+
             if self.storefronts:
-                url += f'&filter[any_retailer_services][]=storefront&filter[region_slug[dispensaries]]={self.searchSlug}'
+                url += f'&filter[any_retailer_services][]=storefront&filter[region_slug[dispensaries]]={encoded_slug}'
 
             if self.deliveries:
-                url += f'&filter[any_retailer_services][]=delivery&filter[region_slug[deliveries]]={self.searchSlug}'
+                url += f'&filter[any_retailer_services][]=delivery&filter[region_slug[deliveries]]={encoded_slug}'
 
             # Execute the request
             locations = self.do_request(url)
@@ -660,7 +665,9 @@ class CanaData:
             logger.error("No valid search term for CannMenus.")
             return
 
-        retailers = client.get_retailers(search_term)
+        # URL encode the search term to prevent injection
+        # Note: CannMenusClient constructs URL manually, so we must encode here
+        retailers = client.get_retailers(quote(search_term))
         
         if not retailers:
             logger.warning(f"No retailers found on CannMenus for: {self.searchSlug}")
@@ -832,6 +839,20 @@ class CanaData:
         # Set searchSlug to City/State provided
         self.searchSlug = search
 
+    def _sanitize_filename(self, filename: str) -> str:
+        """
+        Sanitize filename to prevent path traversal and unsafe characters.
+        Keeps alphanumeric, dot, underscore, dash.
+        """
+        # Remove directory traversal
+        filename = os.path.basename(filename)
+        # Keep only safe characters
+        filename = re.sub(r'[^a-zA-Z0-9_.-]', '_', filename)
+        # Prevent hidden files
+        if filename.startswith('.'):
+            filename = '_' + filename
+        return filename
+
     def csv_maker(self, filename: str, data: List[Dict[str, Any]], preorganized: bool = False) -> None:
         """
         Export a list of dictionaries to a CSV file with timestamp.
@@ -863,14 +884,19 @@ class CanaData:
             # If not exist, create
             makedirs(home_dir)
 
+        # Sanitize filename
+        safe_filename = self._sanitize_filename(filename)
+        if safe_filename != filename:
+            logger.warning(f"Sanitized filename '{filename}' to '{safe_filename}'")
+
         # Handle empty data case
         if not data:
-            logger.warning(f"No data to export for {filename}.csv")
-            print(f'No data to export for {filename}.csv')
+            logger.warning(f"No data to export for {safe_filename}.csv")
+            print(f'No data to export for {safe_filename}.csv')
             return
 
         # Create CSV file as outfile
-        with open(f'{home_dir}/{filename}.csv', 'w', newline='', encoding='utf-8') as outfile:
+        with open(f'{home_dir}/{safe_filename}.csv', 'w', newline='', encoding='utf-8') as outfile:
             # Setup csv writer with file
             output = csv.writer(outfile)
 
@@ -886,7 +912,7 @@ class CanaData:
                 output.writerow(row.values())
 
             # Print visual notification of finished export & number of items seen
-            print(f'Successfully exported ({str(len(data))} items) to CSV -> {filename}.csv')
+            print(f'Successfully exported ({str(len(data))} items) to CSV -> {safe_filename}.csv')
 
     def dataToCSV(self) -> None:
         """
