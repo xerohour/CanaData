@@ -16,7 +16,10 @@ import threading
 from concurrent_processor import ConcurrentMenuProcessor
 from cache_manager import CacheManager
 from cached_api_client import CachedAPIClient
-from optimized_data_processor import OptimizedDataProcessor
+try:
+    from optimized_data_processor import OptimizedDataProcessor
+except ImportError:
+    OptimizedDataProcessor = None
 
 # Load environment variables
 load_dotenv()
@@ -144,8 +147,11 @@ class CanaData:
             
         # Data processing optimization
         self.optimize_processing = optimize_processing
-        if optimize_processing:
+        if optimize_processing and OptimizedDataProcessor:
             self.data_processor = OptimizedDataProcessor(max_workers=max_workers)
+        elif optimize_processing and not OptimizedDataProcessor:
+            logger.warning("Optimized processing requested but dependencies (pandas) are missing. Falling back to default processing.")
+            self.data_processor = None
         else:
             self.data_processor = None
 
@@ -1046,12 +1052,15 @@ class CanaData:
         self.TestMode()
 
 
-if __name__ == '__main__':
+def main():
     # Initiate the Library
     cana = CanaData()
 
     # This is where we end pu putting our list of items. Replaced with a list of search slugs -> []
     searchSlugs = None
+    allStatesSlugs = []
+    knownSlugs = []
+    mySlugList = []
 
     try:
         # Grab list of States from local file
@@ -1088,18 +1097,24 @@ if __name__ == '__main__':
     # This specifically looks for the quick run argument and sets the State list
     if '-go' in argList:
         # Search slug location in args is after the -go
-        searchSlug = argList.index('-go') + 1
+        searchSlugIdx = argList.index('-go') + 1
+
+        if searchSlugIdx >= len(argList):
+            print("Error: -go requires a slug argument (e.g., -go los-angeles, -go all, -go mylist).")
+            return
+
         # Determine if its one of our preset 3 or a regular search
-        if argv[searchSlug].lower() == 'mylist':
+        search_arg = argv[searchSlugIdx].lower()
+        if search_arg == 'mylist':
             searchSlugs = mySlugList
-        elif argv[searchSlug].lower() == 'slugs':
+        elif search_arg == 'slugs':
             # Slug list is set to the list from the cities.txt file
             searchSlugs = knownSlugs
-        elif argv[searchSlug].lower() == 'all':
+        elif search_arg == 'all':
             # Slug list is set to the list from the cities.txt file
             searchSlugs = allStatesSlugs
         else:
-            searchSlugs = [argv[searchSlug].lower()]
+            searchSlugs = [search_arg]
         # Visual queue of start (in place of question for search slug)
         print(f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\n\n\nStarting Quickrun on {str(len(searchSlugs))} Slugs: \n{str(", ".join(searchSlugs))}\n\n\n')
 
@@ -1141,7 +1156,11 @@ if __name__ == '__main__':
     if metadata_only:
         cana.setCitySlug('global')
         cana.dataToCSV()
-        raise SystemExit(0)
+        return
+
+    if not searchSlugs:
+        print("No slugs selected. Exiting.")
+        return
 
     for slug in searchSlugs:
         if len(slug) > 0:
@@ -1167,3 +1186,6 @@ if __name__ == '__main__':
             cana.resetDataSets()
     # Print out the list of Non-Cannabis friendly states
     cana.identifyNaughtyStates()
+
+if __name__ == '__main__':
+    main()
