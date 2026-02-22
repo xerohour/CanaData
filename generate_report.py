@@ -231,6 +231,30 @@ def generate_html_report(data, region_name="Colorado"):
         box-shadow: 0 0 15px rgba(0, 255, 163, 0.4);
     }
 
+    .btn:focus-visible {
+        outline: 2px solid var(--text);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 4px rgba(0, 255, 163, 0.4);
+    }
+
+    .skip-link {
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--primary);
+        color: var(--bg);
+        padding: 8px;
+        z-index: 100;
+        transition: top 0.2s;
+        font-weight: bold;
+        text-decoration: none;
+        border-radius: 0 0 8px 0;
+    }
+
+    .skip-link:focus {
+        top: 0;
+    }
+
     @media (max-width: 768px) {
         body { padding: 1rem; }
         header { padding: 2rem 1rem; margin-bottom: 2rem; }
@@ -252,13 +276,14 @@ def generate_html_report(data, region_name="Colorado"):
         <style>{css}</style>
     </head>
     <body>
+        <a href="#main-content" class="skip-link">Skip to main content</a>
         <div class="container">
             <header>
                 <h1>{region_name} Discovery</h1>
                 <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
             </header>
 
-            <div class="listing-grid">
+            <main id="main-content" class="listing-grid">
     """
 
     for item in listings:
@@ -317,13 +342,13 @@ def generate_html_report(data, region_name="Colorado"):
                     </div>
                     <div class="footer-actions">
                         <span style="font-size: 0.8rem; color: var(--text-muted)">{item.get('license_type', 'Recreational')}</span>
-                        <a href="{item.get('web_url')}" target="_blank" class="btn btn-primary">View on Weedmaps</a>
+                        <a href="{item.get('web_url')}" target="_blank" class="btn btn-primary" aria-label="View {item.get('name')} on Weedmaps">View on Weedmaps</a>
                     </div>
                 </div>
         """
 
     html_content += """
-            </div>
+            </main>
         </div>
     </body>
     </html>
