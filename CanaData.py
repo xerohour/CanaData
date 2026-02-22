@@ -4,6 +4,7 @@ import csv
 import logging
 import os
 import subprocess
+import re
 from datetime import datetime
 from os import path as ospath
 from os import makedirs
@@ -832,6 +833,17 @@ class CanaData:
         # Set searchSlug to City/State provided
         self.searchSlug = search
 
+    def _sanitize_filename(self, filename: str) -> str:
+        """
+        Sanitize filename to prevent path traversal and ensure safe file naming.
+
+        Replaces any characters that are not alphanumeric, underscores, hyphens,
+        or periods with an underscore. This effectively neutralizes directory
+        separators (like / and \\) and other special characters.
+        """
+        # Replace non-alphanumeric characters (except ._-) with underscores
+        return re.sub(r'[^a-zA-Z0-9_\-\.]', '_', filename)
+
     def csv_maker(self, filename: str, data: List[Dict[str, Any]], preorganized: bool = False) -> None:
         """
         Export a list of dictionaries to a CSV file with timestamp.
@@ -854,6 +866,9 @@ class CanaData:
             - Subsequent rows: dictionary values in same order
             - UTF-8 encoding for special characters
         """
+        # Sanitize filename to prevent path traversal
+        filename = self._sanitize_filename(filename)
+
         today = datetime.today().strftime('%m-%d-%Y')
         # Variable on where to save the file
         home_dir = f'{path[0]}/CanaData_{today}'
