@@ -1,10 +1,17 @@
-import pandas as pd
 import logging
 from typing import List, Dict, Any
 import json
 from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
+
+try:
+    import pandas as pd
+    PANDAS_AVAILABLE = True
+except ImportError:
+    pd = None
+    PANDAS_AVAILABLE = False
+    logger.warning("Pandas not available. Optimized processing will be disabled.")
 
 class OptimizedDataProcessor:
     """
@@ -14,6 +21,8 @@ class OptimizedDataProcessor:
     
     def __init__(self, max_workers: int = 4):
         self.max_workers = max_workers
+        if not PANDAS_AVAILABLE:
+            logger.warning("Pandas is not installed. OptimizedDataProcessor will use fallback method.")
     
     def process_menu_data(self, all_menu_items: Dict[str, List[Dict]]) -> List[Dict[str, Any]]:
         """
@@ -27,6 +36,9 @@ class OptimizedDataProcessor:
         """
         logger.info("Starting optimized data processing...")
         
+        if not PANDAS_AVAILABLE:
+            return self._fallback_process_all(all_menu_items)
+
         # Convert to DataFrame for batch processing
         flat_items = self._flatten_all_items(all_menu_items)
         
@@ -39,7 +51,7 @@ class OptimizedDataProcessor:
         logger.info(f"Processed {len(result)} menu items")
         return result
     
-    def _flatten_all_items(self, all_menu_items: Dict[str, List[Dict]]) -> pd.DataFrame:
+    def _flatten_all_items(self, all_menu_items: Dict[str, List[Dict]]) -> 'pd.DataFrame':
         """
         Flatten all menu items using pandas json_normalize for efficiency.
         """
@@ -66,7 +78,7 @@ class OptimizedDataProcessor:
             logger.warning(f"Pandas normalization failed, falling back to custom method: {e}")
             return self._fallback_flattening(items_with_location)
     
-    def _handle_remaining_nesting(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _handle_remaining_nesting(self, df: 'pd.DataFrame') -> 'pd.DataFrame':
         """
         Handle any remaining nested structures that json_normalize couldn't flatten.
         """
@@ -90,9 +102,35 @@ class OptimizedDataProcessor:
         
         return df
     
-    def _fallback_flattening(self, items: List[Dict]) -> pd.DataFrame:
+    def _fallback_process_all(self, all_menu_items: Dict[str, List[Dict]]) -> List[Dict[str, Any]]:
         """
-        Fallback to custom flattening if pandas fails.
+        Complete processing without pandas.
+        """
+        logger.info("Using fallback processing (No Pandas)")
+        items_with_location = []
+        for location_id, items in all_menu_items.items():
+            for item in items:
+                item_copy = item.copy()
+                item_copy['_location_id'] = location_id
+                items_with_location.append(item_copy)
+
+        # Flatten
+        flattened = self._fallback_flattening_list(items_with_location)
+
+        # Normalize
+        normalized = self._normalize_data_fallback(flattened)
+        return normalized
+
+    def _fallback_flattening(self, items: List[Dict]) -> 'pd.DataFrame':
+        """
+        Fallback to custom flattening if pandas fails, returns DataFrame.
+        """
+        flattened_list = self._fallback_flattening_list(items)
+        return pd.DataFrame(flattened_list)
+
+    def _fallback_flattening_list(self, items: List[Dict]) -> List[Dict]:
+        """
+        Fallback to custom flattening returning list of dicts.
         """
         logger.info("Using fallback flattening method")
         
@@ -113,8 +151,8 @@ class OptimizedDataProcessor:
         all_flattened = []
         for batch in flattened_batches:
             all_flattened.extend(batch)
-        
-        return pd.DataFrame(all_flattened)
+
+        return all_flattened
     
     def _flatten_batch(self, batch: List[Dict]) -> List[Dict]:
         """
@@ -128,50 +166,43 @@ class OptimizedDataProcessor:
     
     def _flatten_dictionary_custom(self, d: Dict) -> Dict:
         """
-        Optimized version of the existing custom flattening algorithm.
+        Optimized version of the custom flattening algorithm.
         """
-        # Pre-allocate result dict with estimated size
         result = {}
-        
-        # Use iterative approach with explicit stack
-        stack = [iter(d.items())]
-        keys = []
+        # Stack contains tuples of (dictionary, parent_key_prefix)
+        stack = [(d, "")]
         
         while stack:
-            for k, v in stack[-1]:
-                key = '.'.join(keys + [k]) if keys else k
+            curr_dict, prefix = stack.pop()
+
+            for k, v in curr_dict.items():
+                key = f"{prefix}.{k}" if prefix else k
                 
                 if isinstance(v, dict):
-                    # Push nested dict to stack
-                    keys.append(k)
-                    stack.append(iter(v.items()))
-                    break
+                    if not v:
+                         result[key] = 'None'
+                    else:
+                         stack.append((v, key))
                 elif isinstance(v, list):
                     if v and isinstance(v[0], dict):
-                        # Handle list of dicts by taking first item or joining
                         if len(v) == 1:
-                            # Single item, flatten it
-                            nested_dict = {f"{k}.{sub_k}": sub_v for sub_k, sub_v in v[0].items()}
-                            result.update(nested_dict)
+                            # Single item list of dict, flatten it
+                            # We push it to stack effectively as if it was a dict
+                            stack.append((v[0], key))
                         else:
                             # Multiple items, convert to JSON string
                             result[key] = json.dumps(v)
                     else:
-                        # Simple list, convert to string representation
-                        result[key] = str(v) if v else 'None'
+                        # Simple list or empty list
+                        result[key] = json.dumps(v) if v else 'None'
                 elif v is None:
                     result[key] = 'None'
                 else:
                     result[key] = str(v)
-            else:
-                # Pop from stack when iterator is exhausted
-                if len(stack) > 1:
-                    keys.pop()
-                stack.pop()
-        
+
         return result
     
-    def _normalize_data(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _normalize_data(self, df: 'pd.DataFrame') -> 'pd.DataFrame':
         """
         Normalize and clean the flattened data.
         """
@@ -193,3 +224,31 @@ class OptimizedDataProcessor:
         df = df.reindex(sorted(df.columns), axis=1)
         
         return df
+
+    def _normalize_data_fallback(self, data: List[Dict]) -> List[Dict]:
+        """
+        Normalize and clean data without pandas.
+        """
+        if not data:
+            return []
+
+        # 1. Collect all keys
+        all_keys = set()
+        for item in data:
+            all_keys.update(item.keys())
+
+        sorted_keys = sorted(list(all_keys))
+
+        normalized = []
+        for item in data:
+            new_item = {}
+            for key in sorted_keys:
+                val = item.get(key, 'None')
+                # Basic numeric cleanup if needed, but for CSV strings are fine.
+                # If we really want to mimic pandas 'None' behavior for NaNs:
+                if val is None:
+                    val = 'None'
+                new_item[key] = str(val)
+            normalized.append(new_item)
+
+        return normalized

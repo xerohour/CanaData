@@ -112,7 +112,7 @@ The final flattened and normalized list of dictionaries ready for CSV output.
 
 - **Rate Limiting**: If an API call fails or returns a 422, the script attempts to inform the user and provides a retry/skip mechanism.
 - **503 Errors**: Specifically handled in `getMenus` as "First Byte Errors" (common when Weedmaps is under high load or blocks automated traffic).
-- **Graceful Termination**: Checks if a state has zero results (`meta.total_listings == 0`) and adds it to `unFriendlyStates` to avoid wasted processing.
+- **Graceful Termination**: Checks if a state has zero results (`meta.total_listings == 0`) and adds it to `empty_states` to avoid wasted processing.
 
 ---
 
