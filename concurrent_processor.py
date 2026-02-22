@@ -14,12 +14,12 @@ def retry_with_backoff(max_retries=3, base_delay=1.0, max_delay=60.0):
         @wraps(func)
         def wrapper(*args, **kwargs):
             retries = 0
-            while retries < max_retries:
+            while True:
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
                     retries += 1
-                    if retries >= max_retries:
+                    if retries > max_retries:
                         raise e
                     
                     # Exponential backoff with jitter
@@ -28,8 +28,6 @@ def retry_with_backoff(max_retries=3, base_delay=1.0, max_delay=60.0):
                     time.sleep(delay + jitter)
                     
                     logger.warning(f"Retry {retries}/{max_retries} after error: {str(e)}")
-            
-            return func(*args, **kwargs)
         return wrapper
     return decorator
 

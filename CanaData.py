@@ -16,7 +16,10 @@ import threading
 from concurrent_processor import ConcurrentMenuProcessor
 from cache_manager import CacheManager
 from cached_api_client import CachedAPIClient
-from optimized_data_processor import OptimizedDataProcessor
+try:
+    from optimized_data_processor import OptimizedDataProcessor
+except ImportError:
+    OptimizedDataProcessor = None
 
 # Load environment variables
 load_dotenv()
@@ -102,7 +105,7 @@ class CanaData:
         # List of total flattened locations
         self.totalLocations: List[Dict[str, Any]] = []
         # List of States with No locations
-        self.unFriendlyStates: List[str] = []
+        self.empty_states: List[str] = []
         # Set to True if there are no locations
         self.NonGreenState: bool = False
         # Sets whether or not we grab the slugs for the search
@@ -144,9 +147,11 @@ class CanaData:
             
         # Data processing optimization
         self.optimize_processing = optimize_processing
-        if optimize_processing:
+        if optimize_processing and OptimizedDataProcessor:
             self.data_processor = OptimizedDataProcessor(max_workers=max_workers)
         else:
+            if optimize_processing:
+                logger.warning("Optimized processing requested but module not available")
             self.data_processor = None
 
     def do_request(self, url, use_cache: bool = True):
@@ -275,7 +280,7 @@ class CanaData:
                 if self.maxLocations == 0:
                         logger.warning(f"Found no locations for the state: {self.searchSlug}")
                         if self.searchSlug:
-                            self.unFriendlyStates.append(self.searchSlug)
+                            self.empty_states.append(self.searchSlug)
                         self.NonGreenState = True
                         break
 
@@ -972,13 +977,13 @@ class CanaData:
         self.extractedStrains = {}
 
 
-    def identifyNaughtyStates(self) -> None:
+    def identify_empty_states(self) -> None:
         """
         Print a summary of slugs that returned no results.
         """
-        if len(self.unFriendlyStates) > 0:
+        if len(self.empty_states) > 0:
             # Ensure all items are strings
-            slugs = [str(s) for s in self.unFriendlyStates]
+            slugs = [str(s) for s in self.empty_states]
             print(f'\nThese States were found to have 0 listings!\n{", ".join(slugs)}')
 
     def identifyDataTypes(self) -> None:
@@ -1037,7 +1042,7 @@ class CanaData:
         self.resetDataSets()
 
     def identify_naughty_states(self) -> None:
-        self.identifyNaughtyStates()
+        self.identify_empty_states()
 
     def identify_data_types(self) -> None:
         self.identifyDataTypes()
@@ -1166,4 +1171,4 @@ if __name__ == '__main__':
             # Reset the self variables to avoid using old data from other states/slugs
             cana.resetDataSets()
     # Print out the list of Non-Cannabis friendly states
-    cana.identifyNaughtyStates()
+    cana.identify_empty_states()
