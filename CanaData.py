@@ -16,7 +16,10 @@ import threading
 from concurrent_processor import ConcurrentMenuProcessor
 from cache_manager import CacheManager
 from cached_api_client import CachedAPIClient
-from optimized_data_processor import OptimizedDataProcessor
+try:
+    from optimized_data_processor import OptimizedDataProcessor
+except ImportError:
+    OptimizedDataProcessor = None
 
 # Load environment variables
 load_dotenv()
@@ -99,6 +102,8 @@ class CanaData:
         self.allMenuItems: Dict[str, List[Dict[str, Any]]] = {}
         # List of flattened menu items
         self.finishedMenuItems: List[Dict[str, str]] = []
+        # Headers for menu items CSV
+        self.menuItemHeaders: List[str] = []
         # List of total flattened locations
         self.totalLocations: List[Dict[str, Any]] = []
         # List of States with No locations
@@ -144,9 +149,11 @@ class CanaData:
             
         # Data processing optimization
         self.optimize_processing = optimize_processing
-        if optimize_processing:
+        if optimize_processing and OptimizedDataProcessor:
             self.data_processor = OptimizedDataProcessor(max_workers=max_workers)
         else:
+            if optimize_processing:
+                logger.warning("OptimizedDataProcessor not available (pandas missing?), falling back to standard processing.")
             self.data_processor = None
 
     def do_request(self, url, use_cache: bool = True):
@@ -736,23 +743,12 @@ class CanaData:
         for item in flatDictList:
             all_keys_set.update(item.keys())
         
-        all_keys = sorted(list(all_keys_set))
+        # Store sorted keys for CSV header (used by csv_maker)
+        self.menuItemHeaders = sorted(list(all_keys_set))
 
-        # This list will house all data after each key has been filled out
-        ready_list = []
-
-        # Loop through the flatDictList to update any missing keys
-        for item in flatDictList:
-            # Create a dictionary with all keys initialized to 'None'
-            flat_ordered_dict = {key: 'None' for key in all_keys}
-            # Update with actual values, converting to string
-            for key, value in item.items():
-                flat_ordered_dict[key] = str(value)
-            
-            ready_list.append(flat_ordered_dict)
-
-        # Replace our finished menu items list with our flat, ordered, dictionary list
-        self.finishedMenuItems = ready_list
+        # Assign the sparse list directly to finishedMenuItems
+        # We skip the O(N*M) expansion step and rely on csv.DictWriter in csv_maker
+        self.finishedMenuItems = flatDictList
 
     def flatten_dictionary(self, d: Dict[str, Any]) -> Dict[str, str]:
         """
@@ -832,17 +828,18 @@ class CanaData:
         # Set searchSlug to City/State provided
         self.searchSlug = search
 
-    def csv_maker(self, filename: str, data: List[Dict[str, Any]], preorganized: bool = False) -> None:
+    def csv_maker(self, filename: str, data: List[Dict[str, Any]], preorganized: bool = False, headers: List[str] = None) -> None:
         """
         Export a list of dictionaries to a CSV file with timestamp.
         
         Creates a dated folder (CanaData_MM-DD-YYYY) and writes the data
-        to a CSV file with headers from the first dictionary's keys.
+        to a CSV file with headers from the first dictionary's keys or provided headers.
         
         Args:
             filename (str): Base name for the CSV file (without extension)
-            data (list): List of dictionaries with uniform keys
+            data (list): List of dictionaries
             preorganized (bool): Unused parameter (legacy)
+            headers (list): Optional list of column headers (keys)
             
         Side Effects:
             - Creates CanaData_[date] folder if it doesn't exist
@@ -850,8 +847,8 @@ class CanaData:
             - Prints success message with item count
             
         File Format:
-            - First row: column headers (dictionary keys)
-            - Subsequent rows: dictionary values in same order
+            - First row: column headers
+            - Subsequent rows: dictionary values
             - UTF-8 encoding for special characters
         """
         today = datetime.today().strftime('%m-%d-%Y')
@@ -871,19 +868,22 @@ class CanaData:
 
         # Create CSV file as outfile
         with open(f'{home_dir}/{filename}.csv', 'w', newline='', encoding='utf-8') as outfile:
-            # Setup csv writer with file
-            output = csv.writer(outfile)
+            # Determine headers
+            if headers:
+                fieldnames = headers
+            else:
+                # Fallback to keys from first item (legacy behavior)
+                fieldnames = list(data[0].keys())
 
-            # Row 1 Keys = first item in list's keys
-            all_keys = list(data[0].keys())
+            # Setup csv DictWriter with file
+            # restval='None' fills missing keys with 'None', matching legacy behavior
+            output = csv.DictWriter(outfile, fieldnames=fieldnames, restval='None')
 
-            # Write row of keys
-            output.writerow(all_keys)
+            # Write header
+            output.writeheader()
 
-            # Loop through the dataset
-            for row in data:
-                # Write row of item's values
-                output.writerow(row.values())
+            # Write all rows at once
+            output.writerows(data)
 
             # Print visual notification of finished export & number of items seen
             print(f'Successfully exported ({str(len(data))} items) to CSV -> {filename}.csv')
@@ -906,7 +906,7 @@ class CanaData:
 
         # Attempt detailed results export
         try:
-            self.csv_maker(f'{self.searchSlug}_results', self.finishedMenuItems)
+            self.csv_maker(f'{self.searchSlug}_results', self.finishedMenuItems, headers=self.menuItemHeaders)
         except Exception as e:
             print(f'Error: {str(e)}')
             print('^^ Probably were no actual items (if error says \'list index out of range\')')
@@ -962,6 +962,7 @@ class CanaData:
         self.locations = []
         self.allMenuItems = {}
         self.finishedMenuItems = []
+        self.menuItemHeaders = []
         self.totalLocations = []
         
         # We don't reset brands and strains here as they are global metadata
