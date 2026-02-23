@@ -17,6 +17,7 @@ from concurrent_processor import ConcurrentMenuProcessor
 from cache_manager import CacheManager
 from cached_api_client import CachedAPIClient
 from optimized_data_processor import OptimizedDataProcessor
+from config import CanaConfig
 
 # Load environment variables
 load_dotenv()
@@ -65,18 +66,22 @@ class CanaData:
     """
     def __init__(
         self,
-        max_workers: int = 10,
-        rate_limit: float = 1.0,
-        cache_enabled: bool = True,
-        optimize_processing: bool = True,
+        max_workers: Optional[int] = None,
+        rate_limit: Optional[float] = None,
+        cache_enabled: Optional[bool] = None,
+        optimize_processing: Optional[bool] = None,
         interactive_mode: bool = True,
+        config: Optional[CanaConfig] = None,
     ):
+        # Configuration
+        self.config = config or CanaConfig()
+
         # Where the Magic happens
-        self.baseUrl: str = os.getenv('WEEDMAPS_BASE_URL', 'https://api-g.weedmaps.com/discovery/v1/listings')
-        self.brandsBaseUrl: str = os.getenv('WEEDMAPS_BRANDS_URL', 'https://api-g.weedmaps.com/discovery/v1/brands')
-        self.strainsBaseUrl: str = os.getenv('WEEDMAPS_STRAINS_URL', 'https://api-g.weedmaps.com/discovery/v1/strains')
+        self.baseUrl: str = self.config.weedmaps_base_url
+        self.brandsBaseUrl: str = self.config.brands_base_url
+        self.strainsBaseUrl: str = self.config.strains_base_url
         # Pagination & Page size
-        self.pageSize: str = f"&page_size={os.getenv('PAGE_SIZE', '100')}&size={os.getenv('PAGE_SIZE', '100')}"
+        self.pageSize: str = self.config.pagination_params
         # Populated with the City/State Slug
         self.searchSlug: Optional[str] = None
         # Set to True if we are grabbing storefronts
@@ -115,8 +120,8 @@ class CanaData:
         self.strainsFound: int = 0
         
         # Concurrent processing configuration
-        self.max_workers = max_workers
-        self.rate_limit = rate_limit
+        self.max_workers = max_workers if max_workers is not None else self.config.max_workers
+        self.rate_limit = rate_limit if rate_limit is not None else self.config.rate_limit
         self._menu_data_lock = threading.Lock()
         self.default_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
@@ -128,14 +133,13 @@ class CanaData:
         self.interactive_mode = interactive_mode
         
         # Caching configuration
-        self.cache_enabled = cache_enabled
-        if cache_enabled:
-            cache_ttl = int(os.getenv('CACHE_TTL', 3600))
+        self.cache_enabled = cache_enabled if cache_enabled is not None else self.config.cache_enabled
+        if self.cache_enabled:
             self.cache_manager = CacheManager(
-                memory_cache_size=int(os.getenv('MEMORY_CACHE_SIZE', 2000)),
-                memory_cache_ttl=cache_ttl,
-                disk_cache_ttl=cache_ttl * 6,  # Disk cache lasts longer
-                enable_disk_cache=os.getenv('ENABLE_DISK_CACHE', 'true').lower() == 'true'
+                memory_cache_size=self.config.memory_cache_size,
+                memory_cache_ttl=self.config.cache_ttl,
+                disk_cache_ttl=self.config.cache_ttl * 6,  # Disk cache lasts longer
+                enable_disk_cache=self.config.enable_disk_cache
             )
             self.api_client = CachedAPIClient(self.cache_manager)
         else:
@@ -143,9 +147,9 @@ class CanaData:
             self.api_client = None
             
         # Data processing optimization
-        self.optimize_processing = optimize_processing
-        if optimize_processing:
-            self.data_processor = OptimizedDataProcessor(max_workers=max_workers)
+        self.optimize_processing = optimize_processing if optimize_processing is not None else self.config.optimize_processing
+        if self.optimize_processing:
+            self.data_processor = OptimizedDataProcessor(max_workers=self.max_workers)
         else:
             self.data_processor = None
 
@@ -315,7 +319,7 @@ class CanaData:
             return
 
         # Check if we should use concurrent processing
-        use_concurrent = os.getenv('USE_CONCURRENT_PROCESSING', 'false').lower() == 'true'
+        use_concurrent = self.config.use_concurrent_processing
         
         if use_concurrent:
             self._getMenusConcurrent()
@@ -337,10 +341,9 @@ class CanaData:
         logger.info(f"Processing {len(self.locations)} locations concurrently...")
         
         # Create processor with configuration from environment or defaults
-        max_workers = int(os.getenv('MAX_WORKERS', self.max_workers))
-        rate_limit = float(os.getenv('RATE_LIMIT', self.rate_limit))
+        # We use self.max_workers and self.rate_limit which are already initialized with config/args
         
-        processor = ConcurrentMenuProcessor(max_workers=max_workers, rate_limit=rate_limit)
+        processor = ConcurrentMenuProcessor(max_workers=self.max_workers, rate_limit=self.rate_limit)
         
         # Define the processing function for a single location
         def process_location_menu(location):
@@ -398,7 +401,7 @@ class CanaData:
     def _fetch_discovery_menu_items(self, location_slug: str, listing_path_type: str) -> Optional[Dict[str, Any]]:
         """Fetch paginated menu items from discovery endpoint."""
         page = 1
-        page_size = int(os.getenv('MENU_PAGE_SIZE', 100))
+        page_size = self.config.menu_page_size
         all_items: List[Dict[str, Any]] = []
         meta: Dict[str, Any] = {}
 

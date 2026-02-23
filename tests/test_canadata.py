@@ -1,6 +1,16 @@
 import pytest
 import concurrent.futures
 from CanaData import CanaData
+from config import CanaConfig
+
+def test_init_with_config():
+    config = CanaConfig()
+    config.weedmaps_base_url = 'https://test.api.weedmaps.com'
+    config.max_workers = 20
+
+    cana = CanaData(config=config)
+    assert cana.baseUrl == 'https://test.api.weedmaps.com'
+    assert cana.max_workers == 20
 
 def test_flatten_dictionary_simple():
     cana = CanaData()
