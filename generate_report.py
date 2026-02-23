@@ -11,12 +11,12 @@ consumer-facing HTML report. It uses a modern, "Glassmorphism" design aesthetic
 to present cannabis listing data in a visually appealing way.
 """
 
-def generate_html_report(data, region_name="Colorado"):
+def generate_html_report(data, region_name="Colorado", filename="listing_report.html"):
     """
     Generates a premium HTML report from Weedmaps listing data.
     
     This function takes the raw JSON response from the Weedmaps discovery API and
-    transforms it into a standalone HTML file (`listing_report.html`).
+    transforms it into a standalone HTML file.
     
     The report features:
     - **Glassmorphism Design**: Translucent cards, blurred backgrounds, and neon accents.
@@ -27,9 +27,10 @@ def generate_html_report(data, region_name="Colorado"):
     Args:
         data (dict): The raw JSON dictionary returned by `CanaData.do_request`.
         region_name (str): The display name for the region header (default: "Colorado").
+        filename (str): The output filename (default: "listing_report.html").
         
     Output:
-        Creates a file named `listing_report.html` in the current working directory.
+        Creates a file named `listing_report.html` (or specified filename) in the current working directory.
     """
     listings = data.get('data', {}).get('listings', [])
     meta = data.get('meta', {})
@@ -47,6 +48,31 @@ def generate_html_report(data, region_name="Colorado"):
         --accent: #f59e0b;
         --glass: rgba(255, 255, 255, 0.05);
         --glass-border: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Accessibility & UX Enhancements */
+    .skip-link {
+        position: absolute;
+        top: -100px;
+        left: 0;
+        background: var(--primary);
+        color: var(--bg);
+        padding: 0.8rem 1.5rem;
+        z-index: 100;
+        text-decoration: none;
+        font-weight: bold;
+        border-radius: 0 0 12px 0;
+        transition: top 0.3s ease;
+    }
+
+    .skip-link:focus {
+        top: 0;
+    }
+
+    :focus-visible {
+        outline: 3px solid var(--secondary);
+        outline-offset: 4px;
+        border-radius: 4px;
     }
 
     * {
@@ -178,6 +204,8 @@ def generate_html_report(data, region_name="Colorado"):
     .label {
         color: var(--text-muted);
         width: 140px;
+        text-align: left;
+        font-weight: 400;
     }
 
     .value {
@@ -252,13 +280,14 @@ def generate_html_report(data, region_name="Colorado"):
         <style>{css}</style>
     </head>
     <body>
+        <a href="#main-content" class="skip-link">Skip to content</a>
         <div class="container">
             <header>
                 <h1>{region_name} Discovery</h1>
                 <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
             </header>
 
-            <div class="listing-grid">
+            <div class="listing-grid" id="main-content">
     """
 
     for item in listings:
@@ -282,7 +311,7 @@ def generate_html_report(data, region_name="Colorado"):
         html_content += f"""
                 <div class="card">
                     <div class="card-header">
-                        <img src="{avatar}" alt="{item.get('name')}" class="avatar">
+                        <img src="{avatar}" alt="{item.get('name')} logo" class="avatar" loading="lazy">
                         <div class="listing-info">
                             <h2>{item.get('name')}</h2>
                             <span class="badge badge-type">{item.get('type')}</span>
@@ -293,23 +322,23 @@ def generate_html_report(data, region_name="Colorado"):
                     <div class="card-body">
                         <table class="data-table">
                             <tr>
-                                <td class="label">Address</td>
+                                <th scope="row" class="label">Address</th>
                                 <td class="value">{item.get('address', 'N/A')}</td>
                             </tr>
                             <tr>
-                                <td class="label">City</td>
+                                <th scope="row" class="label">City</th>
                                 <td class="value">{item.get('city', 'N/A')}</td>
                             </tr>
                             <tr>
-                                <td class="label">Hours Today</td>
+                                <th scope="row" class="label">Hours Today</th>
                                 <td class="value">{item.get('todays_hours_str', 'N/A')}</td>
                             </tr>
                             <tr>
-                                <td class="label">Phone</td>
+                                <th scope="row" class="label">Phone</th>
                                 <td class="value">{item.get('phone_number', 'N/A')}</td>
                             </tr>
                             <tr>
-                                <td class="label">Menu Items</td>
+                                <th scope="row" class="label">Menu Items</th>
                                 <td class="value">{item.get('menu_items_count', 0)} items</td>
                             </tr>
                         </table>
@@ -317,7 +346,7 @@ def generate_html_report(data, region_name="Colorado"):
                     </div>
                     <div class="footer-actions">
                         <span style="font-size: 0.8rem; color: var(--text-muted)">{item.get('license_type', 'Recreational')}</span>
-                        <a href="{item.get('web_url')}" target="_blank" class="btn btn-primary">View on Weedmaps</a>
+                        <a href="{item.get('web_url')}" target="_blank" class="btn btn-primary" aria-label="View {item.get('name')} on Weedmaps (opens in new tab)">View on Weedmaps</a>
                     </div>
                 </div>
         """
@@ -329,10 +358,10 @@ def generate_html_report(data, region_name="Colorado"):
     </html>
     """
     
-    with open('listing_report.html', 'w', encoding='utf-8') as f:
+    with open(filename, 'w', encoding='utf-8') as f:
         f.write(html_content)
     
-    print(f"✅ Success! Report generated: {os.path.abspath('listing_report.html')}")
+    print(f"✅ Success! Report generated: {os.path.abspath(filename)}")
 
 if __name__ == "__main__":
     print("🚀 Fetching live data for Colorado...")
