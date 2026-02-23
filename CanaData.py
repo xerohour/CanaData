@@ -731,28 +731,10 @@ class CanaData:
                 # Add the flat dataset to our flatDictList
                 flatDictList.append(flatData)
 
-        # This set will collect all possible keys
-        all_keys_set = set()
-        for item in flatDictList:
-            all_keys_set.update(item.keys())
-        
-        all_keys = sorted(list(all_keys_set))
-
-        # This list will house all data after each key has been filled out
-        ready_list = []
-
-        # Loop through the flatDictList to update any missing keys
-        for item in flatDictList:
-            # Create a dictionary with all keys initialized to 'None'
-            flat_ordered_dict = {key: 'None' for key in all_keys}
-            # Update with actual values, converting to string
-            for key, value in item.items():
-                flat_ordered_dict[key] = str(value)
-            
-            ready_list.append(flat_ordered_dict)
-
-        # Replace our finished menu items list with our flat, ordered, dictionary list
-        self.finishedMenuItems = ready_list
+        # Replace our finished menu items list with our flat dictionary list
+        # Since csv_maker now handles sparse data using DictWriter, we don't need
+        # to manually pad dictionaries with 'None' values.
+        self.finishedMenuItems = flatDictList
 
     def flatten_dictionary(self, d: Dict[str, Any]) -> Dict[str, str]:
         """
@@ -837,11 +819,11 @@ class CanaData:
         Export a list of dictionaries to a CSV file with timestamp.
         
         Creates a dated folder (CanaData_MM-DD-YYYY) and writes the data
-        to a CSV file with headers from the first dictionary's keys.
+        to a CSV file with headers from the union of all dictionaries' keys.
         
         Args:
             filename (str): Base name for the CSV file (without extension)
-            data (list): List of dictionaries with uniform keys
+            data (list): List of dictionaries (can be sparse/ragged)
             preorganized (bool): Unused parameter (legacy)
             
         Side Effects:
@@ -850,8 +832,9 @@ class CanaData:
             - Prints success message with item count
             
         File Format:
-            - First row: column headers (dictionary keys)
-            - Subsequent rows: dictionary values in same order
+            - First row: column headers (all unique keys found in data)
+            - Subsequent rows: dictionary values
+            - Missing keys filled with 'None'
             - UTF-8 encoding for special characters
         """
         today = datetime.today().strftime('%m-%d-%Y')
@@ -869,21 +852,24 @@ class CanaData:
             print(f'No data to export for {filename}.csv')
             return
 
+        # Collect all unique keys to handle sparse data correctly
+        all_keys = set()
+        for row in data:
+            all_keys.update(row.keys())
+
+        fieldnames = sorted(list(all_keys))
+
         # Create CSV file as outfile
         with open(f'{home_dir}/{filename}.csv', 'w', newline='', encoding='utf-8') as outfile:
-            # Setup csv writer with file
-            output = csv.writer(outfile)
+            # Setup csv DictWriter with file
+            # restval='None' ensures missing keys are filled with 'None' string
+            writer = csv.DictWriter(outfile, fieldnames=fieldnames, restval='None')
 
-            # Row 1 Keys = first item in list's keys
-            all_keys = list(data[0].keys())
+            # Write header
+            writer.writeheader()
 
-            # Write row of keys
-            output.writerow(all_keys)
-
-            # Loop through the dataset
-            for row in data:
-                # Write row of item's values
-                output.writerow(row.values())
+            # Write data rows
+            writer.writerows(data)
 
             # Print visual notification of finished export & number of items seen
             print(f'Successfully exported ({str(len(data))} items) to CSV -> {filename}.csv')
