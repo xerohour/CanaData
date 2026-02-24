@@ -1,5 +1,6 @@
 import requests
 import json
+import re
 import csv
 import logging
 import os
@@ -827,6 +828,20 @@ class CanaData:
                 stack.pop()
         return result
 
+    def _sanitize_filename(self, filename: str) -> str:
+        """
+        Sanitize filename to prevent path traversal and ensure valid characters.
+
+        Args:
+            filename (str): The filename to sanitize.
+
+        Returns:
+            str: Sanitized filename containing only alphanumeric, underscore, dash, and dot.
+        """
+        # Remove any character that is not alphanumeric, underscore, dash, or dot
+        # This effectively removes slashes (preventing traversal) and other unsafe chars
+        return re.sub(r'[^a-zA-Z0-9_\-\.]', '', filename)
+
     # Function recieves a city name and sets to searchSlug
     def setCitySlug(self, search: str) -> None:
         # Set searchSlug to City/State provided
@@ -870,7 +885,8 @@ class CanaData:
             return
 
         # Create CSV file as outfile
-        with open(f'{home_dir}/{filename}.csv', 'w', newline='', encoding='utf-8') as outfile:
+        sanitized_filename = self._sanitize_filename(filename)
+        with open(f'{home_dir}/{sanitized_filename}.csv', 'w', newline='', encoding='utf-8') as outfile:
             # Setup csv writer with file
             output = csv.writer(outfile)
 
@@ -886,7 +902,7 @@ class CanaData:
                 output.writerow(row.values())
 
             # Print visual notification of finished export & number of items seen
-            print(f'Successfully exported ({str(len(data))} items) to CSV -> {filename}.csv')
+            print(f'Successfully exported ({str(len(data))} items) to CSV -> {sanitized_filename}.csv')
 
     def dataToCSV(self) -> None:
         """
