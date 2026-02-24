@@ -1046,36 +1046,62 @@ class CanaData:
         self.TestMode()
 
 
-if __name__ == '__main__':
+def main():
     # Initiate the Library
     cana = CanaData()
 
     # This is where we end pu putting our list of items. Replaced with a list of search slugs -> []
     searchSlugs = None
 
+    script_dir = ospath.dirname(ospath.abspath(__file__))
+
     try:
         # Grab list of States from local file
-        allStatesSlugs = [line.rstrip('\n').lower().replace(' ', '-') for line in open('states.txt')]  # Updated by Manually through magic
+        with open(ospath.join(script_dir, 'states.txt')) as f:
+            allStatesSlugs = [line.rstrip('\n').lower().replace(' ', '-') for line in f]  # Updated by Manually through magic
     except Exception as e:
         print('Looks like no states.txt file! No biggy, just cant use the all option!')
+        allStatesSlugs = []
 
     try:
         # Grab list of known Cities from local file
-        knownSlugs = [line.rstrip('\n').lower().replace(' ', '-') for line in open('slugs.txt')]
+        with open(ospath.join(script_dir, 'slugs.txt')) as f:
+            knownSlugs = [line.rstrip('\n').lower().replace(' ', '-') for line in f]
     except Exception as e:
         print('Looks like no slugs.txt file! No biggy, just cant use the slugs option!')
+        knownSlugs = []
 
     try:
         # Grab list of known Cities from local file
-        mySlugList = [line.rstrip('\n').lower().replace(' ', '-') for line in open('mylist.txt')]  # Updated by Manually through magic
+        with open(ospath.join(script_dir, 'mylist.txt')) as f:
+            mySlugList = [line.rstrip('\n').lower().replace(' ', '-') for line in f]  # Updated by Manually through magic
     except Exception as e:
         print('Looks like no mylist.txt file! No biggy, just cant use the mylist option!')
+        mySlugList = []
 
     # Argument list
     argList = list(argv)
 
     if '-tshoot' in argList:
         cana.TestMode()
+
+    # Check if we should only grab metadata
+    metadata_only = (
+        ('-brands' in argList or '-strains' in argList)
+        and '-leafly' not in argList
+        and '-cannmenus' not in argList
+        and '-go' not in argList
+    )
+
+    if metadata_only:
+        # Global data fetch (if requested)
+        if '-brands' in argList:
+            cana.getBrands()
+        if '-strains' in argList:
+            cana.getStrains()
+        cana.setCitySlug('global')
+        cana.dataToCSV()
+        return
 
     # Check if arguments were passed
     if len(argList) > 1:
@@ -1126,44 +1152,39 @@ if __name__ == '__main__':
     # This Loop fires no matter what to process all search slugs provided either manually or through a .txt file!
     # Fun functions against them all!
     
-    # Global data fetch (if requested)
+    # Global data fetch (if requested) - also handled above for metadata_only case
+    # But we keep it here for mixed cases (e.g. brands + scraping)
     if '-brands' in argList:
         cana.getBrands()
     if '-strains' in argList:
         cana.getStrains()
 
-    metadata_only = (
-        ('-brands' in argList or '-strains' in argList)
-        and '-leafly' not in argList
-        and '-cannmenus' not in argList
-    )
+    if searchSlugs:
+        for slug in searchSlugs:
+            if len(slug) > 0:
+                # Visual queue of starting a state
+                print(f'\n\nStarting on {slug}')
+                # Set our searchSlug to the State we are working on
+                cana.setCitySlug(slug)
 
-    if metadata_only:
-        cana.setCitySlug('global')
-        cana.dataToCSV()
-        raise SystemExit(0)
+                if '-leafly' in argList:
+                    cana.getLeaflyData()
+                elif '-cannmenus' in argList:
+                    cana.getCannMenusData()
+                else:
+                    # Default to Weedmaps
+                    # Get the locations for the given slug
+                    cana.getLocations()
+                    # Get the Menus for the locations found
+                    cana.getMenus()
 
-    for slug in searchSlugs:
-        if len(slug) > 0:
-            # Visual queue of starting a state
-            print(f'\n\nStarting on {slug}')
-            # Set our searchSlug to the State we are working on
-            cana.setCitySlug(slug)
-            
-            if '-leafly' in argList:
-                cana.getLeaflyData()
-            elif '-cannmenus' in argList:
-                cana.getCannMenusData()
-            else:
-                # Default to Weedmaps
-                # Get the locations for the given slug
-                cana.getLocations()
-                # Get the Menus for the locations found
-                cana.getMenus()
-            
-            # Convert our Datasets to CSV's (1 for Menu Items & 1 for Listing Info)
-            cana.dataToCSV()
-            # Reset the self variables to avoid using old data from other states/slugs
-            cana.resetDataSets()
+                # Convert our Datasets to CSV's (1 for Menu Items & 1 for Listing Info)
+                cana.dataToCSV()
+                # Reset the self variables to avoid using old data from other states/slugs
+                cana.resetDataSets()
     # Print out the list of Non-Cannabis friendly states
     cana.identifyNaughtyStates()
+
+
+if __name__ == '__main__':
+    main()
