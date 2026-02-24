@@ -5,3 +5,4 @@ python-dotenv>=1.0.0
 pytest
 responses
 apify-client
+pandas
