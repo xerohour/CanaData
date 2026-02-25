@@ -3,6 +3,7 @@ import json
 import csv
 import logging
 import os
+import re
 import subprocess
 from datetime import datetime
 from os import path as ospath
@@ -832,6 +833,19 @@ class CanaData:
         # Set searchSlug to City/State provided
         self.searchSlug = search
 
+    def _sanitize_filename(self, filename: str) -> str:
+        """
+        Sanitize filename to prevent path traversal and ensure safe characters.
+        """
+        # Remove path separators
+        filename = ospath.basename(filename)
+        # Allow only alphanumeric, dashes, underscores, and dots
+        filename = re.sub(r'[^a-zA-Z0-9_\-\.]', '', filename)
+        # Ensure it's not empty
+        if not filename:
+            filename = 'unknown_export'
+        return filename
+
     def csv_maker(self, filename: str, data: List[Dict[str, Any]], preorganized: bool = False) -> None:
         """
         Export a list of dictionaries to a CSV file with timestamp.
@@ -854,6 +868,9 @@ class CanaData:
             - Subsequent rows: dictionary values in same order
             - UTF-8 encoding for special characters
         """
+        # Sanitize the filename to prevent path traversal
+        filename = self._sanitize_filename(filename)
+
         today = datetime.today().strftime('%m-%d-%Y')
         # Variable on where to save the file
         home_dir = f'{path[0]}/CanaData_{today}'
