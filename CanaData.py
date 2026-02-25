@@ -17,6 +17,7 @@ from concurrent_processor import ConcurrentMenuProcessor
 from cache_manager import CacheManager
 from cached_api_client import CachedAPIClient
 from optimized_data_processor import OptimizedDataProcessor
+from csv_exporter import CSVExporter
 
 # Load environment variables
 load_dotenv()
@@ -148,6 +149,10 @@ class CanaData:
             self.data_processor = OptimizedDataProcessor(max_workers=max_workers)
         else:
             self.data_processor = None
+
+        # Initialize CSV Exporter
+        # Default to current directory if path[0] is unavailable/unreliable, but stick to path[0] as per original logic
+        self.csv_exporter = CSVExporter(path[0])
 
     def do_request(self, url, use_cache: bool = True):
         """
@@ -832,62 +837,6 @@ class CanaData:
         # Set searchSlug to City/State provided
         self.searchSlug = search
 
-    def csv_maker(self, filename: str, data: List[Dict[str, Any]], preorganized: bool = False) -> None:
-        """
-        Export a list of dictionaries to a CSV file with timestamp.
-        
-        Creates a dated folder (CanaData_MM-DD-YYYY) and writes the data
-        to a CSV file with headers from the first dictionary's keys.
-        
-        Args:
-            filename (str): Base name for the CSV file (without extension)
-            data (list): List of dictionaries with uniform keys
-            preorganized (bool): Unused parameter (legacy)
-            
-        Side Effects:
-            - Creates CanaData_[date] folder if it doesn't exist
-            - Writes CSV file to that folder
-            - Prints success message with item count
-            
-        File Format:
-            - First row: column headers (dictionary keys)
-            - Subsequent rows: dictionary values in same order
-            - UTF-8 encoding for special characters
-        """
-        today = datetime.today().strftime('%m-%d-%Y')
-        # Variable on where to save the file
-        home_dir = f'{path[0]}/CanaData_{today}'
-
-        # Check if the folder exists
-        if not ospath.exists(home_dir):
-            # If not exist, create
-            makedirs(home_dir)
-
-        # Handle empty data case
-        if not data:
-            logger.warning(f"No data to export for {filename}.csv")
-            print(f'No data to export for {filename}.csv')
-            return
-
-        # Create CSV file as outfile
-        with open(f'{home_dir}/{filename}.csv', 'w', newline='', encoding='utf-8') as outfile:
-            # Setup csv writer with file
-            output = csv.writer(outfile)
-
-            # Row 1 Keys = first item in list's keys
-            all_keys = list(data[0].keys())
-
-            # Write row of keys
-            output.writerow(all_keys)
-
-            # Loop through the dataset
-            for row in data:
-                # Write row of item's values
-                output.writerow(row.values())
-
-            # Print visual notification of finished export & number of items seen
-            print(f'Successfully exported ({str(len(data))} items) to CSV -> {filename}.csv')
-
     def dataToCSV(self) -> None:
         """
         Main entry point for triggering CSV generation.
@@ -906,14 +855,14 @@ class CanaData:
 
         # Attempt detailed results export
         try:
-            self.csv_maker(f'{self.searchSlug}_results', self.finishedMenuItems)
+            self.csv_exporter.export(f'{self.searchSlug}_results', self.finishedMenuItems)
         except Exception as e:
             print(f'Error: {str(e)}')
             print('^^ Probably were no actual items (if error says \'list index out of range\')')
 
         # Attempt high-level listings export
         try:
-            self.csv_maker(f'{self.searchSlug}_total_listings', self.totalLocations)
+            self.csv_exporter.export(f'{self.searchSlug}_total_listings', self.totalLocations)
         except Exception as e:
             print(f'Error: {str(e)}')
             print('^^ Musta been a bad search query? (if error says \'list index out of range\')')
@@ -921,14 +870,14 @@ class CanaData:
         # Attempt Brands export
         if self.brands:
             try:
-                self.csv_maker('all_brands', self.brands)
+                self.csv_exporter.export('all_brands', self.brands)
             except Exception as e:
                 print(f'Error exporting brands: {str(e)}')
 
         # Attempt Strains export
         if self.strains:
             try:
-                self.csv_maker('all_strains', self.strains)
+                self.csv_exporter.export('all_strains', self.strains)
             except Exception as e:
                 print(f'Error exporting strains: {str(e)}')
 
@@ -939,7 +888,7 @@ class CanaData:
                 extracted_list = list(self.extractedStrains.values())
                 # Use current search slug in filename if available
                 filename = f'{self.searchSlug}_extracted_strains' if self.searchSlug else 'extracted_strains'
-                self.csv_maker(filename, extracted_list)
+                self.csv_exporter.export(filename, extracted_list)
                 print(f'- Exported {len(extracted_list)} unique strains found in menus.')
             except Exception as e:
                 print(f'Error exporting extracted strains: {str(e)}')
@@ -1045,8 +994,7 @@ class CanaData:
     def test_mode(self) -> None:
         self.TestMode()
 
-
-if __name__ == '__main__':
+def main():
     # Initiate the Library
     cana = CanaData()
 
@@ -1167,3 +1115,6 @@ if __name__ == '__main__':
             cana.resetDataSets()
     # Print out the list of Non-Cannabis friendly states
     cana.identifyNaughtyStates()
+
+if __name__ == '__main__':
+    main()
