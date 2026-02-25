@@ -43,20 +43,24 @@ class OptimizedDataProcessor:
         """
         Flatten all menu items using pandas json_normalize for efficiency.
         """
-        # Collect all items with location info
-        items_with_location = []
+        # Collect all items and corresponding location IDs without copying dicts
+        all_items = []
+        location_ids = []
+
         for location_id, items in all_menu_items.items():
-            for item in items:
-                item_copy = item.copy()
-                item_copy['_location_id'] = location_id
-                items_with_location.append(item_copy)
+            if items:
+                all_items.extend(items)
+                location_ids.extend([location_id] * len(items))
         
-        if not items_with_location:
+        if not all_items:
             return pd.DataFrame()
         
         # Use pandas json_normalize for efficient flattening
         try:
-            df = pd.json_normalize(items_with_location, sep='.')
+            df = pd.json_normalize(all_items, sep='.')
+
+            # Add location ID column (much faster than copying dicts)
+            df['_location_id'] = location_ids
             
             # Handle any remaining nested structures
             df = self._handle_remaining_nesting(df)
