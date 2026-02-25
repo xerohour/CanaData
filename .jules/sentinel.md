@@ -1,0 +1,4 @@
+## 2026-02-17 - [Path Traversal in CSV Export]
+**Vulnerability:** The application was vulnerable to path traversal because `CanaData.csv_maker` used unsanitized user input (`searchSlug`) as the filename for CSV export. An attacker could provide a slug like `../../evil` to write files outside the intended directory.
+**Learning:** Using user input directly in file paths is a critical risk. Even if the input seems benign (a city slug), it must be sanitized. `os.path.basename` alone is often insufficient if the application logic relies on directory structures, but it's a good first step. Strict allow-listing of characters is safer.
+**Prevention:** Always sanitize filenames derived from user input. Use `os.path.basename` to strip directory components and regex to enforce an allow-list of safe characters (e.g., alphanumeric, dashes, underscores).
