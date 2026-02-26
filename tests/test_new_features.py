@@ -2,7 +2,7 @@ import os
 import logging
 import shutil
 
-from CanaData import CanaData
+from cana_data import CanaData
 from cache_manager import CacheManager
 from optimized_data_processor import OptimizedDataProcessor
 

@@ -1,6 +1,6 @@
 import pytest
 import concurrent.futures
-from CanaData import CanaData
+from cana_data import CanaData
 
 def test_flatten_dictionary_simple():
     cana = CanaData()

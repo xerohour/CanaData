@@ -1,6 +1,6 @@
 import pytest
 import responses
-from CanaData import CanaData
+from cana_data import CanaData
 from CannMenusClient import CannMenusClient
 from LeaflyScraper import scrape_leafly
 import json
