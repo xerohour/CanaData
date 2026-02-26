@@ -55,6 +55,30 @@ def generate_html_report(data, region_name="Colorado"):
         padding: 0;
     }
 
+    /* Accessibility: Skip Link & Focus Styles */
+    .skip-link {
+        position: absolute;
+        top: -100px;
+        left: 1rem;
+        background: var(--primary);
+        color: var(--bg);
+        padding: 0.75rem 1.5rem;
+        border-radius: 0 0 10px 10px;
+        z-index: 1000;
+        font-weight: 700;
+        text-decoration: none;
+        transition: top 0.3s ease;
+    }
+    .skip-link:focus {
+        top: 0;
+        outline: 2px solid var(--secondary);
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: 4px;
+    }
+
     body {
         font-family: 'Outfit', 'Inter', sans-serif;
         background-color: var(--bg);
@@ -252,7 +276,8 @@ def generate_html_report(data, region_name="Colorado"):
         <style>{css}</style>
     </head>
     <body>
-        <div class="container">
+        <a href="#main-content" class="skip-link">Skip to content</a>
+        <div class="container" id="main-content">
             <header>
                 <h1>{region_name} Discovery</h1>
                 <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
@@ -317,7 +342,7 @@ def generate_html_report(data, region_name="Colorado"):
                     </div>
                     <div class="footer-actions">
                         <span style="font-size: 0.8rem; color: var(--text-muted)">{item.get('license_type', 'Recreational')}</span>
-                        <a href="{item.get('web_url')}" target="_blank" class="btn btn-primary">View on Weedmaps</a>
+                        <a href="{item.get('web_url')}" target="_blank" rel="noopener noreferrer" aria-label="View {item.get('name')} on Weedmaps (opens in new tab)" class="btn btn-primary">View on Weedmaps</a>
                     </div>
                 </div>
         """
