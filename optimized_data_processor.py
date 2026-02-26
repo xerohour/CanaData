@@ -43,27 +43,45 @@ class OptimizedDataProcessor:
         """
         Flatten all menu items using pandas json_normalize for efficiency.
         """
-        # Collect all items with location info
-        items_with_location = []
-        for location_id, items in all_menu_items.items():
-            for item in items:
-                item_copy = item.copy()
-                item_copy['_location_id'] = location_id
-                items_with_location.append(item_copy)
-        
-        if not items_with_location:
-            return pd.DataFrame()
-        
-        # Use pandas json_normalize for efficient flattening
         try:
-            df = pd.json_normalize(items_with_location, sep='.')
+            # Optimize: Process batches per location to avoid large-scale dictionary copying
+            dfs = []
+            for location_id, items in all_menu_items.items():
+                if not items:
+                    continue
+
+                # Normalize this batch
+                df = pd.json_normalize(items, sep='.')
+
+                # Assign location_id (vectorized operation)
+                if not df.empty:
+                    df['_location_id'] = location_id
+                    dfs.append(df)
+
+            if not dfs:
+                return pd.DataFrame()
+
+            # Concatenate all dataframes
+            # ignore_index=True resets the index
+            # sort=False prevents sorting columns (performance)
+            df = pd.concat(dfs, ignore_index=True, sort=False)
             
             # Handle any remaining nested structures
             df = self._handle_remaining_nesting(df)
             
             return df
+
         except Exception as e:
             logger.warning(f"Pandas normalization failed, falling back to custom method: {e}")
+
+            # Reconstruct the flat list only if fallback is needed
+            items_with_location = []
+            for location_id, items in all_menu_items.items():
+                for item in items:
+                    item_copy = item.copy()
+                    item_copy['_location_id'] = location_id
+                    items_with_location.append(item_copy)
+
             return self._fallback_flattening(items_with_location)
     
     def _handle_remaining_nesting(self, df: pd.DataFrame) -> pd.DataFrame:
