@@ -1,7 +1,7 @@
 import json
 import os
 from datetime import datetime
-from CanaData import CanaData
+from cana_data import CanaData
 
 """
 HTML Report Generator Module

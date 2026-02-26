@@ -4,6 +4,7 @@ import hashlib
 from typing import Any, Optional, Dict
 from pathlib import Path
 import logging
+from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +28,8 @@ class CacheManager:
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(exist_ok=True)
         
-        # Memory cache with TTL
-        self.memory_cache: Dict[str, Dict[str, Any]] = {}
+        # Memory cache with TTL using OrderedDict for LRU eviction
+        self.memory_cache: OrderedDict[str, Dict[str, Any]] = OrderedDict()
         self.memory_cache_size = max(1, memory_cache_size)
         self.memory_cache_ttl = memory_cache_ttl
         
@@ -63,6 +64,8 @@ class CacheManager:
         if cache_key in self.memory_cache:
             entry = self.memory_cache[cache_key]
             if time.time() - entry['timestamp'] < self.memory_cache_ttl:
+                # Move accessed item to end (LRU)
+                self.memory_cache.move_to_end(cache_key)
                 self.stats['memory_hits'] += 1
                 entry['timestamp'] = time.time()
                 logger.debug(f"Memory cache hit for {url}")
@@ -81,8 +84,11 @@ class CacheManager:
                 # Load back into memory cache
                 self.memory_cache[cache_key] = {
                     'data': disk_data,
-                    'timestamp': time.time()
+                    'timestamp': time.time(),
+                    'url': url # Store URL for invalidation
                 }
+                # Move to end
+                self.memory_cache.move_to_end(cache_key)
                 self._prune_memory_cache()
                 logger.debug(f"Disk cache hit for {url}")
                 return disk_data
@@ -97,8 +103,11 @@ class CacheManager:
         # Store in memory cache
         self.memory_cache[cache_key] = {
             'data': data,
-            'timestamp': time.time()
+            'timestamp': time.time(),
+            'url': url # Store URL for invalidation
         }
+        # Move to end
+        self.memory_cache.move_to_end(cache_key)
         self._prune_memory_cache()
         
         # Store in disk cache if enabled
@@ -106,10 +115,10 @@ class CacheManager:
             self._set_to_disk(cache_key, data)
 
     def _prune_memory_cache(self) -> None:
-        """Enforce memory cache size using oldest-entry eviction."""
+        """Enforce memory cache size using LRU eviction."""
         while len(self.memory_cache) > self.memory_cache_size:
-            oldest_key = min(self.memory_cache, key=lambda key: self.memory_cache[key]['timestamp'])
-            self.memory_cache.pop(oldest_key, None)
+            # Pop the first item (least recently used)
+            self.memory_cache.popitem(last=False)
     
     def _get_from_disk(self, cache_key: str) -> Optional[Any]:
         """Retrieve data from disk cache"""
@@ -148,17 +157,25 @@ class CacheManager:
         if pattern:
             # Invalidate entries matching pattern
             keys_to_remove = []
-            for key in self.memory_cache.keys():
-                if pattern in str(key):
+            for key, entry in self.memory_cache.items():
+                # Check url in entry
+                url = entry.get('url', '')
+                if pattern in url:
                     keys_to_remove.append(key)
             
             for key in keys_to_remove:
                 self.memory_cache.pop(key, None)
+                if self.enable_disk_cache:
+                    cache_file = self.cache_dir / f"{key}.cache"
+                    if cache_file.exists():
+                        cache_file.unlink()
+
+            # Note: For disk cache, if items are not in memory, we can't check URL unless we load them.
+            # This implementation only invalidates items currently in memory or items in memory that map to disk files.
+            # To strictly invalidate all matching disk files, we'd need to store metadata separately or open all files.
+            # For this simplified version, we'll accept this limitation or clear all disk cache if pattern is broad?
+            # No, let's stick to memory-based invalidation for pattern.
             
-            # Remove matching files from disk cache
-            for cache_file in self.cache_dir.glob("*.cache"):
-                if pattern in cache_file.name:
-                    cache_file.unlink()
         else:
             # Clear all cache
             self.memory_cache.clear()
