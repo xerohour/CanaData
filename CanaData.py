@@ -145,7 +145,11 @@ class CanaData:
         # Data processing optimization
         self.optimize_processing = optimize_processing
         if optimize_processing:
-            self.data_processor = OptimizedDataProcessor(max_workers=max_workers)
+            try:
+                self.data_processor = OptimizedDataProcessor(max_workers=max_workers)
+            except Exception as e:
+                logger.warning(f"Optimized processing unavailable, defaulting to standard processing: {e}")
+                self.data_processor = None
         else:
             self.data_processor = None
 
@@ -721,6 +725,7 @@ class CanaData:
 
         # This is where our flat datasets will reside once finished
         flatDictList = []
+        all_keys_set = set()
 
         # Loop through the Listings
         for listing in listings:
@@ -730,24 +735,23 @@ class CanaData:
                 flatData = self.flatten_dictionary(item)
                 # Add the flat dataset to our flatDictList
                 flatDictList.append(flatData)
-
-        # This set will collect all possible keys
-        all_keys_set = set()
-        for item in flatDictList:
-            all_keys_set.update(item.keys())
+                # Collect keys immediately
+                all_keys_set.update(flatData.keys())
         
         all_keys = sorted(list(all_keys_set))
+        # Create a single template dictionary once
+        default_row = {key: 'None' for key in all_keys}
 
         # This list will house all data after each key has been filled out
         ready_list = []
 
         # Loop through the flatDictList to update any missing keys
         for item in flatDictList:
-            # Create a dictionary with all keys initialized to 'None'
-            flat_ordered_dict = {key: 'None' for key in all_keys}
+            # Copy template row - faster than dict comprehension loop
+            flat_ordered_dict = default_row.copy()
             # Update with actual values, converting to string
-            for key, value in item.items():
-                flat_ordered_dict[key] = str(value)
+            # Using update is faster than individual key assignments
+            flat_ordered_dict.update({k: str(v) for k, v in item.items()})
             
             ready_list.append(flat_ordered_dict)
 
