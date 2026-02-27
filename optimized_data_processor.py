@@ -1,8 +1,12 @@
-import pandas as pd
 import logging
 from typing import List, Dict, Any
 import json
 from concurrent.futures import ThreadPoolExecutor
+
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +17,8 @@ class OptimizedDataProcessor:
     """
     
     def __init__(self, max_workers: int = 4):
+        if pd is None:
+            raise ImportError("Pandas is required for optimized processing.")
         self.max_workers = max_workers
     
     def process_menu_data(self, all_menu_items: Dict[str, List[Dict]]) -> List[Dict[str, Any]]:
@@ -39,7 +45,7 @@ class OptimizedDataProcessor:
         logger.info(f"Processed {len(result)} menu items")
         return result
     
-    def _flatten_all_items(self, all_menu_items: Dict[str, List[Dict]]) -> pd.DataFrame:
+    def _flatten_all_items(self, all_menu_items: Dict[str, List[Dict]]) -> 'pd.DataFrame':
         """
         Flatten all menu items using pandas json_normalize for efficiency.
         """
@@ -66,7 +72,7 @@ class OptimizedDataProcessor:
             logger.warning(f"Pandas normalization failed, falling back to custom method: {e}")
             return self._fallback_flattening(items_with_location)
     
-    def _handle_remaining_nesting(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _handle_remaining_nesting(self, df: 'pd.DataFrame') -> 'pd.DataFrame':
         """
         Handle any remaining nested structures that json_normalize couldn't flatten.
         """
@@ -90,7 +96,7 @@ class OptimizedDataProcessor:
         
         return df
     
-    def _fallback_flattening(self, items: List[Dict]) -> pd.DataFrame:
+    def _fallback_flattening(self, items: List[Dict]) -> 'pd.DataFrame':
         """
         Fallback to custom flattening if pandas fails.
         """
@@ -171,7 +177,7 @@ class OptimizedDataProcessor:
         
         return result
     
-    def _normalize_data(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _normalize_data(self, df: 'pd.DataFrame') -> 'pd.DataFrame':
         """
         Normalize and clean the flattened data.
         """
