@@ -1,4 +1,3 @@
-import json
 import os
 from datetime import datetime
 from CanaData import CanaData
@@ -11,30 +10,31 @@ consumer-facing HTML report. It uses a modern, "Glassmorphism" design aesthetic
 to present cannabis listing data in a visually appealing way.
 """
 
+
 def generate_html_report(data, region_name="Colorado"):
     """
     Generates a premium HTML report from Weedmaps listing data.
-    
+
     This function takes the raw JSON response from the Weedmaps discovery API and
     transforms it into a standalone HTML file (`listing_report.html`).
-    
+
     The report features:
     - **Glassmorphism Design**: Translucent cards, blurred backgrounds, and neon accents.
     - **Responsive Grid**: Automatically adjusts columns based on screen size.
     - **Rich Metadata**: Displays ratings, reviews, open status, and promo codes.
     - **Direct Links**: 'View on Weedmaps' buttons for quick navigation.
-    
+
     Args:
         data (dict): The raw JSON dictionary returned by `CanaData.do_request`.
         region_name (str): The display name for the region header (default: "Colorado").
-        
+
     Output:
         Creates a file named `listing_report.html` in the current working directory.
     """
-    listings = data.get('data', {}).get('listings', [])
-    meta = data.get('meta', {})
-    total_listings = meta.get('total_listings', len(listings))
-    
+    listings = data.get("data", {}).get("listings", [])
+    meta = data.get("meta", {})
+    total_listings = meta.get("total_listings", len(listings))
+
     # Modern CSS with Glasmorphism and Vibrant Colors
     css = """
     :root {
@@ -231,6 +231,30 @@ def generate_html_report(data, region_name="Colorado"):
         box-shadow: 0 0 15px rgba(0, 255, 163, 0.4);
     }
 
+    .btn-primary:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
+    }
+
+    .skip-link {
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--primary);
+        color: var(--bg);
+        padding: 8px;
+        z-index: 100;
+        transition: top 0.2s;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    .skip-link:focus, .skip-link:focus-visible {
+        top: 0;
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
+    }
+
     @media (max-width: 768px) {
         body { padding: 1rem; }
         header { padding: 2rem 1rem; margin-bottom: 2rem; }
@@ -252,40 +276,43 @@ def generate_html_report(data, region_name="Colorado"):
         <style>{css}</style>
     </head>
     <body>
-        <div class="container">
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+        <div class="container" id="main-content">
             <header>
                 <h1>{region_name} Discovery</h1>
-                <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
+                <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime("%b %d, %Y")}</p>
             </header>
 
             <div class="listing-grid">
     """
 
     for item in listings:
-        avatar = item.get('avatar_image', {}).get('original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
-        rating = item.get('rating', 'N/A')
-        reviews = item.get('reviews_count', 0)
-        is_open = item.get('open_now', False)
+        avatar = item.get("avatar_image", {}).get(
+            "original_url", "https://images.weedmaps.com/static/avatar/dispensary.png"
+        )
+        rating = item.get("rating", "N/A")
+        reviews = item.get("reviews_count", 0)
+        is_open = item.get("open_now", False)
         status_text = "Open Now" if is_open else "Closed"
         status_class = "badge-open" if is_open else "badge-closed"
-        
-        promo = item.get('promo_code')
+
+        promo = item.get("promo_code")
         promo_html = ""
         if promo:
             promo_html = f"""
             <div class="promo-section">
-                <div class="promo-title">✨ PROMO: {promo.get('code', 'Special Offer')}</div>
-                <div class="promo-body">{promo.get('title', 'Check website for details')}</div>
+                <div class="promo-title">✨ PROMO: {promo.get("code", "Special Offer")}</div>
+                <div class="promo-body">{promo.get("title", "Check website for details")}</div>
             </div>
             """
 
         html_content += f"""
                 <div class="card">
                     <div class="card-header">
-                        <img src="{avatar}" alt="{item.get('name')}" class="avatar">
+                        <img src="{avatar}" alt="{item.get("name")}" class="avatar">
                         <div class="listing-info">
-                            <h2>{item.get('name')}</h2>
-                            <span class="badge badge-type">{item.get('type')}</span>
+                            <h2>{item.get("name")}</h2>
+                            <span class="badge badge-type">{item.get("type")}</span>
                             <span class="badge badge-rating">★ {rating} ({reviews})</span>
                             <span class="badge {status_class}">{status_text}</span>
                         </div>
@@ -294,30 +321,30 @@ def generate_html_report(data, region_name="Colorado"):
                         <table class="data-table">
                             <tr>
                                 <td class="label">Address</td>
-                                <td class="value">{item.get('address', 'N/A')}</td>
+                                <td class="value">{item.get("address", "N/A")}</td>
                             </tr>
                             <tr>
                                 <td class="label">City</td>
-                                <td class="value">{item.get('city', 'N/A')}</td>
+                                <td class="value">{item.get("city", "N/A")}</td>
                             </tr>
                             <tr>
                                 <td class="label">Hours Today</td>
-                                <td class="value">{item.get('todays_hours_str', 'N/A')}</td>
+                                <td class="value">{item.get("todays_hours_str", "N/A")}</td>
                             </tr>
                             <tr>
                                 <td class="label">Phone</td>
-                                <td class="value">{item.get('phone_number', 'N/A')}</td>
+                                <td class="value">{item.get("phone_number", "N/A")}</td>
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">{item.get('menu_items_count', 0)} items</td>
+                                <td class="value">{item.get("menu_items_count", 0)} items</td>
                             </tr>
                         </table>
                         {promo_html}
                     </div>
                     <div class="footer-actions">
-                        <span style="font-size: 0.8rem; color: var(--text-muted)">{item.get('license_type', 'Recreational')}</span>
-                        <a href="{item.get('web_url')}" target="_blank" class="btn btn-primary">View on Weedmaps</a>
+                        <span style="font-size: 0.8rem; color: var(--text-muted)">{item.get("license_type", "Recreational")}</span>
+                        <a href="{item.get("web_url")}" target="_blank" class="btn btn-primary" aria-label="View {item.get("name")} on Weedmaps">View on Weedmaps</a>
                     </div>
                 </div>
         """
@@ -328,20 +355,21 @@ def generate_html_report(data, region_name="Colorado"):
     </body>
     </html>
     """
-    
-    with open('listing_report.html', 'w', encoding='utf-8') as f:
+
+    with open("listing_report.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    
+
     print(f"✅ Success! Report generated: {os.path.abspath('listing_report.html')}")
+
 
 if __name__ == "__main__":
     print("🚀 Fetching live data for Colorado...")
     cana = CanaData()
     # Use the Colorado discovery URL with a larger page size for a better report
     url = "https://api-g.weedmaps.com/discovery/v1/listings?filter[any_retailer_services][]=storefront&filter[any_retailer_services][]=delivery&filter[region_slug[deliveries]]=colorado&filter[region_slug[dispensaries]]=colorado&page_size=24&size=24"
-    
+
     data = cana.do_request(url)
-    if data and data != 'break':
+    if data and data != "break":
         generate_html_report(data)
     else:
         print("❌ Failed to retrieve data from Weedmaps.")
