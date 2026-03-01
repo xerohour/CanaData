@@ -347,7 +347,7 @@ class CanaData:
             return self._fetch_and_process_menu(location)
         
         # Process all locations concurrently
-        results = processor.process_locations(self.locations, process_location_menu)
+        processor.process_locations(self.locations, process_location_menu)
         
         # Update instance variables with results
         # The _fetch_and_process_menu method already updates self.allMenuItems
@@ -1056,19 +1056,19 @@ if __name__ == '__main__':
     try:
         # Grab list of States from local file
         allStatesSlugs = [line.rstrip('\n').lower().replace(' ', '-') for line in open('states.txt')]  # Updated by Manually through magic
-    except Exception as e:
+    except Exception:
         print('Looks like no states.txt file! No biggy, just cant use the all option!')
 
     try:
         # Grab list of known Cities from local file
         knownSlugs = [line.rstrip('\n').lower().replace(' ', '-') for line in open('slugs.txt')]
-    except Exception as e:
+    except Exception:
         print('Looks like no slugs.txt file! No biggy, just cant use the slugs option!')
 
     try:
         # Grab list of known Cities from local file
         mySlugList = [line.rstrip('\n').lower().replace(' ', '-') for line in open('mylist.txt')]  # Updated by Manually through magic
-    except Exception as e:
+    except Exception:
         print('Looks like no mylist.txt file! No biggy, just cant use the mylist option!')
 
     # Argument list
