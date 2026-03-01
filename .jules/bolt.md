@@ -1,0 +1,3 @@
+## 2024-05-24 - [Optimize cache pruning]
+**Learning:** The previous implementation of the `_prune_memory_cache` method used `min()` to find the oldest cache entry to evict, resulting in an O(N) operation per eviction, which caused a performance bottleneck as the cache size grew (O(N * k) where N is the cache size and k is the number of items to evict).
+**Action:** Implemented O(1) Least Recently Used (LRU) cache pruning by using `collections.OrderedDict`. Moving accessed items to the end with `move_to_end()` and popping from the front with `popitem(last=False)` ensures O(1) eviction for any number of elements. Always use `OrderedDict` for LRU cache implementations rather than custom logic involving O(N) min() or sorting operations.
