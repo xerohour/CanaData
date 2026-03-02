@@ -231,6 +231,37 @@ def generate_html_report(data, region_name="Colorado"):
         box-shadow: 0 0 15px rgba(0, 255, 163, 0.4);
     }
 
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: var(--card-bg);
+        backdrop-filter: blur(8px);
+        border: 1px dashed var(--glass-border);
+        border-radius: 20px;
+        grid-column: 1 / -1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .empty-icon {
+        font-size: 3rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-title {
+        font-size: 1.5rem;
+        color: var(--text);
+        font-weight: 600;
+    }
+
+    .empty-desc {
+        color: var(--text-muted);
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
     /* Accessibility Improvements */
     .skip-link {
         position: absolute;
@@ -286,25 +317,34 @@ def generate_html_report(data, region_name="Colorado"):
             <div class="listing-grid">
     """
 
-    for item in listings:
-        avatar = item.get('avatar_image', {}).get('original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
-        rating = item.get('rating', 'N/A')
-        reviews = item.get('reviews_count', 0)
-        is_open = item.get('open_now', False)
-        status_text = "Open Now" if is_open else "Closed"
-        status_class = "badge-open" if is_open else "badge-closed"
-        
-        promo = item.get('promo_code')
-        promo_html = ""
-        if promo:
-            promo_html = f"""
-            <div class="promo-section">
-                <div class="promo-title">✨ PROMO: {promo.get('code', 'Special Offer')}</div>
-                <div class="promo-body">{promo.get('title', 'Check website for details')}</div>
-            </div>
-            """
+    if not listings:
+        html_content += """
+                <div class="empty-state">
+                    <div class="empty-icon" aria-hidden="true">🌱</div>
+                    <h2 class="empty-title">No listings found</h2>
+                    <p class="empty-desc">We couldn't find any cannabis listings in this region matching your criteria. Try adjusting your search or checking back later.</p>
+                </div>
+        """
+    else:
+        for item in listings:
+            avatar = item.get('avatar_image', {}).get('original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
+            rating = item.get('rating', 'N/A')
+            reviews = item.get('reviews_count', 0)
+            is_open = item.get('open_now', False)
+            status_text = "Open Now" if is_open else "Closed"
+            status_class = "badge-open" if is_open else "badge-closed"
 
-        html_content += f"""
+            promo = item.get('promo_code')
+            promo_html = ""
+            if promo:
+                promo_html = f"""
+                <div class="promo-section">
+                    <div class="promo-title">✨ PROMO: {promo.get('code', 'Special Offer')}</div>
+                    <div class="promo-body">{promo.get('title', 'Check website for details')}</div>
+                </div>
+                """
+
+            html_content += f"""
                 <div class="card">
                     <div class="card-header">
                         <img src="{avatar}" alt="{item.get('name')}" class="avatar">
@@ -345,7 +385,7 @@ def generate_html_report(data, region_name="Colorado"):
                         <a href="{item.get('web_url')}" target="_blank" rel="noopener noreferrer" aria-label="View {item.get('name', '').replace('"', '&quot;')} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
                     </div>
                 </div>
-        """
+            """
 
     html_content += """
             </div>
