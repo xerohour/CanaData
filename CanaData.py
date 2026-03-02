@@ -7,7 +7,7 @@ import subprocess
 from datetime import datetime
 from os import path as ospath
 from os import makedirs
-from sys import path, argv
+from sys import path
 from typing import Optional, List, Dict, Any
 from dotenv import load_dotenv
 from LeaflyScraper import scrape_leafly
@@ -33,17 +33,17 @@ logger = logging.getLogger(__name__)
 class CanaData:
     """
     CanaData - A Weedmaps Data Scraper
-    
+
     This class provides functionality to scrape cannabis dispensary and delivery service
     data from Weedmaps API, including location information and menu items.
-    
+
     Workflow:
     1. Initialize with configuration settings
     2. Set search slug (city/state identifier)
     3. Retrieve all locations for the slug via paginated API calls
     4. For each location, fetch and flatten menu data
     5. Export results to CSV files
-    
+
     Attributes:
         baseUrl (str): Base API endpoint for Weedmaps discovery
         pageSize (str): Pagination parameters for API requests
@@ -113,7 +113,7 @@ class CanaData:
         self.extractedStrains: Dict[str, Any] = {}
         self.brandsFound: int = 0
         self.strainsFound: int = 0
-        
+
         # Concurrent processing configuration
         self.max_workers = max_workers
         self.rate_limit = rate_limit
@@ -126,7 +126,7 @@ class CanaData:
             'Referer': 'https://weedmaps.com/'
         }
         self.interactive_mode = interactive_mode
-        
+
         # Caching configuration
         self.cache_enabled = cache_enabled
         if cache_enabled:
@@ -141,7 +141,7 @@ class CanaData:
         else:
             self.cache_manager = None
             self.api_client = None
-            
+
         # Data processing optimization
         self.optimize_processing = optimize_processing
         if optimize_processing:
@@ -152,20 +152,20 @@ class CanaData:
     def do_request(self, url, use_cache: bool = True):
         """
         Execute HTTP GET request and return JSON response.
-        
+
         This is the core HTTP request handler for all API calls. It handles
         successful responses (200), validation errors (422), and other errors.
-        
+
         Args:
             url (str): Complete URL to request
             use_cache (bool): Whether to use caching (default: True)
-            
+
         Returns:
             dict: JSON response data if successful (status 200)
             str: 'break' if validation error (status 422)
             bool: False if other error occurred
         """
-        
+
         # Use cached API client if enabled
         if self.cache_enabled and self.api_client and use_cache:
             try:
@@ -174,7 +174,7 @@ class CanaData:
                 logger.warning(f"Cached request failed, trying without cache: {e}")
                 # Fall back to direct request
                 pass
-        
+
         # Direct request without cache
         try:
             req = requests.get(url, headers=self.default_headers, timeout=30)
@@ -266,7 +266,7 @@ class CanaData:
             if locations:
                 if locations == 'break':
                     break
-                
+
                 # First response sets the total expected result count
                 if self.maxLocations is None:
                     self.maxLocations = locations['meta']['total_listings']
@@ -316,7 +316,7 @@ class CanaData:
 
         # Check if we should use concurrent processing
         use_concurrent = os.getenv('USE_CONCURRENT_PROCESSING', 'false').lower() == 'true'
-        
+
         if use_concurrent:
             self._getMenusConcurrent()
         else:
@@ -335,25 +335,25 @@ class CanaData:
     def _getMenusConcurrent(self):
         """Concurrent menu fetching implementation"""
         logger.info(f"Processing {len(self.locations)} locations concurrently...")
-        
+
         # Create processor with configuration from environment or defaults
         max_workers = int(os.getenv('MAX_WORKERS', self.max_workers))
         rate_limit = float(os.getenv('RATE_LIMIT', self.rate_limit))
-        
+
         processor = ConcurrentMenuProcessor(max_workers=max_workers, rate_limit=rate_limit)
-        
+
         # Define the processing function for a single location
         def process_location_menu(location):
             return self._fetch_and_process_menu(location)
-        
+
         # Process all locations concurrently
-        results = processor.process_locations(self.locations, process_location_menu)
-        
+        processor.process_locations(self.locations, process_location_menu)
+
         # Update instance variables with results
         # The _fetch_and_process_menu method already updates self.allMenuItems
         logger.info("Finished gathering menus. Organizing for export...")
         self.organize_into_clean_list()
-        
+
         # Log any errors that occurred
         if processor.errors:
             logger.warning(f"Encountered {len(processor.errors)} errors during processing")
@@ -364,7 +364,7 @@ class CanaData:
         """Fetch and process menu for a single location"""
         location_slug = location["slug"]
         location_type = location.get("type", "dispensary")
-        
+
         try:
             listing_path_type = self._to_listing_path_type(location_type)
             discovery_items = self._fetch_discovery_menu_items(location_slug, listing_path_type)
@@ -384,7 +384,7 @@ class CanaData:
 
             logger.error(f"Failed to fetch menu for {location_slug}: {resp.status_code}")
             return False
-                 
+
         except Exception as e:
             logger.error(f"Error processing {location_slug}: {str(e)}")
             return False
@@ -436,17 +436,17 @@ class CanaData:
         while True:
             url = f'{self.brandsBaseUrl}?offset={str(offset)}{self.pageSize}'
             logger.info(f"Fetching brands (offset: {offset})...")
-            
+
             data = self.do_request(url)
             if data and data != 'break':
                 brands_list = data.get('data', {}).get('brands', [])
                 if not brands_list:
                     break
-                
+
                 for brand in brands_list:
                     self.brands.append(brand)
                     self.brandsFound += 1
-                
+
                 total_brands = data.get('meta', {}).get('total_brands', 0)
                 if self.brandsFound >= total_brands:
                     break
@@ -466,7 +466,7 @@ class CanaData:
         while True:
             url = f'{self.strainsBaseUrl}?offset={str(offset)}{self.pageSize}'
             logger.info(f"Fetching strains (offset: {offset})...")
-            
+
             data = self.do_request(url)
             if data and data != 'break':
                 strains_list = data.get('data', {}).get('strains', [])
@@ -475,11 +475,11 @@ class CanaData:
                     strains_list = data.get('data', {}).get('taxonomy', {}).get('strains', [])
                     if not strains_list:
                         break
-                
+
                 for strain in strains_list:
                     self.strains.append(strain)
                     self.strainsFound += 1
-                
+
                 total_strains = data.get('meta', {}).get('total_strains', 0)
                 if self.strainsFound >= total_strains or total_strains == 0:
                     break
@@ -503,7 +503,7 @@ class CanaData:
 
         listing_type = 'deliveries' if listing.get('_type') == 'delivery' else 'dispensaries'
         listing_url = f'/{listing_type}/{listing_slug}'
-        
+
         categories = menu_json.get('categories', [])
         menu_items_count = 0
         local_menu_items: List[Dict[str, Any]] = []
@@ -629,7 +629,7 @@ class CanaData:
 
         logger.info(f"Starting Leafly integration for: {self.searchSlug}")
         leafly_items = scrape_leafly(self.searchSlug)
-        
+
         if leafly_items:
             # Map Leafly items to our structure
             # Since Apify returns a list of items, we'll group them by a dummy ID or store ID if present
@@ -650,10 +650,10 @@ class CanaData:
 
         logger.info(f"Starting CannMenus integration for state: {slug}")
         client = CannMenusClient()
-        
+
         # CannMenus uses 2-letter state codes usually, let's assume slug might be one or we need to map it
         # For now, we'll try to pass the slug directly
-        # Since we check self.searchSlug above, this is safe, but explicit check 
+        # Since we check self.searchSlug above, this is safe, but explicit check
         # avoids linting issues.
         search_term = slug.upper()
         if not search_term:
@@ -661,7 +661,7 @@ class CanaData:
             return
 
         retailers = client.get_retailers(search_term)
-        
+
         if not retailers:
             logger.warning(f"No retailers found on CannMenus for: {self.searchSlug}")
             return
@@ -671,34 +671,34 @@ class CanaData:
             shop_name = shop.get('name')
             logger.info(f"Fetching menu for {shop_name} from CannMenus...")
             menu = client.get_menu(shop_id)
-            
+
             if menu:
                 self.allMenuItems[shop_id] = menu
                 self.menuItemsFound += len(menu)
                 # Mock a listing entry for totalLocations
                 self.totalLocations.append(shop)
-        
+
         logger.info(f"Finished CannMenus integration. Total items: {self.menuItemsFound}")
 
     def organize_into_clean_list(self):
         """
         Flatten nested menu item dictionaries into uniform CSV-ready format.
-        
+
         This method transforms the hierarchical menu data structure into a flat
         list of dictionaries where:
         1. All nested keys are flattened with dot notation (e.g., 'price.amount')
         2. All items have the same set of keys (missing keys filled with 'None')
         3. All values are converted to strings for CSV compatibility
-        
+
         Process:
             1. Flatten each menu item dictionary using flatten_dictionary()
             2. Collect all unique keys across all items
             3. Create uniform dictionaries with all keys present
             4. Fill missing keys with 'None' value
-            
+
         Side Effects:
             - Updates self.finishedMenuItems with flattened, uniform data
-            
+
         Example:
             Input:  {'name': 'Product', 'price': {'amount': 10}}
             Output: {'name': 'Product', 'price.amount': '10'}
@@ -711,7 +711,7 @@ class CanaData:
             # Fall back to original method
             logger.info("Using original data processing method")
             self._original_organize_into_clean_list()
-    
+
     def _original_organize_into_clean_list(self):
         """
         Original data organization method for backward compatibility.
@@ -735,7 +735,7 @@ class CanaData:
         all_keys_set = set()
         for item in flatDictList:
             all_keys_set.update(item.keys())
-        
+
         all_keys = sorted(list(all_keys_set))
 
         # This list will house all data after each key has been filled out
@@ -748,7 +748,7 @@ class CanaData:
             # Update with actual values, converting to string
             for key, value in item.items():
                 flat_ordered_dict[key] = str(value)
-            
+
             ready_list.append(flat_ordered_dict)
 
         # Replace our finished menu items list with our flat, ordered, dictionary list
@@ -757,20 +757,20 @@ class CanaData:
     def flatten_dictionary(self, d: Dict[str, Any]) -> Dict[str, str]:
         """
         Recursively flatten a nested dictionary using dot notation for keys.
-        
+
         This is a custom iterative implementation using a stack-based approach
         to handle arbitrarily nested dictionaries and lists. It converts:
         - Nested dicts: {'a': {'b': 'c'}} → {'a.b': 'c'}
         - Lists of dicts: {'a': [{'b': 'c'}]} → {'a.b': 'c'}
         - Lists of strings: {'a': ['x', 'y']} → {'a': 'x.y'}
         - Empty values: {'a': []} → {'a': 'None'}
-        
+
         Args:
             d (dict): Nested dictionary to flatten
-            
+
         Returns:
             dict: Flattened dictionary with dot-notation keys and string values
-            
+
         Algorithm:
             Uses a stack to track nested levels and a keys list to build
             dot-notation paths. Handles lists, dicts, and primitive values
@@ -835,20 +835,20 @@ class CanaData:
     def csv_maker(self, filename: str, data: List[Dict[str, Any]], preorganized: bool = False) -> None:
         """
         Export a list of dictionaries to a CSV file with timestamp.
-        
+
         Creates a dated folder (CanaData_MM-DD-YYYY) and writes the data
         to a CSV file with headers from the first dictionary's keys.
-        
+
         Args:
             filename (str): Base name for the CSV file (without extension)
             data (list): List of dictionaries with uniform keys
             preorganized (bool): Unused parameter (legacy)
-            
+
         Side Effects:
             - Creates CanaData_[date] folder if it doesn't exist
             - Writes CSV file to that folder
             - Prints success message with item count
-            
+
         File Format:
             - First row: column headers (dictionary keys)
             - Subsequent rows: dictionary values in same order
@@ -891,11 +891,11 @@ class CanaData:
     def dataToCSV(self) -> None:
         """
         Main entry point for triggering CSV generation.
-        
+
         This method decides whether to export data based on the current state
-        (NonGreenState) and attempts to export both the detailed menu items 
+        (NonGreenState) and attempts to export both the detailed menu items
         and the high-level listing information.
-        
+
         Side Effects:
             - Calls csv_maker twice (if data exists)
             - Prints summary statistics to the console
@@ -949,24 +949,24 @@ class CanaData:
     def resetDataSets(self) -> None:
         """
         Reset stateful attributes before processing the next search slug.
-        
-        Crucial for the "all" or "mylist" modes to ensure data from one 
+
+        Crucial for the "all" or "mylist" modes to ensure data from one
         state doesn't bleed into the next one.
         """
         # Reset identifiers and counters
         self.searchSlug = None
         self.locationsFound = 0
         self.maxLocations = None
-        
+
         # Clear data collections
         self.locations = []
         self.allMenuItems = {}
         self.finishedMenuItems = []
         self.totalLocations = []
-        
+
         # We don't reset brands and strains here as they are global metadata
         # potentially fetched once per run.
-        
+
         # Reset status flags
         self.NonGreenState = False
         self.extractedStrains = {}
@@ -1046,124 +1046,3 @@ class CanaData:
         self.TestMode()
 
 
-if __name__ == '__main__':
-    # Initiate the Library
-    cana = CanaData()
-
-    # This is where we end pu putting our list of items. Replaced with a list of search slugs -> []
-    searchSlugs = None
-
-    try:
-        # Grab list of States from local file
-        allStatesSlugs = [line.rstrip('\n').lower().replace(' ', '-') for line in open('states.txt')]  # Updated by Manually through magic
-    except Exception as e:
-        print('Looks like no states.txt file! No biggy, just cant use the all option!')
-
-    try:
-        # Grab list of known Cities from local file
-        knownSlugs = [line.rstrip('\n').lower().replace(' ', '-') for line in open('slugs.txt')]
-    except Exception as e:
-        print('Looks like no slugs.txt file! No biggy, just cant use the slugs option!')
-
-    try:
-        # Grab list of known Cities from local file
-        mySlugList = [line.rstrip('\n').lower().replace(' ', '-') for line in open('mylist.txt')]  # Updated by Manually through magic
-    except Exception as e:
-        print('Looks like no mylist.txt file! No biggy, just cant use the mylist option!')
-
-    # Argument list
-    argList = list(argv)
-
-    if '-tshoot' in argList:
-        cana.TestMode()
-
-    # Check if arguments were passed
-    if len(argList) > 1:
-        # There were arguments! Now to check for specifics
-
-        # This looks to see if we need to save the City list that we identify!
-        if '-slugs' in argList:
-            cana.slugs()
-
-    # This specifically looks for the quick run argument and sets the State list
-    if '-go' in argList:
-        # Search slug location in args is after the -go
-        searchSlug = argList.index('-go') + 1
-        # Determine if its one of our preset 3 or a regular search
-        if argv[searchSlug].lower() == 'mylist':
-            searchSlugs = mySlugList
-        elif argv[searchSlug].lower() == 'slugs':
-            # Slug list is set to the list from the cities.txt file
-            searchSlugs = knownSlugs
-        elif argv[searchSlug].lower() == 'all':
-            # Slug list is set to the list from the cities.txt file
-            searchSlugs = allStatesSlugs
-        else:
-            searchSlugs = [argv[searchSlug].lower()]
-        # Visual queue of start (in place of question for search slug)
-        print(f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\n\n\nStarting Quickrun on {str(len(searchSlugs))} Slugs: \n{str(", ".join(searchSlugs))}\n\n\n')
-
-    # If user is not doing Quickrun
-    # Ask them for a slug then determine if its one of our preset 3 or a regular search
-    else:
-        # Ask the user for what City they'd like to run
-        answer = input(f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\nWhat city slug or state slug would you like to search? Can put all for all states or mylist for your custom list or slugs for the list of custom slugs from slugs.txt!\n\nOptions:\n- Use -go <slug> for quick run\n- Use -leafly with a slug for Leafly data\n- Use -cannmenus with a state code for CannMenus data\n\nKnown State Options:\n{", ".join(allStatesSlugs)}\n\nKnown Slug Options:\n{", ".join(knownSlugs)}\n\nKnown Mylist Options:\n{", ".join(mySlugList)}\n\n-- ').lower()
-
-        # Check if user asked for all
-        if answer == 'all':
-            # States list is set to our 50 state list # Fingers crossed it runs through all!
-            searchSlugs = allStatesSlugs
-        elif answer == 'mylist':
-            # States list is set to the list from the myList.txt file
-            searchSlugs = mySlugList
-        elif answer == 'slugs':
-            # Slug list is set to the list from the cities.txt file
-            searchSlugs = knownSlugs
-        else:
-            # State list is set to a single item list of what the user input
-            searchSlugs = [answer]
-
-    # This Loop fires no matter what to process all search slugs provided either manually or through a .txt file!
-    # Fun functions against them all!
-    
-    # Global data fetch (if requested)
-    if '-brands' in argList:
-        cana.getBrands()
-    if '-strains' in argList:
-        cana.getStrains()
-
-    metadata_only = (
-        ('-brands' in argList or '-strains' in argList)
-        and '-leafly' not in argList
-        and '-cannmenus' not in argList
-    )
-
-    if metadata_only:
-        cana.setCitySlug('global')
-        cana.dataToCSV()
-        raise SystemExit(0)
-
-    for slug in searchSlugs:
-        if len(slug) > 0:
-            # Visual queue of starting a state
-            print(f'\n\nStarting on {slug}')
-            # Set our searchSlug to the State we are working on
-            cana.setCitySlug(slug)
-            
-            if '-leafly' in argList:
-                cana.getLeaflyData()
-            elif '-cannmenus' in argList:
-                cana.getCannMenusData()
-            else:
-                # Default to Weedmaps
-                # Get the locations for the given slug
-                cana.getLocations()
-                # Get the Menus for the locations found
-                cana.getMenus()
-            
-            # Convert our Datasets to CSV's (1 for Menu Items & 1 for Listing Info)
-            cana.dataToCSV()
-            # Reset the self variables to avoid using old data from other states/slugs
-            cana.resetDataSets()
-    # Print out the list of Non-Cannabis friendly states
-    cana.identifyNaughtyStates()
