@@ -2,6 +2,7 @@ import pandas as pd
 import logging
 from typing import List, Dict, Any
 import json
+import copy
 from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
@@ -34,11 +35,23 @@ class OptimizedDataProcessor:
         normalized_data = self._normalize_data(flat_items)
         
         # Convert back to list of dictionaries
-        result = normalized_data.to_dict('records')
+        # Using list comprehension with itertuples() and zip is faster than df.to_dict('records')
+        columns = normalized_data.columns.tolist()
+        result = [dict(zip(columns, row)) for row in normalized_data.itertuples(index=False, name=None)]
         
         logger.info(f"Processed {len(result)} menu items")
         return result
     
+    def _serialize_lists(self, d: Dict) -> None:
+        """
+        Recursively serialize lists to JSON strings to avoid slow pandas column-wise operations.
+        """
+        for k, v in d.items():
+            if isinstance(v, list):
+                d[k] = json.dumps(v)
+            elif isinstance(v, dict):
+                self._serialize_lists(v)
+
     def _flatten_all_items(self, all_menu_items: Dict[str, List[Dict]]) -> pd.DataFrame:
         """
         Flatten all menu items using pandas json_normalize for efficiency.
@@ -47,8 +60,15 @@ class OptimizedDataProcessor:
         items_with_location = []
         for location_id, items in all_menu_items.items():
             for item in items:
-                item_copy = item.copy()
+                # Use deepcopy to avoid mutating original nested dictionaries
+                # during the list serialization process
+                item_copy = copy.deepcopy(item)
                 item_copy['_location_id'] = location_id
+
+                # Pre-serialize lists to JSON strings before json_normalize
+                # to avoid slow pandas column-wise operations and ensure consistent formatting
+                self._serialize_lists(item_copy)
+
                 items_with_location.append(item_copy)
         
         if not items_with_location:
@@ -58,7 +78,7 @@ class OptimizedDataProcessor:
         try:
             df = pd.json_normalize(items_with_location, sep='.')
             
-            # Handle any remaining nested structures
+            # Handle any remaining nested structures (dicts not caught or nested within other structures)
             df = self._handle_remaining_nesting(df)
             
             return df
