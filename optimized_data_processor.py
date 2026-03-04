@@ -34,7 +34,9 @@ class OptimizedDataProcessor:
         normalized_data = self._normalize_data(flat_items)
         
         # Convert back to list of dictionaries
-        result = normalized_data.to_dict('records')
+        # Optimized: list comprehension + itertuples is significantly faster than to_dict('records')
+        columns = normalized_data.columns.tolist()
+        result = [dict(zip(columns, row)) for row in normalized_data.itertuples(index=False, name=None)]
         
         logger.info(f"Processed {len(result)} menu items")
         return result
@@ -49,6 +51,10 @@ class OptimizedDataProcessor:
             for item in items:
                 item_copy = item.copy()
                 item_copy['_location_id'] = location_id
+                # Optimized: early serialize lists to JSON strings to bypass json_normalize overhead
+                for k, v in list(item_copy.items()):
+                    if isinstance(v, list):
+                        item_copy[k] = json.dumps(v)
                 items_with_location.append(item_copy)
         
         if not items_with_location:
@@ -83,7 +89,8 @@ class OptimizedDataProcessor:
         for col in nested_columns:
             try:
                 # Convert to string representation for nested data
-                df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (dict, list)) else str(x))
+                # Optimized: List comprehension bypasses Pandas Series.apply overhead
+                df[col] = [json.dumps(x) if isinstance(x, (dict, list)) else str(x) for x in df[col]]
             except Exception as e:
                 logger.warning(f"Failed to flatten column {col}: {e}")
                 df[col] = df[col].astype(str)
