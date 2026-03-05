@@ -34,7 +34,8 @@ class OptimizedDataProcessor:
         normalized_data = self._normalize_data(flat_items)
         
         # Convert back to list of dictionaries
-        result = normalized_data.to_dict('records')
+        columns = normalized_data.columns.tolist()
+        result = [dict(zip(columns, row)) for row in normalized_data.itertuples(index=False, name=None)]
         
         logger.info(f"Processed {len(result)} menu items")
         return result
@@ -43,13 +44,12 @@ class OptimizedDataProcessor:
         """
         Flatten all menu items using pandas json_normalize for efficiency.
         """
-        # Collect all items with location info
-        items_with_location = []
-        for location_id, items in all_menu_items.items():
-            for item in items:
-                item_copy = item.copy()
-                item_copy['_location_id'] = location_id
-                items_with_location.append(item_copy)
+        # Collect all items with location info and inline serialization of lists
+        items_with_location = [
+            {**item.copy(), '_location_id': location_id, **{k: json.dumps(v) for k, v in item.items() if isinstance(v, list)}}
+            for location_id, items in all_menu_items.items()
+            for item in items
+        ]
         
         if not items_with_location:
             return pd.DataFrame()
@@ -83,7 +83,7 @@ class OptimizedDataProcessor:
         for col in nested_columns:
             try:
                 # Convert to string representation for nested data
-                df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (dict, list)) else str(x))
+                df[col] = [json.dumps(x) if isinstance(x, (dict, list)) else str(x) for x in df[col]]
             except Exception as e:
                 logger.warning(f"Failed to flatten column {col}: {e}")
                 df[col] = df[col].astype(str)
@@ -130,29 +130,26 @@ class OptimizedDataProcessor:
         """
         Optimized version of the existing custom flattening algorithm.
         """
-        # Pre-allocate result dict with estimated size
         result = {}
         
-        # Use iterative approach with explicit stack
-        stack = [iter(d.items())]
-        keys = []
+        # Use iterative approach with explicit stack holding (prefix, iterator)
+        stack = [("", iter(d.items()))]
         
         while stack:
-            for k, v in stack[-1]:
-                key = '.'.join(keys + [k]) if keys else k
+            prefix, items_iter = stack[-1]
+            try:
+                k, v = next(items_iter)
+                key = f"{prefix}.{k}" if prefix else k
                 
                 if isinstance(v, dict):
                     # Push nested dict to stack
-                    keys.append(k)
-                    stack.append(iter(v.items()))
-                    break
+                    stack.append((key, iter(v.items())))
                 elif isinstance(v, list):
                     if v and isinstance(v[0], dict):
                         # Handle list of dicts by taking first item or joining
                         if len(v) == 1:
                             # Single item, flatten it
-                            nested_dict = {f"{k}.{sub_k}": sub_v for sub_k, sub_v in v[0].items()}
-                            result.update(nested_dict)
+                            stack.append((key, iter(v[0].items())))
                         else:
                             # Multiple items, convert to JSON string
                             result[key] = json.dumps(v)
@@ -163,10 +160,8 @@ class OptimizedDataProcessor:
                     result[key] = 'None'
                 else:
                     result[key] = str(v)
-            else:
+            except StopIteration:
                 # Pop from stack when iterator is exhausted
-                if len(stack) > 1:
-                    keys.pop()
                 stack.pop()
         
         return result
