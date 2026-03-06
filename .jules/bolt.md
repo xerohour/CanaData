@@ -1,0 +1,4 @@
+
+## 2026-03-06 - Pandas optimizations for iterating nested data
+**Learning:** Pandas `.apply()` on Series and creating new variables via `.copy()` per row inside Python loops are huge bottlenecks for simple JSON serialization operations or mapping tasks during flattening. Native Python list comprehensions are often vastly superior for these element-wise scalar operations because Pandas incurs massive overhead when handling Python native objects (lists/dicts) internally.
+**Action:** When preparing data structures for `pd.json_normalize` or post-processing mixed-type nested lists/dicts within a Pandas DataFrame, prefer fast list comprehensions with `json.dumps()` over Pandas `.apply(lambda)`. Similarly, replace `dict.copy()` loop logic with direct list comprehensions using dictionary unpacking.
