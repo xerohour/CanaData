@@ -4,6 +4,7 @@ import hashlib
 from typing import Any, Optional, Dict
 from pathlib import Path
 import logging
+from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ class CacheManager:
         self.cache_dir.mkdir(exist_ok=True)
         
         # Memory cache with TTL
-        self.memory_cache: Dict[str, Dict[str, Any]] = {}
+        self.memory_cache: Dict[str, Dict[str, Any]] = OrderedDict()
         self.memory_cache_size = max(1, memory_cache_size)
         self.memory_cache_ttl = memory_cache_ttl
         
@@ -65,6 +66,8 @@ class CacheManager:
             if time.time() - entry['timestamp'] < self.memory_cache_ttl:
                 self.stats['memory_hits'] += 1
                 entry['timestamp'] = time.time()
+                # Move to end to mark as recently used
+                self.memory_cache.move_to_end(cache_key)
                 logger.debug(f"Memory cache hit for {url}")
                 return entry['data']
             else:
@@ -99,6 +102,8 @@ class CacheManager:
             'data': data,
             'timestamp': time.time()
         }
+        # Move to end to mark as recently used
+        self.memory_cache.move_to_end(cache_key)
         self._prune_memory_cache()
         
         # Store in disk cache if enabled
@@ -106,10 +111,9 @@ class CacheManager:
             self._set_to_disk(cache_key, data)
 
     def _prune_memory_cache(self) -> None:
-        """Enforce memory cache size using oldest-entry eviction."""
+        """Enforce memory cache size using oldest-entry eviction (O(1) with OrderedDict)."""
         while len(self.memory_cache) > self.memory_cache_size:
-            oldest_key = min(self.memory_cache, key=lambda key: self.memory_cache[key]['timestamp'])
-            self.memory_cache.pop(oldest_key, None)
+            self.memory_cache.popitem(last=False)
     
     def _get_from_disk(self, cache_key: str) -> Optional[Any]:
         """Retrieve data from disk cache"""
