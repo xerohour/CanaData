@@ -1,0 +1,3 @@
+## 2026-03-07 - O(N) Cache Eviction Bottleneck
+**Learning:** In `CacheManager`, enforcing the memory cache size using `min(..., key=lambda k: memory_cache[k]['timestamp'])` causes an O(N) scan of the entire cache dictionary on every `set()` operation that exceeds the size limit. During high concurrency (like concurrent fetching), this CPU bottleneck significantly slows down request processing due to frequent prunes.
+**Action:** Replace standard `dict` with `collections.OrderedDict` for memory caching. Call `move_to_end(key)` on every `get()` hit and `set()` operation to keep entries ordered by access time. This allows using `popitem(last=False)` for O(1) LRU eviction, drastically reducing overhead.
