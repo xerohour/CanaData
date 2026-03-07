@@ -255,6 +255,23 @@ def generate_html_report(data, region_name="Colorado"):
         outline-offset: 4px;
     }
 
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 4rem 2rem;
+        background: var(--card-bg);
+        backdrop-filter: blur(8px);
+        border: 1px dashed var(--glass-border);
+        border-radius: 20px;
+        color: var(--text-muted);
+    }
+
+    .empty-state h2 {
+        color: var(--text);
+        margin-bottom: 0.5rem;
+        font-size: 1.5rem;
+    }
+
     @media (max-width: 768px) {
         body { padding: 1rem; }
         header { padding: 2rem 1rem; margin-bottom: 2rem; }
@@ -285,6 +302,14 @@ def generate_html_report(data, region_name="Colorado"):
 
             <div class="listing-grid">
     """
+
+    if not listings:
+        html_content += """
+                <div class="empty-state">
+                    <h2>No listings found</h2>
+                    <p>Try adjusting your filters or searching a different region.</p>
+                </div>
+        """
 
     for item in listings:
         avatar = item.get('avatar_image', {}).get('original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
