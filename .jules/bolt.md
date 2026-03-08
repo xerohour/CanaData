@@ -1,0 +1,3 @@
+## 2025-02-18 - Replacing apply with list comprehensions for nested JSON strings
+**Learning:** In Pandas data processing pipelines, particularly those dealing with heavy nested JSON manipulations (like converting dicts/lists to strings with `json.dumps`), using `apply(lambda x: ...)` on a Series incurs a huge performance overhead. Replacing the lambda with a pure Python list comprehension over the column's values (e.g. `df[col] = [json.dumps(x) ... for x in df[col]]`) yields a noticeable speedup.
+**Action:** In Pandas data processing pipelines, bypass Pandas Series overhead for element-wise string formatting or mapping (like `json.dumps`) by using pure Python list comprehensions over the column's values.
