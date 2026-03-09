@@ -43,13 +43,12 @@ class OptimizedDataProcessor:
         """
         Flatten all menu items using pandas json_normalize for efficiency.
         """
-        # Collect all items with location info
-        items_with_location = []
-        for location_id, items in all_menu_items.items():
-            for item in items:
-                item_copy = item.copy()
-                item_copy['_location_id'] = location_id
-                items_with_location.append(item_copy)
+        # Collect all items with location info using optimized list comprehension
+        items_with_location = [
+            dict(item, _location_id=location_id)
+            for location_id, items in all_menu_items.items()
+            for item in items
+        ]
         
         if not items_with_location:
             return pd.DataFrame()
@@ -83,7 +82,9 @@ class OptimizedDataProcessor:
         for col in nested_columns:
             try:
                 # Convert to string representation for nested data
-                df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (dict, list)) else str(x))
+                # By-pass pandas Series apply overhead by using list comprehension
+                values = df[col].values
+                df[col] = [json.dumps(x) if isinstance(x, (dict, list)) else str(x) for x in values]
             except Exception as e:
                 logger.warning(f"Failed to flatten column {col}: {e}")
                 df[col] = df[col].astype(str)
