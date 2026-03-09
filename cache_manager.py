@@ -1,6 +1,8 @@
 import time
 import pickle
 import hashlib
+import hmac
+import os
 from typing import Any, Optional, Dict
 from pathlib import Path
 import logging
@@ -24,6 +26,7 @@ class CacheManager:
                  disk_cache_ttl: int = 86400,   # 24 hours
                  enable_disk_cache: bool = True):
         
+        self.secret_key = os.getenv("CACHE_SECRET_KEY", "default-insecure-key").encode()
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(exist_ok=True)
         
@@ -125,12 +128,29 @@ class CacheManager:
                 cache_file.unlink()  # Remove expired cache
                 return None
             
-            # Load cached data
+            # Load and verify cached data
             with open(cache_file, 'rb') as f:
-                return pickle.load(f)
+                content = f.read()
                 
-        except (pickle.PickleError, EOFError, FileNotFoundError) as e:
+            if len(content) < 64:
+                return None
+
+            signature = content[:64].decode('utf-8')
+            pickled_data = content[64:]
+
+            expected_signature = hmac.new(self.secret_key, pickled_data, hashlib.sha256).hexdigest()
+            if not hmac.compare_digest(signature, expected_signature):
+                logger.warning(f"Invalid cache signature for {cache_file}")
+                return None
+
+            return pickle.loads(pickled_data)
+
+        except (pickle.PickleError, EOFError, FileNotFoundError, ValueError) as e:
             logger.warning(f"Failed to load cache file {cache_file}: {e}")
+            try:
+                cache_file.unlink(missing_ok=True)
+            except Exception:
+                pass
             return None
     
     def _set_to_disk(self, cache_key: str, data: Any) -> None:
@@ -138,8 +158,11 @@ class CacheManager:
         cache_file = self.cache_dir / f"{cache_key}.cache"
         
         try:
+            pickled_data = pickle.dumps(data, protocol=pickle.HIGHEST_PROTOCOL)
+            signature = hmac.new(self.secret_key, pickled_data, hashlib.sha256).hexdigest().encode('utf-8')
+
             with open(cache_file, 'wb') as f:
-                pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+                f.write(signature + pickled_data)
         except pickle.PickleError as e:
             logger.warning(f"Failed to save cache file {cache_file}: {e}")
     
