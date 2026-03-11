@@ -1,5 +1,5 @@
 import time
-import pickle
+import json
 import hashlib
 from typing import Any, Optional, Dict
 from pathlib import Path
@@ -53,7 +53,7 @@ class CacheManager:
             sorted_params = sorted(params.items())
             cache_string += "?" + "&".join(f"{k}={v}" for k, v in sorted_params)
         
-        return hashlib.md5(cache_string.encode()).hexdigest()
+        return hashlib.sha256(cache_string.encode()).hexdigest()
     
     def get(self, url: str, params: Optional[Dict] = None) -> Optional[Any]:
         """Retrieve data from cache"""
@@ -81,7 +81,8 @@ class CacheManager:
                 # Load back into memory cache
                 self.memory_cache[cache_key] = {
                     'data': disk_data,
-                    'timestamp': time.time()
+                    'timestamp': time.time(),
+                    'url': url
                 }
                 self._prune_memory_cache()
                 logger.debug(f"Disk cache hit for {url}")
@@ -97,13 +98,14 @@ class CacheManager:
         # Store in memory cache
         self.memory_cache[cache_key] = {
             'data': data,
-            'timestamp': time.time()
+            'timestamp': time.time(),
+            'url': url
         }
         self._prune_memory_cache()
         
         # Store in disk cache if enabled
         if self.enable_disk_cache:
-            self._set_to_disk(cache_key, data)
+            self._set_to_disk(cache_key, data, url)
 
     def _prune_memory_cache(self) -> None:
         """Enforce memory cache size using oldest-entry eviction."""
@@ -126,21 +128,24 @@ class CacheManager:
                 return None
             
             # Load cached data
-            with open(cache_file, 'rb') as f:
-                return pickle.load(f)
+            with open(cache_file, 'r', encoding='utf-8') as f:
+                loaded_data = json.load(f)
+                if isinstance(loaded_data, dict) and 'data' in loaded_data:
+                    return loaded_data['data']
+                return loaded_data
                 
-        except (pickle.PickleError, EOFError, FileNotFoundError) as e:
+        except (json.JSONDecodeError, UnicodeDecodeError, EOFError, FileNotFoundError) as e:
             logger.warning(f"Failed to load cache file {cache_file}: {e}")
             return None
     
-    def _set_to_disk(self, cache_key: str, data: Any) -> None:
+    def _set_to_disk(self, cache_key: str, data: Any, url: str) -> None:
         """Store data in disk cache"""
         cache_file = self.cache_dir / f"{cache_key}.cache"
         
         try:
-            with open(cache_file, 'wb') as f:
-                pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
-        except pickle.PickleError as e:
+            with open(cache_file, 'w', encoding='utf-8') as f:
+                json.dump({'url': url, 'data': data}, f)
+        except Exception as e:
             logger.warning(f"Failed to save cache file {cache_file}: {e}")
     
     def invalidate(self, pattern: Optional[str] = None) -> None:
@@ -148,8 +153,8 @@ class CacheManager:
         if pattern:
             # Invalidate entries matching pattern
             keys_to_remove = []
-            for key in self.memory_cache.keys():
-                if pattern in str(key):
+            for key, entry in self.memory_cache.items():
+                if pattern in str(key) or pattern in entry.get('url', ''):
                     keys_to_remove.append(key)
             
             for key in keys_to_remove:
@@ -159,6 +164,14 @@ class CacheManager:
             for cache_file in self.cache_dir.glob("*.cache"):
                 if pattern in cache_file.name:
                     cache_file.unlink()
+                else:
+                    try:
+                        with open(cache_file, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                            if isinstance(data, dict) and pattern in data.get('url', ''):
+                                cache_file.unlink()
+                    except (json.JSONDecodeError, UnicodeDecodeError):
+                        pass
         else:
             # Clear all cache
             self.memory_cache.clear()
