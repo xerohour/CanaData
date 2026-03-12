@@ -255,6 +255,23 @@ def generate_html_report(data, region_name="Colorado"):
         outline-offset: 4px;
     }
 
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 4rem 2rem;
+        background: var(--card-bg);
+        backdrop-filter: blur(8px);
+        border: 2px dashed var(--glass-border);
+        border-radius: 20px;
+        color: var(--text-muted);
+    }
+
+    .empty-state h3 {
+        color: var(--text);
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
     @media (max-width: 768px) {
         body { padding: 1rem; }
         header { padding: 2rem 1rem; margin-bottom: 2rem; }
@@ -277,7 +294,7 @@ def generate_html_report(data, region_name="Colorado"):
     </head>
     <body>
         <a href="#main-content" class="skip-link">Skip to main content</a>
-        <div class="container" id="main-content">
+        <main class="container" id="main-content">
             <header>
                 <h1>{region_name} Discovery</h1>
                 <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
@@ -347,9 +364,17 @@ def generate_html_report(data, region_name="Colorado"):
                 </div>
         """
 
+    if not listings:
+        html_content += """
+                <div class="empty-state" role="status">
+                    <h3>No listings found</h3>
+                    <p>Try adjusting your search filters or exploring a different region.</p>
+                </div>
+        """
+
     html_content += """
             </div>
-        </div>
+        </main>
     </body>
     </html>
     """
