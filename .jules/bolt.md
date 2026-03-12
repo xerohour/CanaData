@@ -1,0 +1,3 @@
+## 2024-03-12 - Pandas Element-wise Operations vs Python List Comprehensions
+**Learning:** Benchmarking showed that `pd.Series.apply` with a lambda function for element-wise string transformations (e.g., converting nested dicts/lists to JSON strings) is significantly slower than using pure Python list comprehensions on the Pandas column's values. Additionally, pure Python list comprehensions with `dict(item, ...)` are faster for flattening lists of dictionaries than iterative loops with `.copy()`.
+**Action:** In Pandas data processing pipelines, bypass Pandas Series overhead for element-wise string formatting or mapping (like `json.dumps`) by using pure Python list comprehensions over the column's values (e.g., `df[col] = [json.dumps(x) ... for x in df[col]]`).
