@@ -20,9 +20,15 @@ ENDPOINTS: List[Tuple[str, str]] = [
     ("products", "https://api-g.weedmaps.com/discovery/v1/products?page_size=1&size=1"),
     ("categories", "https://api-g.weedmaps.com/discovery/v1/categories"),
     ("deals", "https://api-g.weedmaps.com/discovery/v1/deals?page_size=1&size=1"),
-    ("search", "https://api-g.weedmaps.com/discovery/v1/search?q=flower&page_size=1&size=1"),
+    (
+        "search",
+        "https://api-g.weedmaps.com/discovery/v1/search?q=flower&page_size=1&size=1",
+    ),
     ("tags", "https://api-g.weedmaps.com/discovery/v1/tags?page_size=1&size=1"),
-    ("brand_products", "https://api-g.weedmaps.com/discovery/v1/brands/products?page_size=1&size=1"),
+    (
+        "brand_products",
+        "https://api-g.weedmaps.com/discovery/v1/brands/products?page_size=1&size=1",
+    ),
 ]
 
 
@@ -103,9 +109,13 @@ def run_curl(url: str, timeout_seconds: int = 30) -> Dict[str, Any]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Probe Weedmaps endpoints and emit JSON health report.")
+    parser = argparse.ArgumentParser(
+        description="Probe Weedmaps endpoints and emit JSON health report."
+    )
     parser.add_argument("--output", help="Optional file path to write JSON report")
-    parser.add_argument("--timeout", type=int, default=30, help="curl timeout in seconds")
+    parser.add_argument(
+        "--timeout", type=int, default=30, help="curl timeout in seconds"
+    )
     args = parser.parse_args()
 
     checks: List[Dict[str, Any]] = []
