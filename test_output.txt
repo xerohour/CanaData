@@ -1,4 +1,26 @@
-Traceback (most recent call last):
-  File "C:\Users\xerohour\Documents\GitHub\CanaData\test_endpoints.py", line 1, in <module>
-    import requests
-ModuleNotFoundError: No module named 'requests'
+         7531 function calls (7204 primitive calls) in 0.041 seconds
+
+   Ordered by: cumulative time
+   List reduced from 383 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       23    0.000    0.000    0.148    0.006 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:637(wait)
+       41    0.001    0.000    0.148    0.004 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:323(wait)
+       21    0.000    0.000    0.144    0.007 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/_base.py:199(as_completed)
+  244/174    0.004    0.000    0.074    0.000 {method 'acquire' of '_thread.lock' objects}
+       10    0.000    0.000    0.072    0.007 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:1117(join)
+       10    0.000    0.000    0.072    0.007 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:1155(_wait_for_tstate_lock)
+        1    0.000    0.000    0.041    0.041 /app/CanaData.py:315(getMenus)
+        1    0.001    0.001    0.041    0.041 /app/CanaData.py:340(_getMenusConcurrent)
+        1    0.000    0.000    0.037    0.037 /app/concurrent_processor.py:46(process_locations)
+        1    0.000    0.000    0.037    0.037 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/_base.py:646(__exit__)
+        1    0.000    0.000    0.037    0.037 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/thread.py:220(shutdown)
+     10/1    0.000    0.000    0.036    0.036 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:1018(_bootstrap)
+     10/1    0.000    0.000    0.036    0.036 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:1058(_bootstrap_inner)
+     20/1    0.001    0.000    0.029    0.029 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/thread.py:54(run)
+     20/1    0.000    0.000    0.028    0.028 /app/concurrent_processor.py:74(_process_single_location)
+     20/1    0.000    0.000    0.028    0.028 /app/CanaData.py:351(process_location_menu)
+     20/1    0.000    0.000    0.028    0.028 /app/CanaData.py:368(_fetch_and_process_menu)
+     20/1    0.001    0.000    0.028    0.028 /app/CanaData.py:403(_fetch_discovery_menu_items)
+     20/1    0.001    0.000    0.028    0.028 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1134(__call__)
+       20    0.000    0.000    0.007    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/thread.py:165(submit)
