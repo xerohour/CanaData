@@ -1,0 +1,3 @@
+## 2026-03-13 - Performance Audit and Benchmarks
+**Learning:** Implementing fine-grained locks instead of a single shared `_menu_data_lock` mitigates 'noisy neighbor' bottlenecks when processing multiple HTTP concurrent responses, allowing horizontal scaling and lowering multi-thread latency by a factor equivalent to the network delay across workers. Also, pandas' `json_normalize` combined with pre-flattening by list comprehensions runs considerably faster than appending to lists using `.copy()` and iterative lambda applies.
+**Action:** Use list comprehensions for loop-based dict updates and strict fine-grained mutex locks (like `_items_lock`, `_empty_lock`, etc.) when adding items to shared application state during IO-bound threaded tasks.
