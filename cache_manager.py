@@ -1,5 +1,5 @@
 import time
-import pickle
+import json
 import hashlib
 from typing import Any, Optional, Dict
 from pathlib import Path
@@ -53,7 +53,7 @@ class CacheManager:
             sorted_params = sorted(params.items())
             cache_string += "?" + "&".join(f"{k}={v}" for k, v in sorted_params)
         
-        return hashlib.md5(cache_string.encode()).hexdigest()
+        return hashlib.sha256(cache_string.encode()).hexdigest()
     
     def get(self, url: str, params: Optional[Dict] = None) -> Optional[Any]:
         """Retrieve data from cache"""
@@ -97,7 +97,8 @@ class CacheManager:
         # Store in memory cache
         self.memory_cache[cache_key] = {
             'data': data,
-            'timestamp': time.time()
+            'timestamp': time.time(),
+            'url': url
         }
         self._prune_memory_cache()
         
@@ -126,10 +127,10 @@ class CacheManager:
                 return None
             
             # Load cached data
-            with open(cache_file, 'rb') as f:
-                return pickle.load(f)
+            with open(cache_file, 'r') as f:
+                return json.load(f)
                 
-        except (pickle.PickleError, EOFError, FileNotFoundError) as e:
+        except (json.JSONDecodeError, UnicodeDecodeError, EOFError, FileNotFoundError) as e:
             logger.warning(f"Failed to load cache file {cache_file}: {e}")
             return None
     
@@ -138,9 +139,9 @@ class CacheManager:
         cache_file = self.cache_dir / f"{cache_key}.cache"
         
         try:
-            with open(cache_file, 'wb') as f:
-                pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
-        except pickle.PickleError as e:
+            with open(cache_file, 'w') as f:
+                json.dump(data, f)
+        except (TypeError, Exception) as e:
             logger.warning(f"Failed to save cache file {cache_file}: {e}")
     
     def invalidate(self, pattern: Optional[str] = None) -> None:
@@ -149,7 +150,7 @@ class CacheManager:
             # Invalidate entries matching pattern
             keys_to_remove = []
             for key in self.memory_cache.keys():
-                if pattern in str(key):
+                if pattern in str(self.memory_cache[key].get('url', key)):
                     keys_to_remove.append(key)
             
             for key in keys_to_remove:
