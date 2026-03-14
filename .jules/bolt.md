@@ -1,0 +1,3 @@
+## 2024-03-14 - List Comprehensions vs Pandas Apply for Nested Stringification
+**Learning:** In `OptimizedDataProcessor`, bypassing Pandas Series overhead via pure Python list comprehensions (e.g., `[json.dumps(x) ... for x in df[col]]`) is significantly faster than using `df[col].apply(lambda x: ...)` for element-wise string formatting and mapping of JSON payloads. Likewise, fast list comprehensions with dictionary unpacking `[dict(item, _location_id=loc) ...]` avoids loops with `.copy()` overhead.
+**Action:** When handling string formatting or JSON serialization on nested objects in Pandas data pipelines, stick to pure Python list comprehensions over the column's values rather than relying on `apply()`.
