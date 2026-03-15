@@ -1,0 +1,36 @@
+         58355 function calls (55613 primitive calls) in 0.135 seconds
+
+   Ordered by: cumulative time
+   List reduced from 669 to 30 due to restriction <30>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.118    0.118 /app/CanaData.py:1034(get_menus)
+        1    0.000    0.000    0.118    0.118 /app/CanaData.py:311(getMenus)
+        1    0.000    0.000    0.118    0.118 /app/CanaData.py:326(_getMenusSequential)
+        6    0.006    0.001    0.067    0.011 /app/scripts/profile_runner.py:14(mock_do_request)
+        5    0.000    0.000    0.063    0.013 /app/CanaData.py:364(_fetch_and_process_menu)
+        6    0.061    0.010    0.061    0.010 {built-in method time.sleep}
+        5    0.000    0.000    0.057    0.011 /app/CanaData.py:399(_fetch_discovery_menu_items)
+        1    0.000    0.000    0.054    0.054 /app/CanaData.py:684(organize_into_clean_list)
+        1    0.000    0.000    0.054    0.054 /app/optimized_data_processor.py:18(process_menu_data)
+        1    0.000    0.000    0.033    0.033 /app/optimized_data_processor.py:42(_flatten_all_items)
+        1    0.000    0.000    0.018    0.018 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:301(json_normalize)
+        1    0.000    0.000    0.016    0.016 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:2125(to_dict)
+        1    0.004    0.004    0.016    0.016 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/methods/to_dict.py:97(to_dict)
+        1    0.000    0.000    0.013    0.013 /app/optimized_data_processor.py:69(_handle_remaining_nesting)
+    501/1    0.001    0.000    0.013    0.013 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:217(_simple_json_normalize)
+      500    0.004    0.000    0.012    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:192(_normalize_json_ordered)
+        1    0.000    0.000    0.011    0.011 /app/CanaData.py:1031(get_locations)
+        1    0.000    0.000    0.011    0.011 /app/CanaData.py:245(getLocations)
+        5    0.003    0.001    0.007    0.001 /app/CanaData.py:561(process_menu_items_json)
+ 2500/500    0.004    0.000    0.006    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:151(_normalize_json)
+19721/19682    0.005    0.000    0.005    0.000 {built-in method builtins.isinstance}
+        8    0.000    0.000    0.005    0.001 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/series.py:6422(dropna)
+        1    0.000    0.000    0.005    0.005 /app/CanaData.py:1049(data_to_csv)
+        1    0.000    0.000    0.005    0.005 /app/CanaData.py:907(dataToCSV)
+        7    0.000    0.000    0.005    0.001 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/dtypes/missing.py:649(remove_na_arraylike)
+        3    0.001    0.000    0.005    0.002 /app/CanaData.py:850(csv_maker)
+     3552    0.001    0.000    0.005    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/arrays/base.py:559(__iter__)
+     3500    0.004    0.000    0.005    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/dtypes/cast.py:186(maybe_box_native)
+        1    0.000    0.000    0.005    0.005 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/series.py:4960(apply)
+        1    0.000    0.000    0.005    0.005 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:702(__init__)
