@@ -1,4 +1,3 @@
-import json
 import os
 from datetime import datetime
 from CanaData import CanaData
@@ -100,6 +99,17 @@ def generate_html_report(data, region_name="Colorado"):
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
         gap: 2rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: var(--glass);
+        backdrop-filter: blur(12px);
+        border: 1px dashed var(--glass-border);
+        border-radius: 20px;
+        color: var(--text-muted);
+        grid-column: 1 / -1;
     }
 
     .card {
@@ -277,7 +287,7 @@ def generate_html_report(data, region_name="Colorado"):
     </head>
     <body>
         <a href="#main-content" class="skip-link">Skip to main content</a>
-        <div class="container" id="main-content">
+        <main class="container" id="main-content">
             <header>
                 <h1>{region_name} Discovery</h1>
                 <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
@@ -285,6 +295,14 @@ def generate_html_report(data, region_name="Colorado"):
 
             <div class="listing-grid">
     """
+
+    if not listings:
+        html_content += """
+                <div class="empty-state" role="status">
+                    <h2>No listings found</h2>
+                    <p>Try adjusting your filters or searching a different region.</p>
+                </div>
+        """
 
     for item in listings:
         avatar = item.get('avatar_image', {}).get('original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
@@ -349,7 +367,7 @@ def generate_html_report(data, region_name="Colorado"):
 
     html_content += """
             </div>
-        </div>
+        </main>
     </body>
     </html>
     """
