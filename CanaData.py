@@ -128,6 +128,10 @@ class CanaData:
         }
         self.interactive_mode = interactive_mode
 
+        # Optimize: Use requests.Session for Keep-Alive and connection pooling to reduce network I/O overhead
+        self.session = requests.Session()
+        self.session.headers.update(self.default_headers)
+
         # Caching configuration
         self.cache_enabled = cache_enabled
         if cache_enabled:
@@ -178,7 +182,7 @@ class CanaData:
 
         # Direct request without cache
         try:
-            req = requests.get(url, headers=self.default_headers, timeout=30)
+            req = self.session.get(url, headers=self.default_headers, timeout=30)
             if req.status_code == 200:
                 return req.json()
             elif req.status_code == 422:
@@ -378,7 +382,7 @@ class CanaData:
             if self.testMode:
                 logger.debug(f"Legacy menu URL: {legacy_url}")
 
-            resp = requests.get(legacy_url, headers=self.default_headers, timeout=30)
+            resp = self.session.get(legacy_url, headers=self.default_headers, timeout=30)
             if resp.status_code == 200:
                 self.process_menu_json(resp.json())
                 return True
