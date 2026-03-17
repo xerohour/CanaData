@@ -17,9 +17,7 @@ def test_retry_with_backoff():
             raise ValueError("Failed!")
         return "Success!"
 
-    start_time = time.time()
     result = flaky_function()
-    end_time = time.time()
 
     assert result == "Success!"
     assert len(call_times) == 3
@@ -75,12 +73,9 @@ def test_concurrent_processor_thread_safety():
     processor = ConcurrentMenuProcessor(max_workers=10, rate_limit=0)
     locations = [{"slug": f"loc-{i}"} for i in range(100)]
 
-    shared_counter = 0
-    # Deliberately use a non-thread-safe counter increment to see if our wrapper handles execution properly
     # Actually, we test if process_locations itself safely returns results without dropping any.
 
     def process_func(location):
-        nonlocal shared_counter
         # We don't guarantee thread safety of process_func itself here,
         # but we guarantee that ConcurrentMenuProcessor captures all results
         # without losing any items from the dictionary
