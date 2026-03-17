@@ -1,7 +1,6 @@
 import os
 import pytest
 from CanaData import CanaData
-import re
 from datetime import datetime
 import shutil
 
@@ -90,3 +89,57 @@ class TestSecurity:
         assert cana._sanitize_filename("invalid/characters!@#") == "invalidcharacters"
         assert cana._sanitize_filename("..\\windows\\style") == "..windowsstyle"
         assert cana._sanitize_filename("foo bar") == "foobar" # spaces removed
+
+    def test_cache_manager_secure_serialization(self):
+        """Test that CacheManager securely serializes data and handles legacy cache formats."""
+        import json
+        import pickle
+        from cache_manager import CacheManager
+
+        # Test directory
+        cache_dir = "tests/test_secure_cache"
+        if os.path.exists(cache_dir):
+            shutil.rmtree(cache_dir)
+
+        manager = CacheManager(cache_dir=cache_dir)
+        test_url = "https://api.example.com/data"
+        test_data = {"key": "value", "list": [1, 2, 3]}
+
+        # 1. Test secure serialization (saving)
+        manager.set(test_url, test_data)
+
+        # Verify the file was created and is valid JSON, not pickle
+        cache_key = manager._generate_cache_key(test_url, None)
+        cache_file = os.path.join(cache_dir, f"{cache_key}.cache")
+
+        assert os.path.exists(cache_file)
+        with open(cache_file, 'r', encoding='utf-8') as f:
+            # This will fail if it's pickle data (binary)
+            saved_data = json.load(f)
+            assert saved_data == test_data
+
+        # 2. Test deserialization (loading)
+        # Clear memory cache to force loading from disk
+        manager.memory_cache.clear()
+        loaded_data = manager.get(test_url)
+        assert loaded_data == test_data
+
+        # 3. Test backward compatibility (graceful failure with legacy pickle cache)
+        legacy_url = "https://api.example.com/legacy"
+        legacy_key = manager._generate_cache_key(legacy_url, None)
+        legacy_file = os.path.join(cache_dir, f"{legacy_key}.cache")
+
+        # Create a malicious/legacy pickle file
+        with open(legacy_file, 'wb') as f:
+            pickle.dump(test_data, f)
+
+        # Clear memory cache and attempt to get the legacy data
+        manager.memory_cache.clear()
+
+        # This should fail gracefully, catching UnicodeDecodeError or JSONDecodeError,
+        # and return None without crashing or executing arbitrary code.
+        legacy_loaded = manager.get(legacy_url)
+        assert legacy_loaded is None
+
+        # Cleanup
+        shutil.rmtree(cache_dir)
