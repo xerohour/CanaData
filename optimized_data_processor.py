@@ -54,17 +54,16 @@ class OptimizedDataProcessor:
         if not items_with_location:
             return pd.DataFrame()
         
-        # Use pandas json_normalize for efficient flattening
+        # Memory benchmark indicates custom recursive method is faster for heavily nested, small-scoped structures
+        # Bypass pandas json_normalize entirely
         try:
-            df = pd.json_normalize(items_with_location, sep='.')
-            
+            df = self._fallback_flattening(items_with_location)
             # Handle any remaining nested structures
             df = self._handle_remaining_nesting(df)
-            
             return df
         except Exception as e:
-            logger.warning(f"Pandas normalization failed, falling back to custom method: {e}")
-            return self._fallback_flattening(items_with_location)
+            logger.error(f"Flattening failed: {e}")
+            raise
     
     def _handle_remaining_nesting(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -82,8 +81,8 @@ class OptimizedDataProcessor:
         # Flatten nested columns
         for col in nested_columns:
             try:
-                # Convert to string representation for nested data
-                df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (dict, list)) else str(x))
+                # Use pure python list comprehension instead of pandas apply to avoid Series element-wise overhead
+                df[col] = [json.dumps(x) if isinstance(x, (dict, list)) else str(x) for x in df[col]]
             except Exception as e:
                 logger.warning(f"Failed to flatten column {col}: {e}")
                 df[col] = df[col].astype(str)
