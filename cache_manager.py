@@ -53,7 +53,7 @@ class CacheManager:
             sorted_params = sorted(params.items())
             cache_string += "?" + "&".join(f"{k}={v}" for k, v in sorted_params)
         
-        return hashlib.md5(cache_string.encode()).hexdigest()
+        return hashlib.sha256(cache_string.encode()).hexdigest()
     
     def get(self, url: str, params: Optional[Dict] = None) -> Optional[Any]:
         """Retrieve data from cache"""
@@ -81,7 +81,8 @@ class CacheManager:
                 # Load back into memory cache
                 self.memory_cache[cache_key] = {
                     'data': disk_data,
-                    'timestamp': time.time()
+                    'timestamp': time.time(),
+                    'url': url
                 }
                 self._prune_memory_cache()
                 logger.debug(f"Disk cache hit for {url}")
@@ -97,7 +98,8 @@ class CacheManager:
         # Store in memory cache
         self.memory_cache[cache_key] = {
             'data': data,
-            'timestamp': time.time()
+            'timestamp': time.time(),
+            'url': url
         }
         self._prune_memory_cache()
         
@@ -148,8 +150,8 @@ class CacheManager:
         if pattern:
             # Invalidate entries matching pattern
             keys_to_remove = []
-            for key in self.memory_cache.keys():
-                if pattern in str(key):
+            for key, entry in self.memory_cache.items():
+                if pattern in entry.get('url', str(key)):
                     keys_to_remove.append(key)
             
             for key in keys_to_remove:
