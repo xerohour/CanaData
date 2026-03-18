@@ -277,7 +277,7 @@ def generate_html_report(data, region_name="Colorado"):
     </head>
     <body>
         <a href="#main-content" class="skip-link">Skip to main content</a>
-        <div class="container" id="main-content">
+        <main class="container" id="main-content">
             <header>
                 <h1>{region_name} Discovery</h1>
                 <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
@@ -349,7 +349,7 @@ def generate_html_report(data, region_name="Colorado"):
 
     html_content += """
             </div>
-        </div>
+        </main>
     </body>
     </html>
     """
