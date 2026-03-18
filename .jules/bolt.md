@@ -1,0 +1,3 @@
+## 2026-03-18 - Enable HTTP Keep-Alive
+**Learning:** To mitigate network I/O bottlenecks when making high-frequency API calls (e.g., in `CanaData` or `CannMenusClient`), always use `requests.Session()` to enable HTTP Keep-Alive and connection pooling rather than instantiating new `requests.get()` connections.
+**Action:** I will always use `requests.Session()` when making multiple requests to the same host.

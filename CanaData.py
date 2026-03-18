@@ -18,6 +18,7 @@ from concurrent_processor import ConcurrentMenuProcessor
 from cache_manager import CacheManager
 from cached_api_client import CachedAPIClient
 from optimized_data_processor import OptimizedDataProcessor
+from requests.adapters import HTTPAdapter
 
 # Load environment variables
 load_dotenv()
@@ -127,6 +128,10 @@ class CanaData:
             'Referer': 'https://weedmaps.com/'
         }
         self.interactive_mode = interactive_mode
+        self.session = requests.Session()
+        adapter = HTTPAdapter(pool_connections=self.max_workers, pool_maxsize=self.max_workers)
+        self.session.mount('http://', adapter)
+        self.session.mount('https://', adapter)
 
         # Caching configuration
         self.cache_enabled = cache_enabled
@@ -138,7 +143,7 @@ class CanaData:
                 disk_cache_ttl=cache_ttl * 6,  # Disk cache lasts longer
                 enable_disk_cache=os.getenv('ENABLE_DISK_CACHE', 'true').lower() == 'true'
             )
-            self.api_client = CachedAPIClient(self.cache_manager)
+            self.api_client = CachedAPIClient(self.cache_manager, max_workers=self.max_workers)
         else:
             self.cache_manager = None
             self.api_client = None
@@ -178,7 +183,7 @@ class CanaData:
 
         # Direct request without cache
         try:
-            req = requests.get(url, headers=self.default_headers, timeout=30)
+            req = self.session.get(url, headers=self.default_headers, timeout=30)
             if req.status_code == 200:
                 return req.json()
             elif req.status_code == 422:
@@ -378,7 +383,7 @@ class CanaData:
             if self.testMode:
                 logger.debug(f"Legacy menu URL: {legacy_url}")
 
-            resp = requests.get(legacy_url, headers=self.default_headers, timeout=30)
+            resp = self.session.get(legacy_url, headers=self.default_headers, timeout=30)
             if resp.status_code == 200:
                 self.process_menu_json(resp.json())
                 return True
