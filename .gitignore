@@ -15,3 +15,7 @@ cache/
 # Local Claude tooling state
 .claude/
 .kiln/
+.venv/
+profiling_results.txt
+.venv/
+profiling_results.txt

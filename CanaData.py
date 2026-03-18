@@ -118,7 +118,14 @@ class CanaData:
         # Concurrent processing configuration
         self.max_workers = max_workers
         self.rate_limit = rate_limit
-        self._menu_data_lock = threading.Lock()
+
+        # Fine-grained locks for thread-safe state updates
+        self._items_lock = threading.Lock()
+        self._empty_lock = threading.Lock()
+        self._strains_lock = threading.Lock()
+        self._count_lock = threading.Lock()
+        self._locations_lock = threading.Lock()
+
         self.default_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
             'Accept': 'application/json, text/plain, */*',
@@ -544,16 +551,22 @@ class CanaData:
         listing_copy = dict(listing)
         listing_copy['num_menu_items'] = str(menu_items_count)
 
-        with self._menu_data_lock:
+        with self._items_lock:
             self.allMenuItems[listing_id] = local_menu_items
-            if is_empty_menu:
+
+        if is_empty_menu:
+            with self._empty_lock:
                 self.emptyMenus[listing_id] = listing_copy
 
+        with self._strains_lock:
             for slug, strain in local_extracted_strains.items():
                 if slug not in self.extractedStrains:
                     self.extractedStrains[slug] = strain
 
+        with self._count_lock:
             self.menuItemsFound += menu_items_count
+
+        with self._locations_lock:
             self.totalLocations.append(listing_copy)
 
         logger.info(f"Processed {menu_items_count} items for {listing_slug}")
@@ -606,16 +619,22 @@ class CanaData:
             'num_menu_items': str(menu_items_count),
         }
 
-        with self._menu_data_lock:
+        with self._items_lock:
             self.allMenuItems[listing_id] = local_menu_items
-            if menu_items_count == 0:
+
+        if menu_items_count == 0:
+            with self._empty_lock:
                 self.emptyMenus[listing_id] = listing_copy
 
+        with self._strains_lock:
             for slug, strain in local_extracted_strains.items():
                 if slug not in self.extractedStrains:
                     self.extractedStrains[slug] = strain
 
+        with self._count_lock:
             self.menuItemsFound += menu_items_count
+
+        with self._locations_lock:
             self.totalLocations.append(listing_copy)
 
         logger.info(f"Processed {menu_items_count} items for {listing_slug} via discovery menu_items")
