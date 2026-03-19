@@ -255,6 +255,23 @@ def generate_html_report(data, region_name="Colorado"):
         outline-offset: 4px;
     }
 
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 4rem 2rem;
+        background: var(--card-bg);
+        border: 1px dashed var(--glass-border);
+        border-radius: 20px;
+        color: var(--text-muted);
+        font-size: 1.2rem;
+    }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
     @media (max-width: 768px) {
         body { padding: 1rem; }
         header { padding: 2rem 1rem; margin-bottom: 2rem; }
@@ -277,7 +294,7 @@ def generate_html_report(data, region_name="Colorado"):
     </head>
     <body>
         <a href="#main-content" class="skip-link">Skip to main content</a>
-        <div class="container" id="main-content">
+        <main class="container" id="main-content">
             <header>
                 <h1>{region_name} Discovery</h1>
                 <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
@@ -285,6 +302,15 @@ def generate_html_report(data, region_name="Colorado"):
 
             <div class="listing-grid">
     """
+
+    if not listings:
+        html_content += """
+                <div class="empty-state" role="status">
+                    <div class="empty-state-icon">🔍</div>
+                    <h2>No listings found</h2>
+                    <p>Try adjusting your search filters or exploring a different region.</p>
+                </div>
+        """
 
     for item in listings:
         avatar = item.get('avatar_image', {}).get('original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
@@ -349,7 +375,7 @@ def generate_html_report(data, region_name="Colorado"):
 
     html_content += """
             </div>
-        </div>
+        </main>
     </body>
     </html>
     """
