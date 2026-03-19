@@ -82,8 +82,11 @@ class OptimizedDataProcessor:
         # Flatten nested columns
         for col in nested_columns:
             try:
-                # Convert to string representation for nested data
-                df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (dict, list)) else str(x))
+                # Bypass pandas Series overhead with pure Python list comprehension
+                df[col] = [
+                    json.dumps(x) if isinstance(x, (dict, list)) else str(x)
+                    for x in df[col].tolist()
+                ]
             except Exception as e:
                 logger.warning(f"Failed to flatten column {col}: {e}")
                 df[col] = df[col].astype(str)
