@@ -2,8 +2,6 @@ import pytest
 import responses
 from CanaData import CanaData
 from CannMenusClient import CannMenusClient
-from LeaflyScraper import scrape_leafly
-import json
 
 @pytest.fixture
 def cana():
@@ -20,7 +18,7 @@ def test_get_brands_success(cana):
     }
     responses.add(responses.GET, mock_url, json=mock_response, status=200)
     
-    cana.getBrands()
+    cana.get_brands()
     assert len(cana.brands) == 1
     assert cana.brands[0]['name'] == 'Test Brand'
     assert cana.brandsFound == 1
@@ -36,7 +34,7 @@ def test_get_strains_success(cana):
     }
     responses.add(responses.GET, mock_url, json=mock_response, status=200)
     
-    cana.getStrains()
+    cana.get_strains()
     assert len(cana.strains) == 1
     assert cana.strains[0]['name'] == 'Blue Dream'
     assert cana.strainsFound == 1
