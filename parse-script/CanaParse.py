@@ -1,5 +1,4 @@
 import os
-import sys
 import csv
 import re
 import json
@@ -7,10 +6,9 @@ import logging
 import argparse
 import glob
 from datetime import datetime
-from typing import List, Any, Dict, Optional
+from typing import List, Any
 from yattag import Doc, indent
 from dotenv import load_dotenv
-from typing import List, Any
 
 # Load environment variables
 load_dotenv()
@@ -151,6 +149,12 @@ class CanaParse:
                 return
 
         self.filtered_tables = []
+
+        # ⚡ Bolt Optimization: Pre-calculate lower-cased row strings once, rather than
+        # re-calculating (" ".join(row).lower()) inside the inner loop for every filter.
+        # This reduces the operation from O(rows * filters) to O(rows).
+        precalculated_rows = [(row, " ".join([str(x) for x in row]).lower()) for row in self.raw_data]
+
         for f in self.filters:
             logger.info(f"Filtering for: {f.name}")
             
@@ -159,8 +163,8 @@ class CanaParse:
             
             # Apply filters
             filtered: List[Any] = [
-                row[:] for row in self.raw_data # copy row to avoid mutating raw_data
-                if self.is_match(row, f, price_col)
+                row[:] for row, row_str in precalculated_rows # copy row to avoid mutating raw_data
+                if self.is_match(row, f, price_col, row_str)
             ]
             
             # Handle result limits and sorting
@@ -184,7 +188,7 @@ class CanaParse:
         }
         return mapping.get(key, 9)
 
-    def is_match(self, row, f, price_col):
+    def is_match(self, row, f, price_col, row_str):
         """
         Check if a single CSV row matches the filter criteria.
         """
@@ -199,9 +203,6 @@ class CanaParse:
         if f.categories:
             if str(row[20]).lower() not in [c.lower() for c in f.categories]:
                 return False
-
-        # 3. Join row for word-based searches
-        row_str = " ".join([str(x) for x in row]).lower()
 
         # 4. Brands
         if f.brands:
