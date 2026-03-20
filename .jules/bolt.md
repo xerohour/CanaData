@@ -1,0 +1,3 @@
+## 2024-05-18 - Optimized Concurrency Locks and Connections
+**Learning:** Single locks (`self._menu_data_lock`) and lack of connection pooling (`requests.get`) bottleneck concurrent data processing and network I/O, leading to 'noisy neighbor' issues and port exhaustion. Additionally, redundant Pandas `apply` operations or string concatenations in tight loops significantly degrade data processing speeds.
+**Action:** Replace single locks with fine-grained ones (e.g., `_items_lock`, `_empty_lock`). Use `requests.Session` with an `HTTPAdapter` configured to match `max_workers`. Leverage list comprehensions over Pandas element-wise mapping and precalculate strings outside of iterative loops to boost pipeline throughput.
