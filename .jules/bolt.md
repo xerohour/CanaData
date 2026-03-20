@@ -1,0 +1,3 @@
+## 2026-03-20 - Optimize redundant string joins in loops
+**Learning:** Redundant string joining operations within nested loops (filters x rows) create a significant O(N*M) performance bottleneck in Python. Recalculating `" ".join([str(x) for x in row]).lower()` for every row and every filter evaluation dramatically increases CPU time and limits scalability.
+**Action:** When filtering or processing 2D array structures (like CSV rows) multiple times based on string matching, always pre-calculate lower-cased aggregate strings for each row before entering the iteration loop, effectively replacing an O(N*M) operation with an O(N) calculation.
