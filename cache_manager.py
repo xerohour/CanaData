@@ -1,5 +1,5 @@
 import time
-import pickle
+import json
 import hashlib
 from typing import Any, Optional, Dict
 from pathlib import Path
@@ -126,11 +126,11 @@ class CacheManager:
                 return None
             
             # Load cached data
-            with open(cache_file, 'rb') as f:
-                return pickle.load(f)
+            with open(cache_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
                 
-        except (pickle.PickleError, EOFError, FileNotFoundError) as e:
-            logger.warning(f"Failed to load cache file {cache_file}: {e}")
+        except (json.JSONDecodeError, FileNotFoundError, UnicodeDecodeError) as e:
+            logger.warning(f"Failed to load cache file {cache_file} (likely legacy pickle format): {e}")
             return None
     
     def _set_to_disk(self, cache_key: str, data: Any) -> None:
@@ -138,9 +138,9 @@ class CacheManager:
         cache_file = self.cache_dir / f"{cache_key}.cache"
         
         try:
-            with open(cache_file, 'wb') as f:
-                pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
-        except pickle.PickleError as e:
+            with open(cache_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f)
+        except (TypeError, ValueError) as e:
             logger.warning(f"Failed to save cache file {cache_file}: {e}")
     
     def invalidate(self, pattern: Optional[str] = None) -> None:
