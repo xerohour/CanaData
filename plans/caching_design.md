@@ -324,7 +324,7 @@ class CanaData:
         # This would contain the existing response processing logic
         return response
     
-    def getLocations(self, lat=None, long=None):
+    def get_locations(self, lat=None, long=None):
         """Enhanced location fetching with caching"""
         if not self.searchSlug:
             logger.error("No search slug provided!")
@@ -342,7 +342,7 @@ class CanaData:
                 return
         
         # Fetch fresh data
-        super().getLocations(lat, long)
+        super().get_locations(lat, long)
         
         # Cache the results
         if self.cache_manager and self.locations:
