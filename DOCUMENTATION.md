@@ -12,11 +12,11 @@ The scraper follows a linear sequential workflow for each city or state "slug" p
 graph TD
     A[Start] --> B[Initialize CanaData Class]
     B --> C[Set Search Slug]
-    C --> D[getLocations: Fetch all Dispensaries/Deliveries]
-    D --> E[getMenus: Fetch menu for each location]
+    C --> D[get_locations: Fetch all Dispensaries/Deliveries]
+    D --> E[get_menus: Fetch menu for each location]
     E --> F[organize_into_clean_list: Flatten and Normalize data]
-    F --> G[dataToCSV: Export to CSV files]
-    G --> H[resetDataSets: Prepare for next slug]
+    F --> G[data_to_csv: Export to CSV files]
+    G --> H[reset_data_sets: Prepare for next slug]
     H --> I{More Slugs?}
     I -- Yes --> C
     I -- No --> J[End]
@@ -26,7 +26,7 @@ graph TD
 
 ## 2. Core Logic Components
 
-### A. Location Retrieval (`getLocations`)
+### A. Location Retrieval (`get_locations`)
 - **API Endpoint**: `https://api-g.weedmaps.com/discovery/v1/listings`
 - **Logic**: 
     - Uses a `while True` loop to handle pagination.
@@ -35,7 +35,7 @@ graph TD
     - Filters are applied for `storefront` (dispensaries) and `delivery` based on user settings.
     - Captures the total count of listings from the first response (`meta.total_listings`).
 
-### B. Menu Retrieval (`getMenus`)
+### B. Menu Retrieval (`get_menus`)
 - **API Endpoint**: `https://weedmaps.com/api/web/v1/listings/{slug}/menu`
 - **Logic**:
     - Iterates through the list of location slugs collected in the previous step.
@@ -111,8 +111,8 @@ The final flattened and normalized list of dictionaries ready for CSV output.
 ## 6. Error Handling and Resiliency
 
 - **Rate Limiting**: If an API call fails or returns a 422, the script attempts to inform the user and provides a retry/skip mechanism.
-- **503 Errors**: Specifically handled in `getMenus` as "First Byte Errors" (common when Weedmaps is under high load or blocks automated traffic).
-- **Graceful Termination**: Checks if a state has zero results (`meta.total_listings == 0`) and adds it to `unFriendlyStates` to avoid wasted processing.
+- **503 Errors**: Specifically handled in `get_menus` as "First Byte Errors" (common when Weedmaps is under high load or blocks automated traffic).
+- **Graceful Termination**: Checks if a state has zero results (`meta.total_listings == 0`) and adds it to `empty_states` to avoid wasted processing.
 
 ---
 

@@ -280,8 +280,8 @@ class TestIntegration:
         canadata_instance.storefronts = True
         canadata_instance.deliveries = False
         
-        canadata_instance.getLocations()
-        canadata_instance.getMenus()
+        canadata_instance.get_locations()
+        canadata_instance.get_menus()
         canadata_instance.organize_into_clean_list()
         
         # Verify results

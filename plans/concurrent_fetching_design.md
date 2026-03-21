@@ -8,7 +8,7 @@ This document outlines the design for implementing concurrent data fetching in t
 
 The current implementation processes locations sequentially:
 ```python
-# Current approach in getMenus()
+# Current approach in get_menus()
 for i, location in enumerate(self.locations):
     # Process one location at a time
     resp = requests.get(url, timeout=30)
@@ -119,7 +119,7 @@ class CanaData:
         # ... existing initialization ...
         self.concurrent_processor = ConcurrentMenuProcessor(max_workers, rate_limit)
     
-    def getMenus(self):
+    def get_menus(self):
         """Enhanced menu fetching with concurrent processing"""
         if self.NonGreenState:
             return
@@ -258,7 +258,7 @@ def _fetch_with_retry(self, url: str) -> Dict:
 ### Implementation Steps
 
 1. Create `ConcurrentMenuProcessor` class
-2. Modify `CanaData.getMenus()` to use concurrent processing
+2. Modify `CanaData.get_menus()` to use concurrent processing
 3. Add configuration options for concurrent processing
 4. Implement retry logic with exponential backoff
 5. Add progress tracking and error reporting

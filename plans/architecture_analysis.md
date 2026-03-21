@@ -34,7 +34,7 @@ The CanaData project is a Python-based cannabis data scraper that pulls informat
 ### 1. Sequential API Requests
 - **Issue**: All API requests are made sequentially, one at a time
 - **Impact**: Significant delays when processing large numbers of locations
-- **Location**: `getLocations()` and `getMenus()` methods in CanaData.py
+- **Location**: `get_locations()` and `get_menus()` methods in CanaData.py
 
 ### 2. Inefficient Data Flattening
 - **Issue**: Custom stack-based flattening algorithm processes each item individually
