@@ -150,6 +150,10 @@ class CanaParse:
             if not self.load_csv_data():
                 return
 
+        # Pre-calculate lowercase string representation for each row
+        # This prevents redundant string joining and lowercasing in the inner loop
+        precalculated_data = [(row, " ".join([str(x) for x in row]).lower()) for row in self.raw_data]
+
         self.filtered_tables = []
         for f in self.filters:
             logger.info(f"Filtering for: {f.name}")
@@ -158,10 +162,10 @@ class CanaParse:
             price_col = self.get_col_by_key(f.key)
             
             # Apply filters
-            filtered: List[Any] = [
-                row[:] for row in self.raw_data # copy row to avoid mutating raw_data
-                if self.is_match(row, f, price_col)
-            ]
+            filtered: List[Any] = []
+            for original_row, row_str in precalculated_data:
+                if self.is_match(original_row, row_str, f, price_col):
+                    filtered.append(original_row[:]) # copy row to avoid mutating raw_data
             
             # Handle result limits and sorting
             if f.limit_results_amt > -1 and len(filtered) > f.limit_results_amt:
@@ -184,7 +188,7 @@ class CanaParse:
         }
         return mapping.get(key, 9)
 
-    def is_match(self, row, f, price_col):
+    def is_match(self, row, row_str, f, price_col):
         """
         Check if a single CSV row matches the filter criteria.
         """
@@ -200,9 +204,7 @@ class CanaParse:
             if str(row[20]).lower() not in [c.lower() for c in f.categories]:
                 return False
 
-        # 3. Join row for word-based searches
-        row_str = " ".join([str(x) for x in row]).lower()
-
+        # 3. Word-based searches use the precalculated row_str
         # 4. Brands
         if f.brands:
             if not any(brand.lower() in row_str for brand in f.brands):
