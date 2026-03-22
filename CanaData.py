@@ -138,7 +138,7 @@ class CanaData:
                 disk_cache_ttl=cache_ttl * 6,  # Disk cache lasts longer
                 enable_disk_cache=os.getenv('ENABLE_DISK_CACHE', 'true').lower() == 'true'
             )
-            self.api_client = CachedAPIClient(self.cache_manager)
+            self.api_client = CachedAPIClient(self.cache_manager, max_workers=max_workers)
         else:
             self.cache_manager = None
             self.api_client = None
@@ -149,6 +149,12 @@ class CanaData:
             self.data_processor = OptimizedDataProcessor(max_workers=max_workers)
         else:
             self.data_processor = None
+
+        # Configure Network Connection Pooling
+        self.session = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(pool_maxsize=max_workers, pool_connections=max_workers)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
 
     def do_request(self, url, use_cache: bool = True):
         """
@@ -178,7 +184,7 @@ class CanaData:
 
         # Direct request without cache
         try:
-            req = requests.get(url, headers=self.default_headers, timeout=30)
+            req = self.session.get(url, headers=self.default_headers, timeout=30)
             if req.status_code == 200:
                 return req.json()
             elif req.status_code == 422:
