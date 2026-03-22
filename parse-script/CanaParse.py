@@ -1,5 +1,4 @@
 import os
-import sys
 import csv
 import re
 import json
@@ -7,10 +6,9 @@ import logging
 import argparse
 import glob
 from datetime import datetime
-from typing import List, Any, Dict, Optional
+from typing import List, Any
 from yattag import Doc, indent
 from dotenv import load_dotenv
-from typing import List, Any
 
 # Load environment variables
 load_dotenv()
@@ -150,6 +148,9 @@ class CanaParse:
             if not self.load_csv_data():
                 return
 
+        # Pre-calculate lowercased row strings once to avoid redundant joining inside the filter loop
+        row_strings = [" ".join([str(x) for x in row]).lower() for row in self.raw_data]
+
         self.filtered_tables = []
         for f in self.filters:
             logger.info(f"Filtering for: {f.name}")
@@ -158,10 +159,12 @@ class CanaParse:
             price_col = self.get_col_by_key(f.key)
             
             # Apply filters
-            filtered: List[Any] = [
-                row[:] for row in self.raw_data # copy row to avoid mutating raw_data
-                if self.is_match(row, f, price_col)
-            ]
+            filtered: List[Any] = []
+            for i, row in enumerate(self.raw_data):
+                if self.is_match(row, f, price_col, row_strings[i]):
+                    # evaluate condition first, then append a copy of it
+                    # to prevent creating shallow copies of rows that won't make it to `filtered`
+                    filtered.append(row[:])
             
             # Handle result limits and sorting
             if f.limit_results_amt > -1 and len(filtered) > f.limit_results_amt:
@@ -184,7 +187,7 @@ class CanaParse:
         }
         return mapping.get(key, 9)
 
-    def is_match(self, row, f, price_col):
+    def is_match(self, row, f, price_col, row_str):
         """
         Check if a single CSV row matches the filter criteria.
         """
@@ -199,9 +202,6 @@ class CanaParse:
         if f.categories:
             if str(row[20]).lower() not in [c.lower() for c in f.categories]:
                 return False
-
-        # 3. Join row for word-based searches
-        row_str = " ".join([str(x) for x in row]).lower()
 
         # 4. Brands
         if f.brands:
