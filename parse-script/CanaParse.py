@@ -1,5 +1,4 @@
 import os
-import sys
 import csv
 import re
 import json
@@ -7,10 +6,9 @@ import logging
 import argparse
 import glob
 from datetime import datetime
-from typing import List, Any, Dict, Optional
+from typing import List, Any
 from yattag import Doc, indent
 from dotenv import load_dotenv
-from typing import List, Any
 
 # Load environment variables
 load_dotenv()
@@ -151,6 +149,10 @@ class CanaParse:
                 return
 
         self.filtered_tables = []
+
+        # Pre-calculate row_str for all rows to avoid redundant string joining inside the inner loop
+        precalc_raw_data = [(row, " ".join([str(x) for x in row]).lower()) for row in self.raw_data]
+
         for f in self.filters:
             logger.info(f"Filtering for: {f.name}")
             
@@ -158,10 +160,16 @@ class CanaParse:
             price_col = self.get_col_by_key(f.key)
             
             # Apply filters
-            filtered: List[Any] = [
-                row[:] for row in self.raw_data # copy row to avoid mutating raw_data
-                if self.is_match(row, f, price_col)
-            ]
+            filtered: List[Any] = []
+            for row, row_str in precalc_raw_data:
+                is_matched, thc_append_str, cbd_append_str = self.is_match(row, row_str, f, price_col)
+                if is_matched:
+                    copied_row = row[:]
+                    if thc_append_str:
+                        copied_row.append(thc_append_str)
+                    if cbd_append_str:
+                        copied_row.append(cbd_append_str)
+                    filtered.append(copied_row)
             
             # Handle result limits and sorting
             if f.limit_results_amt > -1 and len(filtered) > f.limit_results_amt:
@@ -184,67 +192,70 @@ class CanaParse:
         }
         return mapping.get(key, 9)
 
-    def is_match(self, row, f, price_col):
+    def is_match(self, row, row_str, f, price_col):
         """
         Check if a single CSV row matches the filter criteria.
+        Returns a tuple (is_matched, thc_append_str, cbd_append_str)
         """
+        thc_append_str = None
+        cbd_append_str = None
+
         # 1. Price Comparison
         if f.price:
             row_price_raw = str(row[price_col])
             row_price = float(row_price_raw) if row_price_raw.replace('.','',1).isdigit() else 0
             if not getComparisonVal(f.compare, row_price, f.price):
-                return False
+                return False, None, None
 
         # 2. Categories (Index 20)
         if f.categories:
             if str(row[20]).lower() not in [c.lower() for c in f.categories]:
-                return False
-
-        # 3. Join row for word-based searches
-        row_str = " ".join([str(x) for x in row]).lower()
+                return False, None, None
 
         # 4. Brands
         if f.brands:
             if not any(brand.lower() in row_str for brand in f.brands):
-                return False
+                return False, None, None
 
         # 5. Strains
         if f.strains:
             if not any(strain.lower() in row_str for strain in f.strains):
-                return False
+                return False, None, None
 
         # 6. Stores (Index 29)
         if f.stores:
             if not any(store.lower() in str(row[29]).lower() for store in f.stores):
-                return False
+                return False, None, None
 
         # 7. Bad Words (Exclusion)
         if f.bad_words:
             if any(word.lower() in row_str for word in f.bad_words):
-                return False
+                return False, None, None
 
         # 8. Good Words (Required)
         if f.good_words:
             if not any(word.lower() in row_str for word in f.good_words):
-                return False
+                return False, None, None
 
         # 9. THC Floor
         if f.thc_floor > 0:
             thc_val = self.extract_cannabinoid(row_str, 'thc')
             if thc_val < f.thc_floor:
-                if f.thc_floor_strict: return False
+                if f.thc_floor_strict:
+                    return False, None, None
             else:
-                row.append(f"thc+{thc_val}")
+                thc_append_str = f"thc+{thc_val}"
 
         # 10. CBD Floor
         if f.cbd_floor > 0.001:
             cbd_val = self.extract_cannabinoid(row_str, 'cbd')
             if cbd_val < f.cbd_floor:
-                if f.cbd_floor_strict: return False
+                if f.cbd_floor_strict:
+                    return False, None, None
             else:
-                row.append(f"cbd+{cbd_val}")
+                cbd_append_str = f"cbd+{cbd_val}"
 
-        return True
+        return True, thc_append_str, cbd_append_str
 
     def extract_cannabinoid(self, text, type_name):
         """Extract numeric value for THC or CBD from text."""
@@ -530,7 +541,8 @@ class CanaParse:
                     text(str(len(results)))
 
             if not results:
-                with tag('p', style="color: var(--text-muted); padding: 1rem;"): text("No results found for this filter.")
+                with tag('p', style="color: var(--text-muted); padding: 1rem;"):
+                    text("No results found for this filter.")
                 return
 
             with tag('div', klass='table-container'):
@@ -539,11 +551,13 @@ class CanaParse:
                         with tag('tr'):
                             # Define headers based on data content
                             headers = ['Price', 'Image', 'Product', 'Category', 'THC']
-                            if f.cbd_floor > 0: headers.append('CBD')
+                            if f.cbd_floor > 0:
+                                headers.append('CBD')
                             headers.extend(['Dispensary', 'Details'])
                             
                             for label in headers:
-                                with tag('th'): text(label)
+                                with tag('th'):
+                                    text(label)
                     
                     with tag('tbody'):
                         for row in results:

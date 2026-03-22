@@ -9,9 +9,12 @@ logger = logging.getLogger(__name__)
 class CachedAPIClient:
     """Enhanced API client with caching capabilities"""
     
-    def __init__(self, cache_manager: CacheManager):
+    def __init__(self, cache_manager: CacheManager, max_workers: int = 10):
         self.cache_manager = cache_manager
         self.session = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(pool_maxsize=max_workers, pool_connections=max_workers)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
     
     def get(self, url: str, params: Optional[Dict] = None, use_cache: bool = True, 
             force_refresh: bool = False, **kwargs) -> Any:
