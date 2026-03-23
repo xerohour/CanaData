@@ -12,6 +12,9 @@ class CachedAPIClient:
     def __init__(self, cache_manager: CacheManager):
         self.cache_manager = cache_manager
         self.session = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(pool_connections=100, pool_maxsize=100)
+        self.session.mount('http://', adapter)
+        self.session.mount('https://', adapter)
     
     def get(self, url: str, params: Optional[Dict] = None, use_cache: bool = True, 
             force_refresh: bool = False, **kwargs) -> Any:
