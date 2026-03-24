@@ -1,5 +1,4 @@
 import requests
-import json
 
 url = "https://api-g.weedmaps.com/discovery/v1/listings?page_size=1"
 
