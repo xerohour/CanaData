@@ -1,7 +1,6 @@
 import os
 import pytest
 from CanaData import CanaData
-import re
 from datetime import datetime
 import shutil
 
