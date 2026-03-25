@@ -3,19 +3,12 @@ import concurrent.futures
 import time
 import requests
 import json
-from unittest.mock import patch, MagicMock
+import os
+import responses
+from unittest.mock import patch
 from concurrent_processor import ConcurrentMenuProcessor
 from CanaData import CanaData
 
-def mock_request(*args, **kwargs):
-    time.sleep(0.01) # Simulate network latency
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {
-        "listing": {"id": args[0].split("/")[-2] if "listings" in args[0] else "1", "slug": "test-slug", "wmid": "wm1", "_type": "dispensary"},
-        "categories": [{"items": [{"id": 1, "name": "Test Item", "price": {"amount": 50}}]}]
-    }
-    return mock_response
 
 def test_concurrent_processor_thread_safety():
     # Test that results and errors lists are thread safe (they should be since the executor returns futures)
@@ -34,29 +27,48 @@ def test_concurrent_processor_thread_safety():
     assert len(results) == 90
     assert len(processor.errors) == 10
 
-@patch("CanaData.CanaData.do_request")
-def test_canadata_concurrent_get_menus(mock_do_request):
-    # Mock do_request to return legacy API response so it processes properly
-    mock_do_request.return_value = 'break' # force skip discovery items to go to legacy url
+@responses.activate
+def test_canadata_concurrent_get_menus(monkeypatch):
+    # Mocking environment variables BEFORE instantiation
+    monkeypatch.setenv('USE_CONCURRENT_PROCESSING', 'true')
+    monkeypatch.setenv('MAX_WORKERS', '10')
+    monkeypatch.setenv('RATE_LIMIT', '0.0')
 
-    with patch("requests.get", side_effect=mock_request):
-        cana = CanaData(optimize_processing=False) # optimized flattener groups by location id so it deduplicates if mock id is the same. using custom flattener ensures we see the raw length.
+    cana = CanaData(optimize_processing=False, cache_enabled=False) # optimized flattener groups by location id so it deduplicates if mock id is the same. using custom flattener ensures we see the raw length. Disable cache to hit endpoints.
 
-        # Mocking environment variables
-        import os
-        os.environ['USE_CONCURRENT_PROCESSING'] = 'true'
-        os.environ['MAX_WORKERS'] = '10'
-        os.environ['RATE_LIMIT'] = '0.0'
+    # We mock 50 locations
+    cana.locations = [{"slug": f"loc-{i}", "type": "dispensary", "id": f"loc-{i}"} for i in range(50)]
 
-        cana.locations = [{"slug": f"loc-{i}", "type": "dispensary", "id": f"loc-{i}"} for i in range(50)]
+    for i in range(50):
+        slug = f"loc-{i}"
 
-        # We bypass getLocations and directly call getMenus
-        cana.getMenus()
+        # We mock the discovery menu items endpoint.
+        # process_menu_items_json requires standard structure: 'data': {'menu_items': [...]}
+        discovery_url = f"{cana.baseUrl}/dispensaries/{slug}/menu_items?page=1&page_size=100&size=100"
+        mock_response = {
+            "data": {
+                "menu_items": [
+                    {
+                        "id": 1,
+                        "name": f"Test Item {i}",
+                        "price": {"amount": 50}
+                    }
+                ]
+            },
+            "meta": {
+                "total_menu_items": 1
+            }
+        }
 
-        # Assertions to check thread safety on shared data structures
-        assert len(cana.totalLocations) == 50
-        assert cana.menuItemsFound == 50
-        assert len(cana.finishedMenuItems) == 50
+        responses.add(responses.GET, discovery_url, json=mock_response, status=200)
+
+    # We bypass getLocations and directly call getMenus
+    cana.getMenus()
+
+    # Assertions to check thread safety on shared data structures
+    assert len(cana.totalLocations) == 50
+    assert cana.menuItemsFound == 50
+    assert len(cana.finishedMenuItems) == 50
 
 def test_cache_manager_concurrency():
     from cache_manager import CacheManager

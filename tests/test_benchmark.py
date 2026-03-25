@@ -1,7 +1,7 @@
 import pytest
+import copy
 from CanaData import CanaData
 from optimized_data_processor import OptimizedDataProcessor
-from tests.test_canadata import _build_menu_payload
 
 def build_large_payload(num_locations=20, items_per_location=50):
     all_menu_items = {}
@@ -31,7 +31,8 @@ def payload():
 def test_benchmark_custom_flattening(benchmark, payload):
     def run_custom():
         cana = CanaData(optimize_processing=False)
-        cana.allMenuItems = payload
+        # Deep copy payload so mutation by the processor doesn't affect subsequent runs
+        cana.allMenuItems = copy.deepcopy(payload)
         cana.organize_into_clean_list()
         return cana.finishedMenuItems
 
@@ -41,7 +42,8 @@ def test_benchmark_custom_flattening(benchmark, payload):
 def test_benchmark_optimized_flattening(benchmark, payload):
     def run_optimized():
         cana = CanaData(optimize_processing=True)
-        cana.allMenuItems = payload
+        # Deep copy payload so mutation by the processor doesn't affect subsequent runs
+        cana.allMenuItems = copy.deepcopy(payload)
         cana.organize_into_clean_list()
         return cana.finishedMenuItems
 
