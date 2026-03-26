@@ -1,5 +1,4 @@
 import os
-import sys
 import csv
 import re
 import json
@@ -7,10 +6,9 @@ import logging
 import argparse
 import glob
 from datetime import datetime
-from typing import List, Any, Dict, Optional
+from typing import List, Any
 from yattag import Doc, indent
 from dotenv import load_dotenv
-from typing import List, Any
 
 # Load environment variables
 load_dotenv()
@@ -150,6 +148,9 @@ class CanaParse:
             if not self.load_csv_data():
                 return
 
+        # Pre-calculate lowercase row_str for all rows to avoid redundant joining inside is_match
+        row_strings = [" ".join(str(x) for x in row).lower() for row in self.raw_data]
+
         self.filtered_tables = []
         for f in self.filters:
             logger.info(f"Filtering for: {f.name}")
@@ -157,11 +158,11 @@ class CanaParse:
             # Identify the column index for the price key (gram, eighth, etc.)
             price_col = self.get_col_by_key(f.key)
             
-            # Apply filters
-            filtered: List[Any] = [
-                row[:] for row in self.raw_data # copy row to avoid mutating raw_data
-                if self.is_match(row, f, price_col)
-            ]
+            # Apply filters - evaluate is_match on the original row, only append a copy if true
+            filtered: List[Any] = []
+            for i, row in enumerate(self.raw_data):
+                if self.is_match(row, f, price_col, row_strings[i]):
+                    filtered.append(row[:])
             
             # Handle result limits and sorting
             if f.limit_results_amt > -1 and len(filtered) > f.limit_results_amt:
@@ -184,7 +185,7 @@ class CanaParse:
         }
         return mapping.get(key, 9)
 
-    def is_match(self, row, f, price_col):
+    def is_match(self, row, f, price_col, row_str):
         """
         Check if a single CSV row matches the filter criteria.
         """
@@ -200,10 +201,7 @@ class CanaParse:
             if str(row[20]).lower() not in [c.lower() for c in f.categories]:
                 return False
 
-        # 3. Join row for word-based searches
-        row_str = " ".join([str(x) for x in row]).lower()
-
-        # 4. Brands
+        # 3. Brands
         if f.brands:
             if not any(brand.lower() in row_str for brand in f.brands):
                 return False
@@ -232,7 +230,8 @@ class CanaParse:
         if f.thc_floor > 0:
             thc_val = self.extract_cannabinoid(row_str, 'thc')
             if thc_val < f.thc_floor:
-                if f.thc_floor_strict: return False
+                if f.thc_floor_strict:
+                    return False
             else:
                 row.append(f"thc+{thc_val}")
 
@@ -240,7 +239,8 @@ class CanaParse:
         if f.cbd_floor > 0.001:
             cbd_val = self.extract_cannabinoid(row_str, 'cbd')
             if cbd_val < f.cbd_floor:
-                if f.cbd_floor_strict: return False
+                if f.cbd_floor_strict:
+                    return False
             else:
                 row.append(f"cbd+{cbd_val}")
 
@@ -251,21 +251,27 @@ class CanaParse:
         pattern = rf"{type_name}[:\s-]*(\d+\.?\d*)"
         match = re.search(pattern, text)
         if match:
-            try: return float(match.group(1))
-            except: pass
+            try:
+                return float(match.group(1))
+            except Exception:
+                pass
         return 0
 
     def as_currency(self, amount):
         """Format number as USD currency."""
-        try: return '${:,.2f}'.format(float(amount))
-        except: return str(amount)
+        try:
+            return '${:,.2f}'.format(float(amount))
+        except Exception:
+            return str(amount)
 
     def as_percentage(self, amount):
         """Format number as percentage."""
         try:
             val = float(amount)
-            if 0 <= val <= 100: return '{:,.2f}%'.format(val)
-        except: pass
+            if 0 <= val <= 100:
+                return '{:,.2f}%'.format(val)
+        except Exception:
+            pass
         return ""
 
     def clean_html(self, raw_html):
@@ -530,7 +536,8 @@ class CanaParse:
                     text(str(len(results)))
 
             if not results:
-                with tag('p', style="color: var(--text-muted); padding: 1rem;"): text("No results found for this filter.")
+                with tag('p', style="color: var(--text-muted); padding: 1rem;"):
+                    text("No results found for this filter.")
                 return
 
             with tag('div', klass='table-container'):
@@ -539,11 +546,13 @@ class CanaParse:
                         with tag('tr'):
                             # Define headers based on data content
                             headers = ['Price', 'Image', 'Product', 'Category', 'THC']
-                            if f.cbd_floor > 0: headers.append('CBD')
+                            if f.cbd_floor > 0:
+                                headers.append('CBD')
                             headers.extend(['Dispensary', 'Details'])
                             
                             for label in headers:
-                                with tag('th'): text(label)
+                                with tag('th'):
+                                    text(label)
                     
                     with tag('tbody'):
                         for row in results:
@@ -555,7 +564,8 @@ class CanaParse:
         with tag('tr'):
             # Price
             with tag('td'): 
-                with tag('div', klass="price-tag"): text(self.as_currency(row[price_col]))
+                with tag('div', klass="price-tag"):
+                    text(self.as_currency(row[price_col]))
             
             # Image
             with tag('td', klass="thumb"):
@@ -576,7 +586,8 @@ class CanaParse:
                 # Actually index 4 is usually brand in CanaData export
                 brand = str(row[4]) if len(row) > 4 else ""
                 if brand:
-                    with tag('span', style="font-size: 0.8rem; color: var(--text-muted);"): text(brand)
+                    with tag('span', style="font-size: 0.8rem; color: var(--text-muted);"):
+                        text(brand)
 
             # Category
             with tag('td'): 
@@ -585,12 +596,14 @@ class CanaParse:
             
             # THC
             thc_val = next((str(s).split("+")[1] for s in row if str(s).startswith("thc+")), "0")
-            with tag('td'): text(self.as_percentage(thc_val))
+            with tag('td'):
+                text(self.as_percentage(thc_val))
             
             # CBD
             if f.cbd_floor > 0:
                 cbd_val = next((str(s).split("+")[1] for s in row if str(s).startswith("cbd+")), "0")
-                with tag('td'): text(self.as_percentage(cbd_val))
+                with tag('td'):
+                    text(self.as_percentage(cbd_val))
             
             # Dispensary
             with tag('td'): 
@@ -600,7 +613,8 @@ class CanaParse:
             with tag('td', klass="info-cell"): 
                 desc = self.clean_html(row[1])
                 # Truncate if too long
-                if len(desc) > 100: desc = desc[:100] + "..."
+                if len(desc) > 100:
+                    desc = desc[:100] + "..."
                 text(desc)
 
     def _generate_footer(self, doc, tag, text):
@@ -619,12 +633,18 @@ class CanaParse:
 def getComparisonVal(op, val1, val2):
     """Evaluate a comparison operation."""
     try:
-        if op == '>=': return 1 if val1 >= val2 else 0
-        if op == '<=': return 1 if 0 < val1 <= val2 else 0
-        if op == '==': return 1 if val1 == val2 else 0
-        if op == '>':  return 1 if val1 > val2 else 0
-        if op == '<':  return 1 if 0 < val1 < val2 else 0
-    except: pass
+        if op == '>=':
+            return 1 if val1 >= val2 else 0
+        if op == '<=':
+            return 1 if 0 < val1 <= val2 else 0
+        if op == '==':
+            return 1 if val1 == val2 else 0
+        if op == '>':
+            return 1 if val1 > val2 else 0
+        if op == '<':
+            return 1 if 0 < val1 < val2 else 0
+    except Exception:
+        pass
     return 0
 
 def main():
