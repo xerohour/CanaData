@@ -85,6 +85,12 @@ class CanaParse:
         self.raw_data: List[List[Any]] = []
         self.filtered_tables: List[List[List[Any]]] = []
         
+        # Pre-compile regex patterns for performance
+        self._cannabinoid_patterns = {
+            'thc': re.compile(r"thc[:\s-]*(\d+\.?\d*)"),
+            'cbd': re.compile(r"cbd[:\s-]*(\d+\.?\d*)")
+        }
+
         self.load_filters()
 
     def load_filters(self):
@@ -248,8 +254,11 @@ class CanaParse:
 
     def extract_cannabinoid(self, text, type_name):
         """Extract numeric value for THC or CBD from text."""
-        pattern = rf"{type_name}[:\s-]*(\d+\.?\d*)"
-        match = re.search(pattern, text)
+        pattern = self._cannabinoid_patterns.get(type_name)
+        if not pattern:
+            pattern = re.compile(rf"{type_name}[:\s-]*(\d+\.?\d*)")
+
+        match = pattern.search(text)
         if match:
             try: return float(match.group(1))
             except: pass
