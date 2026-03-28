@@ -1,0 +1,86 @@
+         206 function calls (204 primitive calls) in 0.001 seconds
+
+   Ordered by: cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.001    0.001 /app/perf_audit/profile_script.py:10(main)
+        1    0.000    0.000    0.001    0.001 /app/CanaData.py:67(__init__)
+        1    0.000    0.000    0.000    0.000 /app/cached_api_client.py:12(__init__)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/sessions.py:391(__init__)
+        1    0.000    0.000    0.000    0.000 /app/cache_manager.py:20(__init__)
+        2    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/adapters.py:179(__init__)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:1306(mkdir)
+        1    0.000    0.000    0.000    0.000 {built-in method posix.mkdir}
+        2    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:447(__fspath__)
+        2    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:437(__str__)
+        8    0.000    0.000    0.000    0.000 <frozen os>:808(getenv)
+        8    0.000    0.000    0.000    0.000 <frozen _collections_abc>:804(get)
+        8    0.000    0.000    0.000    0.000 <frozen os>:709(__getitem__)
+        1    0.000    0.000    0.000    0.000 /app/CanaData.py:716(_original_organize_into_clean_list)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/utils.py:890(default_headers)
+        8    0.000    0.000    0.000    0.000 <frozen os>:791(encode)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/structures.py:40(__init__)
+        2    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/adapters.py:217(init_poolmanager)
+        1    0.000    0.000    0.000    0.000 <frozen _collections_abc>:974(update)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:551(drive)
+       18    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:407(_load_parts)
+        1    0.000    0.000    0.000    0.000 <frozen abc>:117(__instancecheck__)
+        1    0.000    0.000    0.000    0.000 {built-in method _abc._abc_instancecheck}
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:387(_parse_path)
+      2/1    0.000    0.000    0.000    0.000 <frozen abc>:121(__subclasscheck__)
+      2/1    0.000    0.000    0.000    0.000 {built-in method _abc._abc_subclasscheck}
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:429(_format_parsed_parts)
+        2    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/urllib3/poolmanager.py:199(__init__)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/cookies.py:521(cookiejar_from_dict)
+        2    0.000    0.000    0.000    0.000 /app/CanaData.py:758(flatten_dictionary)
+        2    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/urllib3/util/retry.py:211(__init__)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:870(is_dir)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/http/cookiejar.py:1261(__init__)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:835(stat)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:1157(__init__)
+        1    0.000    0.000    0.000    0.000 {built-in method posix.stat}
+        2    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/urllib3/_collections.py:82(__init__)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:1164(__new__)
+        2    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/sessions.py:802(mount)
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.print}
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:358(__init__)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/http/cookiejar.py:884(__init__)
+        4    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/structures.py:46(__setitem__)
+        8    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/urllib3/util/retry.py:253(<genexpr>)
+       11    0.000    0.000    0.000    0.000 {method 'lower' of 'str' objects}
+        8    0.000    0.000    0.000    0.000 {method 'encode' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/http/cookiejar.py:1227(deepvalues)
+        3    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:124(RLock)
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.sorted}
+        1    0.000    0.000    0.000    0.000 <frozen posixpath>:131(splitdrive)
+        9    0.000    0.000    0.000    0.000 {method 'append' of 'list' objects}
+        2    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/adapters.py:117(__init__)
+        6    0.000    0.000    0.000    0.000 {method 'items' of 'dict' objects}
+        9    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        1    0.000    0.000    0.000    0.000 <frozen posixpath>:138(splitroot)
+        2    0.000    0.000    0.000    0.000 <frozen _collections_abc>:435(__subclasshook__)
+        6    0.000    0.000    0.000    0.000 {method 'pop' of 'list' objects}
+        2    0.000    0.000    0.000    0.000 {built-in method time.time}
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/hooks.py:16(default_hooks)
+        3    0.000    0.000    0.000    0.000 {method 'join' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 {method 'update' of 'set' objects}
+        2    0.000    0.000    0.000    0.000 {method 'copy' of 'dict' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.max}
+        2    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/urllib3/_request_methods.py:51(__init__)
+        1    0.000    0.000    0.000    0.000 {built-in method sys.intern}
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/http/cookiejar.py:1753(__iter__)
+        1    0.000    0.000    0.000    0.000 {method 'split' of 'str' objects}
+        3    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/utils.py:881(default_user_agent)
+        3    0.000    0.000    0.000    0.000 {built-in method posix.fspath}
+        1    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x7f6a84d57600}
+        3    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+        1    0.000    0.000    0.000    0.000 {built-in method _thread.allocate_lock}
+        1    0.000    0.000    0.000    0.000 /app/optimized_data_processor.py:15(__init__)
+        1    0.000    0.000    0.000    0.000 {built-in method _stat.S_ISDIR}
+        1    0.000    0.000    0.000    0.000 {method 'values' of 'dict' objects}
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:560(root)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:569(_tail)

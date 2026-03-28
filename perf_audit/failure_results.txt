@@ -1,0 +1,4 @@
+Call attempt 1
+Call attempt 2
+Call attempt 3
+Result: Success on try 3 | Total calls: 3 | Total time: 0.31s

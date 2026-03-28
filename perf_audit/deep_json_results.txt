@@ -1,0 +1,4 @@
+Depth:  10 | Time: 0.0000s | Keys generated: 1
+Depth:  50 | Time: 0.0001s | Keys generated: 1
+Depth: 100 | Time: 0.0001s | Keys generated: 1
+Depth: 500 | Time: 0.0005s | Keys generated: 1

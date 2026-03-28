@@ -1,0 +1,4 @@
+Workers:  1 | Time: 1.036s | Processed: 100
+Workers:  5 | Time: 0.210s | Processed: 100
+Workers: 10 | Time: 0.109s | Processed: 100
+Workers: 20 | Time: 0.061s | Processed: 100
