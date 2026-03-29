@@ -85,6 +85,9 @@ class CanaParse:
         self.raw_data: List[List[Any]] = []
         self.filtered_tables: List[List[List[Any]]] = []
         
+        # Pre-compile regex patterns for performance
+        self._clean_pattern = re.compile(r"<.*?>")
+
         self.load_filters()
 
     def load_filters(self):
@@ -151,6 +154,10 @@ class CanaParse:
                 return
 
         self.filtered_tables = []
+
+        # Optimization: Pre-compute row strings once per row instead of per filter
+        row_strs = [" ".join([str(x) for x in row]).lower() for row in self.raw_data]
+
         for f in self.filters:
             logger.info(f"Filtering for: {f.name}")
             
@@ -159,8 +166,8 @@ class CanaParse:
             
             # Apply filters
             filtered: List[Any] = [
-                row[:] for row in self.raw_data # copy row to avoid mutating raw_data
-                if self.is_match(row, f, price_col)
+                row[:] for i, row in enumerate(self.raw_data) # copy row to avoid mutating raw_data
+                if self.is_match(row, f, price_col, row_str=row_strs[i])
             ]
             
             # Handle result limits and sorting
@@ -184,7 +191,7 @@ class CanaParse:
         }
         return mapping.get(key, 9)
 
-    def is_match(self, row, f, price_col):
+    def is_match(self, row, f, price_col, row_str=None):
         """
         Check if a single CSV row matches the filter criteria.
         """
@@ -201,7 +208,8 @@ class CanaParse:
                 return False
 
         # 3. Join row for word-based searches
-        row_str = " ".join([str(x) for x in row]).lower()
+        if row_str is None:
+            row_str = " ".join([str(x) for x in row]).lower()
 
         # 4. Brands
         if f.brands:
@@ -270,8 +278,7 @@ class CanaParse:
 
     def clean_html(self, raw_html):
         """Remove HTML tags from a string."""
-        cleanr = re.compile('<.*?>')
-        return re.sub(cleanr, '', str(raw_html))
+        return self._clean_pattern.sub('', str(raw_html))
 
     def generate_html(self):
         """Build the full HTML dashboard."""
