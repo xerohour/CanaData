@@ -307,7 +307,7 @@ def generate_html_report(data, region_name="Colorado"):
         html_content += f"""
                 <div class="card">
                     <div class="card-header">
-                        <img src="{avatar}" alt="{item.get('name')}" class="avatar">
+                        <img src="{avatar}" alt="" aria-hidden="true" class="avatar">
                         <div class="listing-info">
                             <h2>{item.get('name')}</h2>
                             <span class="badge badge-type">{item.get('type')}</span>
