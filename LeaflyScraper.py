@@ -56,7 +56,7 @@ def scrape_leafly(location_slug):
         run = client.actor("paradox-analytics/leafly-scraper").call(run_input=run_input)
 
         # Fetch results from the run's dataset
-        print(f"✅ Scraping complete. Downloading results...")
+        print("✅ Scraping complete. Downloading results...")
         results = []
         for item in client.dataset(run["defaultDatasetId"]).iterate_items():
             results.append(item)
