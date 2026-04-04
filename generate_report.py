@@ -231,6 +231,28 @@ def generate_html_report(data, region_name="Colorado"):
         box-shadow: 0 0 15px rgba(0, 255, 163, 0.4);
     }
 
+    /* Empty State */
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 4rem 2rem;
+        background: var(--card-bg);
+        border: 1px dashed var(--glass-border);
+        border-radius: 20px;
+        backdrop-filter: blur(8px);
+    }
+
+    .empty-state h2 {
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+        color: var(--text);
+    }
+
+    .empty-state p {
+        color: var(--text-muted);
+        font-size: 1.1rem;
+    }
+
     /* Accessibility Improvements */
     .skip-link {
         position: absolute;
@@ -277,7 +299,7 @@ def generate_html_report(data, region_name="Colorado"):
     </head>
     <body>
         <a href="#main-content" class="skip-link">Skip to main content</a>
-        <div class="container" id="main-content">
+        <main class="container" id="main-content">
             <header>
                 <h1>{region_name} Discovery</h1>
                 <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
@@ -286,70 +308,77 @@ def generate_html_report(data, region_name="Colorado"):
             <div class="listing-grid">
     """
 
-    for item in listings:
-        avatar = item.get('avatar_image', {}).get('original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
-        rating = item.get('rating', 'N/A')
-        reviews = item.get('reviews_count', 0)
-        is_open = item.get('open_now', False)
-        status_text = "Open Now" if is_open else "Closed"
-        status_class = "badge-open" if is_open else "badge-closed"
-        
-        promo = item.get('promo_code')
-        promo_html = ""
-        if promo:
-            promo_html = f"""
-            <div class="promo-section">
-                <div class="promo-title">✨ PROMO: {promo.get('code', 'Special Offer')}</div>
-                <div class="promo-body">{promo.get('title', 'Check website for details')}</div>
-            </div>
-            """
-
-        html_content += f"""
-                <div class="card">
-                    <div class="card-header">
-                        <img src="{avatar}" alt="{item.get('name')}" class="avatar">
-                        <div class="listing-info">
-                            <h2>{item.get('name')}</h2>
-                            <span class="badge badge-type">{item.get('type')}</span>
-                            <span class="badge badge-rating">★ {rating} ({reviews})</span>
-                            <span class="badge {status_class}">{status_text}</span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <table class="data-table">
-                            <tr>
-                                <td class="label">Address</td>
-                                <td class="value">{item.get('address', 'N/A')}</td>
-                            </tr>
-                            <tr>
-                                <td class="label">City</td>
-                                <td class="value">{item.get('city', 'N/A')}</td>
-                            </tr>
-                            <tr>
-                                <td class="label">Hours Today</td>
-                                <td class="value">{item.get('todays_hours_str', 'N/A')}</td>
-                            </tr>
-                            <tr>
-                                <td class="label">Phone</td>
-                                <td class="value">{item.get('phone_number', 'N/A')}</td>
-                            </tr>
-                            <tr>
-                                <td class="label">Menu Items</td>
-                                <td class="value">{item.get('menu_items_count', 0)} items</td>
-                            </tr>
-                        </table>
-                        {promo_html}
-                    </div>
-                    <div class="footer-actions">
-                        <span style="font-size: 0.8rem; color: var(--text-muted)">{item.get('license_type', 'Recreational')}</span>
-                        <a href="{item.get('web_url')}" target="_blank" rel="noopener noreferrer" aria-label="View {item.get('name', '').replace('"', '&quot;')} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
-                    </div>
+    if not listings:
+        html_content += """
+                <div class="empty-state">
+                    <h2>🌿 No listings found</h2>
+                    <p>We couldn't find any results matching your search criteria. Try exploring a different region or adjusting your filters.</p>
                 </div>
         """
+    else:
+        for item in listings:
+            avatar = item.get('avatar_image', {}).get('original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
+            rating = item.get('rating', 'N/A')
+            reviews = item.get('reviews_count', 0)
+            is_open = item.get('open_now', False)
+            status_text = "Open Now" if is_open else "Closed"
+            status_class = "badge-open" if is_open else "badge-closed"
 
+            promo = item.get('promo_code')
+            promo_html = ""
+            if promo:
+                promo_html = f"""
+                <div class="promo-section">
+                    <div class="promo-title">✨ PROMO: {promo.get('code', 'Special Offer')}</div>
+                    <div class="promo-body">{promo.get('title', 'Check website for details')}</div>
+                </div>
+                """
+
+            html_content += f"""
+                    <div class="card">
+                        <div class="card-header">
+                            <img src="{avatar}" alt="{item.get('name')}" class="avatar">
+                            <div class="listing-info">
+                                <h2>{item.get('name')}</h2>
+                                <span class="badge badge-type">{item.get('type')}</span>
+                                <span class="badge badge-rating">★ {rating} ({reviews})</span>
+                                <span class="badge {status_class}">{status_text}</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <table class="data-table">
+                                <tr>
+                                    <td class="label">Address</td>
+                                    <td class="value">{item.get('address', 'N/A')}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">City</td>
+                                    <td class="value">{item.get('city', 'N/A')}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Hours Today</td>
+                                    <td class="value">{item.get('todays_hours_str', 'N/A')}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Phone</td>
+                                    <td class="value">{item.get('phone_number', 'N/A')}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Menu Items</td>
+                                    <td class="value">{item.get('menu_items_count', 0)} items</td>
+                                </tr>
+                            </table>
+                            {promo_html}
+                        </div>
+                        <div class="footer-actions">
+                            <span style="font-size: 0.8rem; color: var(--text-muted)">{item.get('license_type', 'Recreational')}</span>
+                            <a href="{item.get('web_url')}" target="_blank" rel="noopener noreferrer" aria-label="View {item.get('name', '').replace('"', '&quot;')} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                        </div>
+                    </div>
+            """
     html_content += """
             </div>
-        </div>
+        </main>
     </body>
     </html>
     """
