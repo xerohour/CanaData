@@ -739,13 +739,16 @@ class CanaData:
 
         all_keys = sorted(list(all_keys_set))
 
+        # Pre-create a dictionary with all keys initialized to 'None' to avoid recomputing in loop
+        base_dict = {key: 'None' for key in all_keys}
+
         # This list will house all data after each key has been filled out
         ready_list = []
 
         # Loop through the flatDictList to update any missing keys
         for item in flatDictList:
-            # Create a dictionary with all keys initialized to 'None'
-            flat_ordered_dict = {key: 'None' for key in all_keys}
+            # Copy our pre-initialized dictionary
+            flat_ordered_dict = base_dict.copy()
             # Update with actual values, converting to string
             for key, value in item.items():
                 flat_ordered_dict[key] = str(value)
