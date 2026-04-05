@@ -277,7 +277,7 @@ def generate_html_report(data, region_name="Colorado"):
     </head>
     <body>
         <a href="#main-content" class="skip-link">Skip to main content</a>
-        <div class="container" id="main-content">
+        <main class="container" id="main-content">
             <header>
                 <h1>{region_name} Discovery</h1>
                 <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
@@ -285,6 +285,15 @@ def generate_html_report(data, region_name="Colorado"):
 
             <div class="listing-grid">
     """
+
+    if not listings:
+        html_content += """
+                <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: 4rem 2rem; background: var(--card-bg); backdrop-filter: blur(8px); border-radius: 20px; border: 1px dashed rgba(255, 255, 255, 0.2);">
+                    <div style="font-size: 3.5rem; margin-bottom: 1rem; opacity: 0.8;">🏜️</div>
+                    <h2 style="font-size: 1.8rem; margin-bottom: 0.5rem; color: var(--text);">No listings found</h2>
+                    <p style="color: var(--text-muted); font-size: 1.1rem;">We couldn't find any locations matching your criteria in this region.</p>
+                </div>
+        """
 
     for item in listings:
         avatar = item.get('avatar_image', {}).get('original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
@@ -349,7 +358,7 @@ def generate_html_report(data, region_name="Colorado"):
 
     html_content += """
             </div>
-        </div>
+        </main>
     </body>
     </html>
     """
