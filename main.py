@@ -10,19 +10,24 @@ if __name__ == '__main__':
 
     try:
         # Grab list of States from local file
-        allStatesSlugs = [line.rstrip('\n').lower().replace(' ', '-') for line in open('states.txt')]  # Updated by Manually through magic
+        allStatesSlugs = [line.rstrip('\n').lower().replace(
+            # Updated by Manually through magic
+            ' ', '-') for line in open('states.txt')]
     except Exception:
         print('Looks like no states.txt file! No biggy, just cant use the all option!')
 
     try:
         # Grab list of known Cities from local file
-        knownSlugs = [line.rstrip('\n').lower().replace(' ', '-') for line in open('slugs.txt')]
+        knownSlugs = [line.rstrip('\n').lower().replace(' ', '-')
+                      for line in open('slugs.txt')]
     except Exception:
         print('Looks like no slugs.txt file! No biggy, just cant use the slugs option!')
 
     try:
         # Grab list of known Cities from local file
-        mySlugList = [line.rstrip('\n').lower().replace(' ', '-') for line in open('mylist.txt')]  # Updated by Manually through magic
+        mySlugList = [line.rstrip('\n').lower().replace(
+            # Updated by Manually through magic
+            ' ', '-') for line in open('mylist.txt')]
     except Exception:
         print('Looks like no mylist.txt file! No biggy, just cant use the mylist option!')
 
@@ -56,13 +61,15 @@ if __name__ == '__main__':
         else:
             searchSlugs = [argv[searchSlug].lower()]
         # Visual queue of start (in place of question for search slug)
-        print(f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\n\n\nStarting Quickrun on {str(len(searchSlugs))} Slugs: \n{str(", ".join(searchSlugs))}\n\n\n')
+        print(
+            f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\n\n\nStarting Quickrun on {str(len(searchSlugs))} Slugs: \n{str(", ".join(searchSlugs))}\n\n\n')
 
     # If user is not doing Quickrun
     # Ask them for a slug then determine if its one of our preset 3 or a regular search
     else:
         # Ask the user for what City they'd like to run
-        answer = input(f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\nWhat city slug or state slug would you like to search? Can put all for all states or mylist for your custom list or slugs for the list of custom slugs from slugs.txt!\n\nOptions:\n- Use -go <slug> for quick run\n- Use -leafly with a slug for Leafly data\n- Use -cannmenus with a state code for CannMenus data\n\nKnown State Options:\n{", ".join(allStatesSlugs)}\n\nKnown Slug Options:\n{", ".join(knownSlugs)}\n\nKnown Mylist Options:\n{", ".join(mySlugList)}\n\n-- ').lower()
+        answer = input(
+            f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\nWhat city slug or state slug would you like to search? Can put all for all states or mylist for your custom list or slugs for the list of custom slugs from slugs.txt!\n\nOptions:\n- Use -go <slug> for quick run\n- Use -leafly with a slug for Leafly data\n- Use -cannmenus with a state code for CannMenus data\n\nKnown State Options:\n{", ".join(allStatesSlugs)}\n\nKnown Slug Options:\n{", ".join(knownSlugs)}\n\nKnown Mylist Options:\n{", ".join(mySlugList)}\n\n-- ').lower()
 
         # Check if user asked for all
         if answer == 'all':
