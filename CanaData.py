@@ -743,9 +743,11 @@ class CanaData:
         ready_list = []
 
         # Loop through the flatDictList to update any missing keys
+        # PERFORMANCE OPTIMIZATION: Pre-create base dict to avoid slow comprehension inside the loop
+        base_dict = {key: 'None' for key in all_keys}
         for item in flatDictList:
-            # Create a dictionary with all keys initialized to 'None'
-            flat_ordered_dict = {key: 'None' for key in all_keys}
+            # Copy pre-created dict instead of running comprehension on every iteration
+            flat_ordered_dict = base_dict.copy()
             # Update with actual values, converting to string
             for key, value in item.items():
                 flat_ordered_dict[key] = str(value)
