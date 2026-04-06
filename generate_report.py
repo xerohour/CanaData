@@ -1,5 +1,6 @@
 import json
 import os
+import html
 from datetime import datetime
 from CanaData import CanaData
 
@@ -287,8 +288,21 @@ def generate_html_report(data, region_name="Colorado"):
     """
 
     for item in listings:
-        avatar = item.get('avatar_image', {}).get('original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
-        rating = item.get('rating', 'N/A')
+        raw_avatar = item.get('avatar_image', {}).get('original_url') or 'https://images.weedmaps.com/static/avatar/dispensary.png'
+        avatar = raw_avatar if str(raw_avatar).startswith(('http://', 'https://')) else '#'
+
+        raw_web_url = item.get('web_url') or '#'
+        web_url = raw_web_url if str(raw_web_url).startswith(('http://', 'https://')) else '#'
+
+        name = html.escape(str(item.get('name') or 'N/A'))
+        type_str = html.escape(str(item.get('type') or 'N/A'))
+        address = html.escape(str(item.get('address') or 'N/A'))
+        city = html.escape(str(item.get('city') or 'N/A'))
+        hours = html.escape(str(item.get('todays_hours_str') or 'N/A'))
+        phone = html.escape(str(item.get('phone_number') or 'N/A'))
+        license_type = html.escape(str(item.get('license_type') or 'Recreational'))
+
+        rating = html.escape(str(item.get('rating', 'N/A')))
         reviews = item.get('reviews_count', 0)
         is_open = item.get('open_now', False)
         status_text = "Open Now" if is_open else "Closed"
@@ -297,20 +311,22 @@ def generate_html_report(data, region_name="Colorado"):
         promo = item.get('promo_code')
         promo_html = ""
         if promo:
+            p_code = html.escape(str(promo.get('code', 'Special Offer')))
+            p_title = html.escape(str(promo.get('title', 'Check website for details')))
             promo_html = f"""
             <div class="promo-section">
-                <div class="promo-title">✨ PROMO: {promo.get('code', 'Special Offer')}</div>
-                <div class="promo-body">{promo.get('title', 'Check website for details')}</div>
+                <div class="promo-title">✨ PROMO: {p_code}</div>
+                <div class="promo-body">{p_title}</div>
             </div>
             """
 
         html_content += f"""
                 <div class="card">
                     <div class="card-header">
-                        <img src="{avatar}" alt="{item.get('name')}" class="avatar">
+                        <img src="{avatar}" alt="{name}" class="avatar">
                         <div class="listing-info">
-                            <h2>{item.get('name')}</h2>
-                            <span class="badge badge-type">{item.get('type')}</span>
+                            <h2>{name}</h2>
+                            <span class="badge badge-type">{type_str}</span>
                             <span class="badge badge-rating">★ {rating} ({reviews})</span>
                             <span class="badge {status_class}">{status_text}</span>
                         </div>
@@ -319,19 +335,19 @@ def generate_html_report(data, region_name="Colorado"):
                         <table class="data-table">
                             <tr>
                                 <td class="label">Address</td>
-                                <td class="value">{item.get('address', 'N/A')}</td>
+                                <td class="value">{address}</td>
                             </tr>
                             <tr>
                                 <td class="label">City</td>
-                                <td class="value">{item.get('city', 'N/A')}</td>
+                                <td class="value">{city}</td>
                             </tr>
                             <tr>
                                 <td class="label">Hours Today</td>
-                                <td class="value">{item.get('todays_hours_str', 'N/A')}</td>
+                                <td class="value">{hours}</td>
                             </tr>
                             <tr>
                                 <td class="label">Phone</td>
-                                <td class="value">{item.get('phone_number', 'N/A')}</td>
+                                <td class="value">{phone}</td>
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
@@ -341,8 +357,8 @@ def generate_html_report(data, region_name="Colorado"):
                         {promo_html}
                     </div>
                     <div class="footer-actions">
-                        <span style="font-size: 0.8rem; color: var(--text-muted)">{item.get('license_type', 'Recreational')}</span>
-                        <a href="{item.get('web_url')}" target="_blank" rel="noopener noreferrer" aria-label="View {item.get('name', '').replace('"', '&quot;')} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                        <span style="font-size: 0.8rem; color: var(--text-muted)">{license_type}</span>
+                        <a href="{web_url}" target="_blank" rel="noopener noreferrer" aria-label="View {name} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
                     </div>
                 </div>
         """

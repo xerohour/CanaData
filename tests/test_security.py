@@ -90,3 +90,34 @@ class TestSecurity:
         assert cana._sanitize_filename("invalid/characters!@#") == "invalidcharacters"
         assert cana._sanitize_filename("..\\windows\\style") == "..windowsstyle"
         assert cana._sanitize_filename("foo bar") == "foobar" # spaces removed
+
+    def test_generate_report_xss_sanitization(self):
+        """Test that XSS payloads are properly escaped in generate_report.py"""
+        from generate_report import generate_html_report
+        import os
+
+        malicious_data = {
+            'meta': {'total_listings': 1},
+            'data': {
+                'listings': [{
+                    'name': '<script>alert("xss")</script>',
+                    'web_url': 'javascript:alert(1)',
+                    'avatar_image': {'original_url': 'javascript:alert(2)'},
+                    'type': '"><img src=x onerror=alert(1)>',
+                    'address': '<svg onload=alert(1)>'
+                }]
+            }
+        }
+
+        generate_html_report(malicious_data, "Test")
+
+        assert os.path.exists('listing_report.html')
+        with open('listing_report.html', 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        assert '<script>' not in content
+        assert '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;' in content
+        assert 'javascript:alert(1)' not in content
+        assert 'href="#"' in content
+
+        os.remove('listing_report.html')
