@@ -1,0 +1,110 @@
+Starting Profiling Script...
+
+--- Running Pandas Flattening ---
+Pandas processing took 4.1747 seconds for 5000 items.
+Filename: /app/profiling_script.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    39     92.6 MiB     92.6 MiB           1   @profile
+    40                                         def test_pandas_flattening():
+    41     92.6 MiB      0.0 MiB           1       print("\n--- Running Pandas Flattening ---")
+    42     92.6 MiB      0.0 MiB           1       start = time.time()
+    43     98.8 MiB      6.2 MiB           1       result = processor.process_menu_data(mock_data)
+    44     98.8 MiB      0.0 MiB           1       end = time.time()
+    45     98.8 MiB      0.0 MiB           1       print(f"Pandas processing took {end - start:.4f} seconds for {len(result)} items.")
+
+
+
+--- Running Custom Flattening ---
+Custom flattening took 1.1606 seconds for 5000 items.
+Filename: /app/profiling_script.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    47     98.8 MiB     98.8 MiB           1   @profile
+    48                                         def test_custom_flattening():
+    49     98.8 MiB      0.0 MiB           1       print("\n--- Running Custom Flattening ---")
+    50     98.8 MiB      0.0 MiB           1       start = time.time()
+    51
+    52     98.8 MiB      0.0 MiB           1       items = []
+    53     98.8 MiB      0.0 MiB           6       for loc_id, loc_items in mock_data.items():
+    54     98.8 MiB      0.0 MiB        5005           for item in loc_items:
+    55     98.8 MiB      0.0 MiB        5000               items.append(item)
+    56
+    57                                             # we need to fallback explicitly
+    58    101.7 MiB      2.9 MiB           1       df = processor._fallback_flattening(items)
+    59
+    60    101.7 MiB      0.0 MiB           1       end = time.time()
+    61    101.7 MiB      0.0 MiB           1       print(f"Custom flattening took {end - start:.4f} seconds for {len(df)} items.")
+
+
+
+--- Profiling CanaData Initialization ---
+         34 function calls in 0.000 seconds
+
+   Ordered by: cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.000    0.000 /app/CanaData.py:67(__init__)
+        5    0.000    0.000    0.000    0.000 <frozen os>:808(getenv)
+        5    0.000    0.000    0.000    0.000 <frozen _collections_abc>:804(get)
+        5    0.000    0.000    0.000    0.000 <frozen os>:709(__getitem__)
+        5    0.000    0.000    0.000    0.000 <frozen os>:791(encode)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        5    0.000    0.000    0.000    0.000 {method 'encode' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method _thread.allocate_lock}
+        5    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        1    0.000    0.000    0.000    0.000 /app/optimized_data_processor.py:15(__init__)
+
+
+
+
+--- Pandas Run cProfile ---
+         30736 function calls (29062 primitive calls) in 0.046 seconds
+
+   Ordered by: cumulative time
+   List reduced from 541 to 15 due to restriction <15>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.045    0.045 /app/optimized_data_processor.py:18(process_menu_data)
+        1    0.000    0.000    0.025    0.025 /app/optimized_data_processor.py:42(_flatten_all_items)
+        1    0.000    0.000    0.016    0.016 /app/optimized_data_processor.py:69(_handle_remaining_nesting)
+        1    0.000    0.000    0.012    0.012 /app/optimized_data_processor.py:174(_normalize_data)
+        1    0.000    0.000    0.009    0.009 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:303(json_normalize)
+        1    0.000    0.000    0.007    0.007 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:2125(to_dict)
+        1    0.001    0.001    0.007    0.007 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/methods/to_dict.py:97(to_dict)
+       13    0.000    0.000    0.007    0.001 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/series.py:6422(dropna)
+       12    0.000    0.000    0.007    0.001 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/dtypes/missing.py:649(remove_na_arraylike)
+       47    0.000    0.000    0.006    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/indexing.py:1192(__getitem__)
+        4    0.000    0.000    0.006    0.001 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/generic.py:10154(where)
+        4    0.000    0.000    0.006    0.001 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/generic.py:9981(_where)
+       59    0.001    0.000    0.005    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/internals/managers.py:396(apply)
+8758/8684    0.003    0.000    0.005    0.000 {built-in method builtins.isinstance}
+        1    0.000    0.000    0.004    0.004 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:702(__init__)
+
+
+
+
+--- Custom Flattening Run cProfile ---
+         9618 function calls (9577 primitive calls) in 0.011 seconds
+
+   Ordered by: cumulative time
+   List reduced from 234 to 15 due to restriction <15>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.011    0.011 /app/optimized_data_processor.py:93(_fallback_flattening)
+        1    0.000    0.000    0.008    0.008 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/_base.py:646(__exit__)
+        1    0.000    0.000    0.008    0.008 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/thread.py:220(shutdown)
+    28/20    0.000    0.000    0.008    0.000 {method 'acquire' of '_thread.lock' objects}
+        2    0.000    0.000    0.008    0.004 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:1117(join)
+        2    0.000    0.000    0.008    0.004 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:1155(_wait_for_tstate_lock)
+        4    0.000    0.000    0.006    0.002 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/thread.py:54(run)
+        4    0.000    0.000    0.006    0.001 /app/optimized_data_processor.py:119(_flatten_batch)
+      100    0.004    0.000    0.006    0.000 /app/optimized_data_processor.py:129(_flatten_dictionary_custom)
+      2/1    0.000    0.000    0.006    0.006 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:1018(_bootstrap)
+      2/1    0.000    0.000    0.006    0.006 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:1058(_bootstrap_inner)
+      4/2    0.000    0.000    0.006    0.003 {method 'get' of '_queue.SimpleQueue' objects}
+      2/1    0.000    0.000    0.006    0.006 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:1001(run)
+      2/1    0.000    0.000    0.006    0.006 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/thread.py:70(_worker)
+        5    0.000    0.000    0.004    0.001 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:323(wait)

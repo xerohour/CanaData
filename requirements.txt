@@ -7,3 +7,7 @@ responses
 apify-client
 pandas
 flake8
+
+pytest-benchmark
+psutil
+memory-profiler

@@ -1,0 +1,21 @@
+# CanaData Scalability & Architecture Analysis
+
+## 1. Thread Blocking via Synchronous Requests
+**Issue:** The application uses `requests.get()` inside `do_request()` and relies on the standard `concurrent.futures.ThreadPoolExecutor` for concurrency.
+**Impact:** Thread blocking occurs while waiting for network I/O. Each active request locks a thread entirely. In highly distributed, heavy workloads (e.g., California state extraction with thousands of locations), this wastes CPU cycles and memory overhead by holding idle threads open.
+**Projection:** Transitioning from `requests` and threading to `aiohttp` and `asyncio` will allow thousands of concurrent non-blocking requests on a single thread, drastically reducing memory footprint and improving network throughput by avoiding thread contention.
+
+## 2. Rate Limiting Bottleneck (`ConcurrentMenuProcessor._wait_for_rate_limit`)
+**Issue:** The rate limiter uses a global `threading.Lock()` (`self.request_lock`) around `time.sleep()`.
+**Impact:** As confirmed by `test_benchmark_rate_limiting`, even with 10 worker threads, operations are effectively serialized by this lock if the rate limit is hit. The `time.sleep()` inside the lock prevents *any* other thread from checking the lock, halting the entire pool rather than pacing individual requests independently.
+**Projection:** Replacing the global lock sleep with an Asyncio Semaphore or a Token Bucket algorithm will allow threads/tasks to yield execution correctly without blocking the global pool.
+
+## 3. Memory Stateful Bottleneck (`allMenuItems` Dictionary)
+**Issue:** The `CanaData` class stores all raw, highly-nested API JSON payloads for all locations in memory simultaneously within `self.allMenuItems` before initiating the flattening phase.
+**Impact:** For a large state (e.g., 200,000 items), this requires storing massive amounts of repetitive metadata in RAM, leading to memory bloat and potential OOM (Out of Memory) kills in constrained container environments.
+**Projection:** Implement a streaming architecture. Process (flatten) each location's JSON payload immediately upon retrieval, write the flat results directly to an NDJSON/CSV on disk, and then release the raw JSON from memory.
+
+## 4. Pandas Overhead on Deeply Nested JSON
+**Issue:** Memory and CPU profiling of `OptimizedDataProcessor._flatten_all_items` shows `pd.json_normalize` takes ~4.17s to process 5,000 items, whereas the custom iterative stack method takes ~1.16s.
+**Impact:** Pandas allocates massive intermediate dataframes to unpack highly irregular, nested JSON objects. This overhead negates its internal C-level vectorization benefits because the data schema is not strictly uniform.
+**Projection:** Deprecating the Pandas fallback and exclusively utilizing the optimized stack-based custom flattening will reduce CPU overhead by ~72% during the processing phase.

@@ -1,0 +1,22 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.0.2, pluggy-1.6.0
+benchmark: 5.2.3 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: /app
+plugins: benchmark-5.2.3
+collected 3 items
+
+tests/test_benchmarks.py ...                                             [100%]
+
+
+-------------------------------------------------------------------------------------------- benchmark: 3 tests --------------------------------------------------------------------------------------------
+Name (time in ms)                       Min                   Max                Mean             StdDev                Median                IQR            Outliers      OPS            Rounds  Iterations
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+test_benchmark_fast_processing      56.7138 (1.0)         58.5496 (1.0)       57.6614 (1.0)       0.5717 (1.14)        57.6807 (1.0)       1.0345 (1.52)          7;0  17.3426 (1.0)          17           1
+test_benchmark_error_handling      806.9338 (14.23)      807.8391 (13.80)    807.5128 (14.00)     0.5028 (1.0)        807.7654 (14.00)     0.6790 (1.0)           1;0   1.2384 (0.07)          3           1
+test_benchmark_rate_limiting       915.3504 (16.14)    1,003.4012 (17.14)    973.8677 (16.89)    50.6782 (100.80)   1,002.8515 (17.39)    66.0381 (97.26)         1;0   1.0268 (0.06)          3           1
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Legend:
+  Outliers: 1 Standard Deviation from Mean; 1.5 IQR (InterQuartile Range) from 1st Quartile and 3rd Quartile.
+  OPS: Operations Per Second, computed as 1 / Mean
+============================== 3 passed in 7.49s ===============================
