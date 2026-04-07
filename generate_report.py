@@ -1,5 +1,6 @@
 import json
 import os
+import html
 from datetime import datetime
 from CanaData import CanaData
 
@@ -255,6 +256,29 @@ def generate_html_report(data, region_name="Colorado"):
         outline-offset: 4px;
     }
 
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: var(--card-bg);
+        border: 1px dashed var(--glass-border);
+        border-radius: 20px;
+        grid-column: 1 / -1;
+    }
+
+    .empty-state h2 {
+        color: var(--secondary);
+        margin-bottom: 1rem;
+        font-size: 1.8rem;
+    }
+
+    .empty-state p {
+        color: var(--text-muted);
+        margin-bottom: 2rem;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
     @media (max-width: 768px) {
         body { padding: 1rem; }
         header { padding: 2rem 1rem; margin-bottom: 2rem; }
@@ -285,6 +309,15 @@ def generate_html_report(data, region_name="Colorado"):
 
             <div class="listing-grid">
     """
+
+    if not listings:
+        html_content += f"""
+                <div class="empty-state">
+                    <h2>No listings found</h2>
+                    <p>We couldn't find any dispensaries or deliveries matching your criteria in {html.escape(region_name)}.</p>
+                    <a href="https://weedmaps.com" target="_blank" rel="noopener noreferrer" class="btn btn-primary">Explore Weedmaps</a>
+                </div>
+        """
 
     for item in listings:
         avatar = item.get('avatar_image', {}).get('original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
