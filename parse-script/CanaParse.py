@@ -1,5 +1,4 @@
 import os
-import sys
 import csv
 import re
 import json
@@ -7,10 +6,9 @@ import logging
 import argparse
 import glob
 from datetime import datetime
-from typing import List, Any, Dict, Optional
+from typing import List, Any
 from yattag import Doc, indent
 from dotenv import load_dotenv
-from typing import List, Any
 
 # Load environment variables
 load_dotenv()
@@ -22,10 +20,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 class FlowerFilter:
     """
     Configuration for filtering cannabis products.
     """
+
     def __init__(self, filter_data=None):
         self.table_sort_col = ""
         self.limit_results_amt = -1
@@ -54,7 +54,8 @@ class FlowerFilter:
         """Populate filter attributes from a dictionary."""
         self.table_sort_col = str(data.get("table_sort_col", ""))
         self.limit_results_amt = int(data.get("limit_results_amt", -1))
-        self.limit_results_amt_email = int(data.get("limit_results_amt_email", -1))
+        self.limit_results_amt_email = int(
+            data.get("limit_results_amt_email", -1))
         self.name = str(data.get("name", ""))
         self.key = str(data.get("key", ""))
         self.compare = str(data.get("compare", ""))
@@ -72,19 +73,23 @@ class FlowerFilter:
         self.cbd_floor_strict = bool(data.get("cbd_floor_strict", False))
         self.terpenes = data.get("terpenes", [])
 
+
 class CanaParse:
     """
     Main class for parsing CanaData CSV results and generating HTML reports.
     """
+
     def __init__(self, csv_file=None, csv_folder=None, no_filter=False):
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.csv_file = csv_file or os.getenv('CSV_FILE', 'colorado_results.csv')
-        self.csv_folder = csv_folder or os.getenv('CSV_FOLDER', os.path.join(base_dir, f"CanaData_{datetime.today().strftime('%m-%d-%Y')}"))
+        self.csv_file = csv_file or os.getenv(
+            'CSV_FILE', 'colorado_results.csv')
+        self.csv_folder = csv_folder or os.getenv('CSV_FOLDER', os.path.join(
+            base_dir, f"CanaData_{datetime.today().strftime('%m-%d-%Y')}"))
         self.no_filter = no_filter
         self.filters = []
         self.raw_data: List[List[Any]] = []
         self.filtered_tables: List[List[List[Any]]] = []
-        
+
         self.load_filters()
 
     def load_filters(self):
@@ -93,27 +98,31 @@ class CanaParse:
             # Create a single catch-all filter
             default_filter = FlowerFilter()
             default_filter.name = "All Results"
-            default_filter.key = "prices.eighth" # Default sort/price column
+            default_filter.key = "prices.eighth"  # Default sort/price column
             self.filters = [default_filter]
             logger.info("No-filter mode enabled: Included all results.")
             return
 
-        filters_path = os.path.join(os.path.dirname(__file__), 'flower-filters.json')
+        filters_path = os.path.join(
+            os.path.dirname(__file__), 'flower-filters.json')
         try:
             with open(filters_path, 'r') as f:
                 data = json.load(f)
-                self.filters = [FlowerFilter(f_data) for f_data in data.get('filters', [])]
-            logger.info(f"Loaded {len(self.filters)} filters from {filters_path}")
+                self.filters = [FlowerFilter(f_data)
+                                for f_data in data.get('filters', [])]
+            logger.info(
+                f"Loaded {len(self.filters)} filters from {filters_path}")
         except Exception as e:
             logger.error(f"Failed to load filters: {str(e)}")
 
     def load_csv_data(self):
         """Read the CSV file and pre-filter rows with pricing data."""
         file_path = os.path.join(self.csv_folder, self.csv_file)
-        
+
         # Fallback: If specific file not found, look for any result CSV in the folder
         if not os.path.exists(file_path):
-            logger.warning(f"Primary CSV file not found: {file_path}. Searching for fallbacks...")
+            logger.warning(
+                f"Primary CSV file not found: {file_path}. Searching for fallbacks...")
             fallback_pattern = os.path.join(self.csv_folder, "*_results.csv")
             fallbacks = glob.glob(fallback_pattern)
             if fallbacks:
@@ -130,9 +139,10 @@ class CanaParse:
                 reader = csv.reader(f)
                 # Skip rows that don't have at least one numeric price column (indices 9-15)
                 self.raw_data = [
-                    row for row in reader 
+                    row for row in reader
                     if len(row) > 15 and any(
-                        str(row[i]).replace('.', '', 1).isdigit() and float(row[i]) > 0 
+                        str(row[i]).replace(
+                            '.', '', 1).isdigit() and float(row[i]) > 0
                         for i in range(9, 16)
                     )
                 ]
@@ -153,21 +163,23 @@ class CanaParse:
         self.filtered_tables = []
         for f in self.filters:
             logger.info(f"Filtering for: {f.name}")
-            
+
             # Identify the column index for the price key (gram, eighth, etc.)
             price_col = self.get_col_by_key(f.key)
-            
+
             # Apply filters
             filtered: List[Any] = [
-                row[:] for row in self.raw_data # copy row to avoid mutating raw_data
+                # copy row to avoid mutating raw_data
+                row[:] for row in self.raw_data
                 if self.is_match(row, f, price_col)
             ]
-            
+
             # Handle result limits and sorting
             if f.limit_results_amt > -1 and len(filtered) > f.limit_results_amt:
-                filtered = sorted(filtered, key=lambda x: float(str(x[price_col])) if str(x[price_col]).replace('.','',1).isdigit() else 999999)
+                filtered = sorted(filtered, key=lambda x: float(str(x[price_col])) if str(
+                    x[price_col]).replace('.', '', 1).isdigit() else 999999)
                 filtered = filtered[:f.limit_results_amt]
-                
+
             self.filtered_tables.append(filtered)
             logger.info(f"Filter '{f.name}' yielded {len(filtered)} results.")
 
@@ -191,7 +203,8 @@ class CanaParse:
         # 1. Price Comparison
         if f.price:
             row_price_raw = str(row[price_col])
-            row_price = float(row_price_raw) if row_price_raw.replace('.','',1).isdigit() else 0
+            row_price = float(row_price_raw) if row_price_raw.replace(
+                '.', '', 1).isdigit() else 0
             if not getComparisonVal(f.compare, row_price, f.price):
                 return False
 
@@ -232,7 +245,8 @@ class CanaParse:
         if f.thc_floor > 0:
             thc_val = self.extract_cannabinoid(row_str, 'thc')
             if thc_val < f.thc_floor:
-                if f.thc_floor_strict: return False
+                if f.thc_floor_strict:
+                    return False
             else:
                 row.append(f"thc+{thc_val}")
 
@@ -240,7 +254,8 @@ class CanaParse:
         if f.cbd_floor > 0.001:
             cbd_val = self.extract_cannabinoid(row_str, 'cbd')
             if cbd_val < f.cbd_floor:
-                if f.cbd_floor_strict: return False
+                if f.cbd_floor_strict:
+                    return False
             else:
                 row.append(f"cbd+{cbd_val}")
 
@@ -251,21 +266,27 @@ class CanaParse:
         pattern = rf"{type_name}[:\s-]*(\d+\.?\d*)"
         match = re.search(pattern, text)
         if match:
-            try: return float(match.group(1))
-            except: pass
+            try:
+                return float(match.group(1))
+            except (ValueError, TypeError):
+                pass
         return 0
 
     def as_currency(self, amount):
         """Format number as USD currency."""
-        try: return '${:,.2f}'.format(float(amount))
-        except: return str(amount)
+        try:
+            return '${:,.2f}'.format(float(amount))
+        except (ValueError, TypeError):
+            return str(amount)
 
     def as_percentage(self, amount):
         """Format number as percentage."""
         try:
             val = float(amount)
-            if 0 <= val <= 100: return '{:,.2f}%'.format(val)
-        except: pass
+            if 0 <= val <= 100:
+                return '{:,.2f}%'.format(val)
+        except (ValueError, TypeError):
+            pass
         return ""
 
     def clean_html(self, raw_html):
@@ -293,12 +314,14 @@ class CanaParse:
     def _add_html_head(self, doc):
         """Append metadata and script links to head."""
         doc.asis('<meta charset="utf-8">')
-        doc.asis('<meta name="viewport" content="width=device-width, initial-scale=1">')
+        doc.asis(
+            '<meta name="viewport" content="width=device-width, initial-scale=1">')
         doc.asis('<link rel="preconnect" href="https://fonts.googleapis.com">')
-        doc.asis('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>')
+        doc.asis(
+            '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>')
         doc.asis('<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">')
         doc.asis('<link href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" rel="stylesheet">')
-        
+
         # Premium Glassmorphism CSS
         css = """
         :root {
@@ -488,14 +511,16 @@ class CanaParse:
         ::-webkit-scrollbar-thumb { background: var(--card-bg); border-radius: 5px; border: 1px solid var(--glass-border); }
         ::-webkit-scrollbar-thumb:hover { background: var(--glass-border); }
         """
-        
+
         with doc.tag('style'):
             doc.asis(css)
 
         # Scripts
-        doc.asis('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>')
-        doc.asis('<script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>')
-        # Note: Sorting script removed for now as it relied on old jquery tablesorter. 
+        doc.asis(
+            '<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>')
+        doc.asis(
+            '<script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>')
+        # Note: Sorting script removed for now as it relied on old jquery tablesorter.
         # Could re-add a modern vanilla JS sorter later.
 
     def _generate_navbar(self, doc, tag, text):
@@ -503,14 +528,14 @@ class CanaParse:
         with tag('nav', klass="navbar"):
             with tag('div', klass="navbar-brand"):
                 text("CANADATA ANALYTICS")
-            
+
             with tag('div'):
                 with tag('ul', klass="navbar-nav"):
                     for f in self.filters:
                         with tag('li'):
                             with tag('a', klass="nav-link", href=f'#{f.name.replace(" ", "_").lower()}'):
                                 text(f.name)
-            
+
             with tag('div', style="text-align: right"):
                 with tag('div', style="font-size: 0.8rem; color: var(--text-muted)"):
                     text(f"Source: {self.csv_file}")
@@ -522,7 +547,7 @@ class CanaParse:
         """Generate a table for a specific filter."""
         results = self.filtered_tables[i]
         section_id = f.name.replace(" ", "_").lower()
-        
+
         with tag('div', id=section_id):
             with tag('h3'):
                 text(f.name)
@@ -530,7 +555,8 @@ class CanaParse:
                     text(str(len(results)))
 
             if not results:
-                with tag('p', style="color: var(--text-muted); padding: 1rem;"): text("No results found for this filter.")
+                with tag('p', style="color: var(--text-muted); padding: 1rem;"):
+                    text("No results found for this filter.")
                 return
 
             with tag('div', klass='table-container'):
@@ -538,13 +564,16 @@ class CanaParse:
                     with tag('thead'):
                         with tag('tr'):
                             # Define headers based on data content
-                            headers = ['Price', 'Image', 'Product', 'Category', 'THC']
-                            if f.cbd_floor > 0: headers.append('CBD')
+                            headers = ['Price', 'Image',
+                                       'Product', 'Category', 'THC']
+                            if f.cbd_floor > 0:
+                                headers.append('CBD')
                             headers.extend(['Dispensary', 'Details'])
-                            
+
                             for label in headers:
-                                with tag('th'): text(label)
-                    
+                                with tag('th'):
+                                    text(label)
+
                     with tag('tbody'):
                         for row in results:
                             self._generate_row(doc, tag, text, row, f)
@@ -554,18 +583,20 @@ class CanaParse:
         price_col = self.get_col_by_key(f.key)
         with tag('tr'):
             # Price
-            with tag('td'): 
-                with tag('div', klass="price-tag"): text(self.as_currency(row[price_col]))
-            
+            with tag('td'):
+                with tag('div', klass="price-tag"):
+                    text(self.as_currency(row[price_col]))
+
             # Image
             with tag('td', klass="thumb"):
                 img_url = str(row[17]) if len(row) > 17 else ""
                 if img_url:
                     with tag('a', ('data-fancybox', 'gallery'), href=img_url):
-                        doc.stag('img', src=img_url, klass="img-thumbnail", onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';")
+                        doc.stag('img', src=img_url, klass="img-thumbnail",
+                                 onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';")
                 else:
                     text("-")
-            
+
             # Strain Name + Link
             with tag('td'):
                 slug = str(row[28]) if len(row) > 28 else ""
@@ -576,31 +607,37 @@ class CanaParse:
                 # Actually index 4 is usually brand in CanaData export
                 brand = str(row[4]) if len(row) > 4 else ""
                 if brand:
-                    with tag('span', style="font-size: 0.8rem; color: var(--text-muted);"): text(brand)
+                    with tag('span', style="font-size: 0.8rem; color: var(--text-muted);"):
+                        text(brand)
 
             # Category
-            with tag('td'): 
+            with tag('td'):
                 with tag('span', style="background: rgba(0, 212, 255, 0.1); color: var(--secondary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;"):
                     text(str(row[20]))
-            
+
             # THC
-            thc_val = next((str(s).split("+")[1] for s in row if str(s).startswith("thc+")), "0")
-            with tag('td'): text(self.as_percentage(thc_val))
-            
+            thc_val = next(
+                (str(s).split("+")[1] for s in row if str(s).startswith("thc+")), "0")
+            with tag('td'):
+                text(self.as_percentage(thc_val))
+
             # CBD
             if f.cbd_floor > 0:
-                cbd_val = next((str(s).split("+")[1] for s in row if str(s).startswith("cbd+")), "0")
-                with tag('td'): text(self.as_percentage(cbd_val))
-            
+                cbd_val = next(
+                    (str(s).split("+")[1] for s in row if str(s).startswith("cbd+")), "0")
+                with tag('td'):
+                    text(self.as_percentage(cbd_val))
+
             # Dispensary
-            with tag('td'): 
+            with tag('td'):
                 text(str(row[29]))
-            
+
             # Info (Cleaned)
-            with tag('td', klass="info-cell"): 
+            with tag('td', klass="info-cell"):
                 desc = self.clean_html(row[1])
                 # Truncate if too long
-                if len(desc) > 100: desc = desc[:100] + "..."
+                if len(desc) > 100:
+                    desc = desc[:100] + "..."
                 text(desc)
 
     def _generate_footer(self, doc, tag, text):
@@ -616,33 +653,48 @@ class CanaParse:
             f.write(html_content)
         logger.info(f"HTML report saved to: {output_path}")
 
+
 def getComparisonVal(op, val1, val2):
     """Evaluate a comparison operation."""
     try:
-        if op == '>=': return 1 if val1 >= val2 else 0
-        if op == '<=': return 1 if 0 < val1 <= val2 else 0
-        if op == '==': return 1 if val1 == val2 else 0
-        if op == '>':  return 1 if val1 > val2 else 0
-        if op == '<':  return 1 if 0 < val1 < val2 else 0
-    except: pass
+        if op == '>=':
+            return 1 if val1 >= val2 else 0
+        if op == '<=':
+            return 1 if 0 < val1 <= val2 else 0
+        if op == '==':
+            return 1 if val1 == val2 else 0
+        if op == '>':
+            return 1 if val1 > val2 else 0
+        if op == '<':
+            return 1 if 0 < val1 < val2 else 0
+    except (ValueError, TypeError):
+        pass
     return 0
+
 
 def main():
     """Execution entry point."""
-    parser_args = argparse.ArgumentParser(description="CanaParse: Filter and generate HTML reports from CanaData CSVs.")
-    parser_args.add_argument("--file", help="Specific CSV file name (e.g., results.csv)")
-    parser_args.add_argument("--folder", help="Specific folder containing the CSV file")
-    parser_args.add_argument("--output", default="output/index.html", help="Path to save the HTML report")
-    parser_args.add_argument("--no-filter", action="store_true", help="Include all results without filtering")
-    
+    parser_args = argparse.ArgumentParser(
+        description="CanaParse: Filter and generate HTML reports from CanaData CSVs.")
+    parser_args.add_argument(
+        "--file", help="Specific CSV file name (e.g., results.csv)")
+    parser_args.add_argument(
+        "--folder", help="Specific folder containing the CSV file")
+    parser_args.add_argument(
+        "--output", default="output/index.html", help="Path to save the HTML report")
+    parser_args.add_argument(
+        "--no-filter", action="store_true", help="Include all results without filtering")
+
     args = parser_args.parse_args()
 
-    parser = CanaParse(csv_file=args.file, csv_folder=args.folder, no_filter=args.no_filter)
+    parser = CanaParse(csv_file=args.file,
+                       csv_folder=args.folder, no_filter=args.no_filter)
     if parser.load_csv_data():
         parser.apply_filters()
         parser.save_html(output_path=args.output)
     else:
         logger.error("Skipping report generation due to missing data.")
+
 
 if __name__ == "__main__":
     main()
