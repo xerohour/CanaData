@@ -1,5 +1,6 @@
 import json
 import os
+import html
 from datetime import datetime
 from CanaData import CanaData
 
@@ -263,13 +264,15 @@ def generate_html_report(data, region_name="Colorado"):
     }
     """
 
+    safe_region_name = html.escape(str(region_name))
+
     html_content = f"""
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Weedmaps Discovery Report - {region_name}</title>
+        <title>Weedmaps Discovery Report - {safe_region_name}</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -279,7 +282,7 @@ def generate_html_report(data, region_name="Colorado"):
         <a href="#main-content" class="skip-link">Skip to main content</a>
         <div class="container" id="main-content">
             <header>
-                <h1>{region_name} Discovery</h1>
+                <h1>{safe_region_name} Discovery</h1>
                 <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
             </header>
 
@@ -287,7 +290,20 @@ def generate_html_report(data, region_name="Colorado"):
     """
 
     for item in listings:
-        avatar = item.get('avatar_image', {}).get('original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
+        raw_avatar = item.get('avatar_image', {}).get('original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
+        avatar = raw_avatar if str(raw_avatar).startswith(('http://', 'https://')) else '#'
+
+        safe_name = html.escape(str(item.get('name', '')))
+        safe_type = html.escape(str(item.get('type', '')))
+        safe_address = html.escape(str(item.get('address', 'N/A')))
+        safe_city = html.escape(str(item.get('city', 'N/A')))
+        safe_hours = html.escape(str(item.get('todays_hours_str', 'N/A')))
+        safe_phone = html.escape(str(item.get('phone_number', 'N/A')))
+        safe_license = html.escape(str(item.get('license_type', 'Recreational')))
+
+        raw_web_url = item.get('web_url') or '#'
+        safe_web_url = raw_web_url if str(raw_web_url).startswith(('http://', 'https://')) else '#'
+
         rating = item.get('rating', 'N/A')
         reviews = item.get('reviews_count', 0)
         is_open = item.get('open_now', False)
@@ -297,20 +313,22 @@ def generate_html_report(data, region_name="Colorado"):
         promo = item.get('promo_code')
         promo_html = ""
         if promo:
+            safe_promo_code = html.escape(str(promo.get('code', 'Special Offer')))
+            safe_promo_title = html.escape(str(promo.get('title', 'Check website for details')))
             promo_html = f"""
             <div class="promo-section">
-                <div class="promo-title">✨ PROMO: {promo.get('code', 'Special Offer')}</div>
-                <div class="promo-body">{promo.get('title', 'Check website for details')}</div>
+                <div class="promo-title">✨ PROMO: {safe_promo_code}</div>
+                <div class="promo-body">{safe_promo_title}</div>
             </div>
             """
 
         html_content += f"""
                 <div class="card">
                     <div class="card-header">
-                        <img src="{avatar}" alt="{item.get('name')}" class="avatar">
+                        <img src="{avatar}" alt="{safe_name}" class="avatar">
                         <div class="listing-info">
-                            <h2>{item.get('name')}</h2>
-                            <span class="badge badge-type">{item.get('type')}</span>
+                            <h2>{safe_name}</h2>
+                            <span class="badge badge-type">{safe_type}</span>
                             <span class="badge badge-rating">★ {rating} ({reviews})</span>
                             <span class="badge {status_class}">{status_text}</span>
                         </div>
@@ -319,19 +337,19 @@ def generate_html_report(data, region_name="Colorado"):
                         <table class="data-table">
                             <tr>
                                 <td class="label">Address</td>
-                                <td class="value">{item.get('address', 'N/A')}</td>
+                                <td class="value">{safe_address}</td>
                             </tr>
                             <tr>
                                 <td class="label">City</td>
-                                <td class="value">{item.get('city', 'N/A')}</td>
+                                <td class="value">{safe_city}</td>
                             </tr>
                             <tr>
                                 <td class="label">Hours Today</td>
-                                <td class="value">{item.get('todays_hours_str', 'N/A')}</td>
+                                <td class="value">{safe_hours}</td>
                             </tr>
                             <tr>
                                 <td class="label">Phone</td>
-                                <td class="value">{item.get('phone_number', 'N/A')}</td>
+                                <td class="value">{safe_phone}</td>
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
@@ -341,8 +359,8 @@ def generate_html_report(data, region_name="Colorado"):
                         {promo_html}
                     </div>
                     <div class="footer-actions">
-                        <span style="font-size: 0.8rem; color: var(--text-muted)">{item.get('license_type', 'Recreational')}</span>
-                        <a href="{item.get('web_url')}" target="_blank" rel="noopener noreferrer" aria-label="View {item.get('name', '').replace('"', '&quot;')} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                        <span style="font-size: 0.8rem; color: var(--text-muted)">{safe_license}</span>
+                        <a href="{safe_web_url}" target="_blank" rel="noopener noreferrer" aria-label="View {safe_name} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
                     </div>
                 </div>
         """
