@@ -103,9 +103,12 @@ def run_curl(url: str, timeout_seconds: int = 30) -> Dict[str, Any]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Probe Weedmaps endpoints and emit JSON health report.")
-    parser.add_argument("--output", help="Optional file path to write JSON report")
-    parser.add_argument("--timeout", type=int, default=30, help="curl timeout in seconds")
+    parser = argparse.ArgumentParser(
+        description="Probe Weedmaps endpoints and emit JSON health report.")
+    parser.add_argument(
+        "--output", help="Optional file path to write JSON report")
+    parser.add_argument("--timeout", type=int, default=30,
+                        help="curl timeout in seconds")
     args = parser.parse_args()
 
     checks: List[Dict[str, Any]] = []
