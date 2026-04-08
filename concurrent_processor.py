@@ -81,13 +81,20 @@ class ConcurrentMenuProcessor:
             return process_func(location)
     
     def _wait_for_rate_limit(self):
-        """Implement rate limiting between requests"""
+        """Implement global rate limiting between requests"""
+        # Optimization: Calculate target time inside lock, but sleep outside lock
+        # This prevents the global lock from bottlenecking the entire application
+        sleep_time = 0
         with self.request_lock:
             current_time = time.time()
-            time_since_last = current_time - self.last_request_time
+            # If this is the first request, set last_request_time to allow immediate execution
+            if self.last_request_time == 0.0:
+                self.last_request_time = current_time - self.rate_limit
+
+            next_allowed_time = max(current_time, self.last_request_time + self.rate_limit)
+            sleep_time = next_allowed_time - current_time
+            # Update last_request_time so subsequent threads wait progressively longer
+            self.last_request_time = next_allowed_time
             
-            if time_since_last < self.rate_limit:
-                sleep_time = self.rate_limit - time_since_last
-                time.sleep(sleep_time)
-            
-            self.last_request_time = time.time()
+        if sleep_time > 0:
+            time.sleep(sleep_time)
