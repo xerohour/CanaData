@@ -1,0 +1,21 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
+benchmark: 5.2.3 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: /app
+plugins: benchmark-5.2.3
+collected 2 items
+
+tests/benchmark_canadata.py ..                                           [100%]
+
+
+--------------------------------------------------------------------------------------- benchmark: 2 tests --------------------------------------------------------------------------------------
+Name (time in ms)                     Min                Max               Mean            StdDev             Median               IQR            Outliers      OPS            Rounds  Iterations
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+test_benchmark_custom_flatten     14.0417 (1.0)      62.6133 (2.56)     16.7246 (1.0)      6.5050 (3.64)     15.3093 (1.0)      2.0306 (2.33)          1;4  59.7922 (1.0)          55           1
+test_benchmark_pandas_flatten     16.4915 (1.17)     24.4498 (1.0)      18.0619 (1.08)     1.7894 (1.0)      17.5794 (1.15)     0.8706 (1.0)           4;5  55.3652 (0.93)         54           1
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Legend:
+  Outliers: 1 Standard Deviation from Mean; 1.5 IQR (InterQuartile Range) from 1st Quartile and 3rd Quartile.
+  OPS: Operations Per Second, computed as 1 / Mean
+============================== 2 passed in 3.74s ===============================
