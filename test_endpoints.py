@@ -1,6 +1,5 @@
 import requests
-import json
-import time
+
 
 def check_endpoint(name, url):
     print(f"\n--- Testing: {name} ---")
@@ -23,7 +22,8 @@ def check_endpoint(name, url):
                 if 'data' in data:
                     print(f"Data type: {type(data['data'])}")
                     if isinstance(data['data'], list) and len(data['data']) > 0:
-                        print("First item keys:", data['data'][0].keys() if isinstance(data['data'][0], dict) else "Not a dict")
+                        print("First item keys:", data['data'][0].keys() if isinstance(
+                            data['data'][0], dict) else "Not a dict")
             return data
         else:
             print(f"Response: {response.text[:200]}...")
@@ -31,13 +31,15 @@ def check_endpoint(name, url):
         print(f"Error: {e}")
     return None
 
+
 if __name__ == "__main__":
     # 1. Test EXACT URL from README
     readme_url = "https://api-g.weedmaps.com/discovery/v1/listings?filter[any_retailer_services][]=storefront&filter[any_retailer_services][]=delivery&filter[region_slug[deliveries]]=washington-dc&filter[region_slug[dispensaries]]=washington-dc&page_size=100&size=100"
     check_endpoint("README CURL Example", readme_url)
-    
+
     # 2. Test Region Discovery again without custom User-Agent (let requests use default)
     # Actually, let's try with a more 'browser-like' set of headers if the above fails.
-    
+
     # 3. Test the Menu endpoint which uses weedmaps.com (not api-g)
-    check_endpoint("Web Menu API", "https://weedmaps.com/api/web/v1/listings/metropolitan-wellness-center/menu?type=dispensary")
+    check_endpoint(
+        "Web Menu API", "https://weedmaps.com/api/web/v1/listings/metropolitan-wellness-center/menu?type=dispensary")
