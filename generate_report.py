@@ -299,7 +299,7 @@ def generate_html_report(data, region_name="Colorado"):
         if promo:
             promo_html = f"""
             <div class="promo-section">
-                <div class="promo-title">✨ PROMO: {promo.get('code', 'Special Offer')}</div>
+                <div class="promo-title"><span aria-hidden="true">✨</span> PROMO: {promo.get('code', 'Special Offer')}</div>
                 <div class="promo-body">{promo.get('title', 'Check website for details')}</div>
             </div>
             """
@@ -307,11 +307,13 @@ def generate_html_report(data, region_name="Colorado"):
         html_content += f"""
                 <div class="card">
                     <div class="card-header">
-                        <img src="{avatar}" alt="{item.get('name')}" class="avatar">
+                        <img src="{avatar}" alt="" aria-hidden="true" class="avatar">
                         <div class="listing-info">
                             <h2>{item.get('name')}</h2>
                             <span class="badge badge-type">{item.get('type')}</span>
-                            <span class="badge badge-rating">★ {rating} ({reviews})</span>
+                            <span class="badge badge-rating" aria-label="Rating: {rating} out of 5 stars from {reviews} reviews" title="Rating: {rating} out of 5 stars from {reviews} reviews">
+                                <span aria-hidden="true">★</span> {rating} ({reviews})
+                            </span>
                             <span class="badge {status_class}">{status_text}</span>
                         </div>
                     </div>
