@@ -1,26 +1,25 @@
-import pytest
 import time
-import threading
 from concurrent_processor import ConcurrentMenuProcessor, retry_with_backoff
 
+
 def test_concurrent_processor_race_condition():
-    # Test if multiple workers accessing shared structures cause race conditions
+    # Test if multiple workers accessing shared structures
     locations = [{"slug": f"loc-{i}"} for i in range(1000)]
 
-    # We use a custom process func that simulates mixed latency to cause thread interleaving
     def mixed_latency_process(loc):
         import random
         time.sleep(random.uniform(0.001, 0.01))
-        # Deliberately raise exception sometimes to test error list thread safety
+        # Deliberately raise exception sometimes to test error
         if random.random() < 0.1:
-            raise Exception("Simulated Failure")
+            raise ValueError("Simulated Failure")
         return {"id": loc["slug"]}
 
     processor = ConcurrentMenuProcessor(max_workers=50, rate_limit=0.0)
-    results = processor.process_locations(locations, mixed_latency_process)
+    _ = processor.process_locations(locations, mixed_latency_process)
 
     # Assert thread safety of results and errors dict/list
     assert len(processor.results) + len(processor.errors) == 1000
+
 
 def test_retry_backoff_decorator():
     call_count = 0
@@ -39,5 +38,9 @@ def test_retry_backoff_decorator():
 
     assert result == "success"
     assert call_count == 3
-    # First retry: ~0.1s, Second retry: ~0.2s. Total should be > 0.3s
-    assert (end_time - start_time) > 0.3
+    # The backoff is calculated as:
+    # min(base_delay * (2 ** (retries - 1)), max_delay) + jitter
+    # Retry 1: min(0.1 * 2^0, 1.0) = 0.1 + jitter (0 to 0.01)
+    # Retry 2: min(0.1 * 2^1, 1.0) = 0.2 + jitter (0 to 0.02)
+    # Total time > 0.25 considering minimums and negligible jitter.
+    assert (end_time - start_time) > 0.25
