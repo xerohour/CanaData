@@ -15,9 +15,11 @@ from tkinter import messagebox, ttk
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
+    # noqa: E402
     sys.path.insert(0, str(ROOT))
 
-from CanaData import CanaData
+# noqa: E402
+from CanaData import CanaData  # noqa: E402
 
 
 @dataclass
@@ -420,7 +422,7 @@ class CanaDataGUI:
 
 def main() -> None:
     root = tk.Tk()
-    app = CanaDataGUI(root)
+    _app = CanaDataGUI(root)
     root.mainloop()
 
 
