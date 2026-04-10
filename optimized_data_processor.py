@@ -130,28 +130,23 @@ class OptimizedDataProcessor:
         """
         Optimized version of the existing custom flattening algorithm.
         """
-        # Pre-allocate result dict with estimated size
         result = {}
-        
-        # Use iterative approach with explicit stack
-        stack = [iter(d.items())]
-        keys = []
+        stack = [(d, "")]
         
         while stack:
-            for k, v in stack[-1]:
-                key = '.'.join(keys + [k]) if keys else k
+            current_dict, prefix = stack.pop()
+
+            for k, v in current_dict.items():
+                key = f"{prefix}.{k}" if prefix else k
                 
                 if isinstance(v, dict):
-                    # Push nested dict to stack
-                    keys.append(k)
-                    stack.append(iter(v.items()))
-                    break
+                    stack.append((v, key))
                 elif isinstance(v, list):
                     if v and isinstance(v[0], dict):
                         # Handle list of dicts by taking first item or joining
                         if len(v) == 1:
                             # Single item, flatten it
-                            nested_dict = {f"{k}.{sub_k}": sub_v for sub_k, sub_v in v[0].items()}
+                            nested_dict = {f"{key}.{sub_k}": sub_v for sub_k, sub_v in v[0].items()}
                             result.update(nested_dict)
                         else:
                             # Multiple items, convert to JSON string
@@ -163,12 +158,7 @@ class OptimizedDataProcessor:
                     result[key] = 'None'
                 else:
                     result[key] = str(v)
-            else:
-                # Pop from stack when iterator is exhausted
-                if len(stack) > 1:
-                    keys.pop()
-                stack.pop()
-        
+
         return result
     
     def _normalize_data(self, df: pd.DataFrame) -> pd.DataFrame:
