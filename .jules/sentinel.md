@@ -1,4 +1,4 @@
-## 2026-02-24 - Path Traversal in CSV Export
-**Vulnerability:** User-controlled filenames in `csv_maker` allowed writing files outside the intended directory via `../` sequences.
-**Learning:** Even internal utility functions like `csv_maker` can be vulnerable if they accept unsanitized input derived from user arguments (`searchSlug`).
-**Prevention:** Always sanitize filenames using allowlists (alphanumeric, etc.) before using them in file operations, especially when they originate from user input.
+## 2024-04-11 - XSS in HTML Report Generator
+**Vulnerability:** Untrusted dictionary values from API/scraped JSON were injected directly into an HTML string via f-strings without any escaping. In addition, URLs like `web_url` and `avatar` lacked scheme validation, opening vectors for `javascript:` URIs.
+**Learning:** Raw f-strings are highly dangerous for generating HTML from external data because they lack the automatic contextual escaping provided by modern templating engines (like Jinja2).
+**Prevention:** Always manually apply `html.escape()` to text nodes and validate protocol schemes (`http://`, `https://`) for URL attributes when generating raw HTML strings. Consider using a templating engine.
