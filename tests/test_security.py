@@ -1,7 +1,6 @@
 import os
 import pytest
 from CanaData import CanaData
-import re
 from datetime import datetime
 import shutil
 
@@ -90,3 +89,32 @@ class TestSecurity:
         assert cana._sanitize_filename("invalid/characters!@#") == "invalidcharacters"
         assert cana._sanitize_filename("..\\windows\\style") == "..windowsstyle"
         assert cana._sanitize_filename("foo bar") == "foobar" # spaces removed
+
+    def test_xss_prevention(self):
+        from generate_report import generate_html_report
+        import os
+
+        malicious_data = {
+            'meta': {'total_listings': 1},
+            'data': {
+                'listings': [{
+                    'name': '<script>alert("XSS")</script>',
+                    'address': '"><img src=x onerror=alert(1)>',
+                    'city': '<svg/onload=alert(2)>',
+                }]
+            }
+        }
+
+        generate_html_report(malicious_data, region_name='<script>alert("Region")</script>')
+
+        with open('listing_report.html', 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        assert '<script>alert("XSS")</script>' not in content
+        assert '"><img src=x onerror=alert(1)>' not in content
+        assert '&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt;' in content
+        assert '&quot;&gt;&lt;img src=x onerror=alert(1)&gt;' in content
+        assert '&lt;script&gt;alert(&quot;Region&quot;)&lt;/script&gt;' in content
+
+        if os.path.exists('listing_report.html'):
+            os.remove('listing_report.html')
