@@ -1,0 +1,3 @@
+## 2024-05-18 - Optimized JSON Flattening Algorithm
+**Learning:** Profiling shows that using a custom, iterative stack-based algorithm (pushing `(dict, prefix)` pairs rather than creating `iter()` objects) for flattening large, deeply nested JSON responses is significantly faster than using the current `iter()` stack-based algorithm or `pandas.json_normalize`. The tuple-based algorithm avoids pandas structural overhead, excessive object creation from `iter()`, and complex array manipulations on the prefix keys.
+**Action:** Always prefer pushing `(dict, prefix)` tuples in a simple stack over creating iterator objects when recursively or iteratively flattening deeply nested dictionary structures in hot paths.
