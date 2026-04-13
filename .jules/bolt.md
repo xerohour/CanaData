@@ -1,0 +1,3 @@
+## 2025-03-02 - Flattening Algorithm Quirks
+**Learning:** Custom iterative algorithms building keys iteratively from top-to-bottom with tuples are generally faster than maintaining string paths dynamically with list pops and joins. However, the original flattening algorithm in this codebase has a quirky behavior for flattening nested lists of dictionaries, and changing the core algorithm breaks this output exactly. When micro-optimizing core parsers, be cautious to not break implicit schema structures.
+**Action:** Always test optimizations to parsing logic against strict unit tests ensuring identical output schemas. Opt for simpler, safer downstream optimizations like dictionary normalization using `dict.fromkeys()` and `.update()`.
