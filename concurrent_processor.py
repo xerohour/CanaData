@@ -88,6 +88,10 @@ class ConcurrentMenuProcessor:
             
             if time_since_last < self.rate_limit:
                 sleep_time = self.rate_limit - time_since_last
-                time.sleep(sleep_time)
-            
-            self.last_request_time = time.time()
+                self.last_request_time = current_time + sleep_time
+            else:
+                self.last_request_time = current_time
+                sleep_time = 0
+
+        if sleep_time > 0:
+            time.sleep(sleep_time)
