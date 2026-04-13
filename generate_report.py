@@ -1,5 +1,6 @@
 import json
 import os
+import html
 from datetime import datetime
 from CanaData import CanaData
 
@@ -269,7 +270,7 @@ def generate_html_report(data, region_name="Colorado"):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Weedmaps Discovery Report - {region_name}</title>
+        <title>Weedmaps Discovery Report - {html.escape(str(region_name))}</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -279,7 +280,7 @@ def generate_html_report(data, region_name="Colorado"):
         <a href="#main-content" class="skip-link">Skip to main content</a>
         <div class="container" id="main-content">
             <header>
-                <h1>{region_name} Discovery</h1>
+                <h1>{html.escape(str(region_name))} Discovery</h1>
                 <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
             </header>
 
@@ -299,19 +300,20 @@ def generate_html_report(data, region_name="Colorado"):
         if promo:
             promo_html = f"""
             <div class="promo-section">
-                <div class="promo-title">✨ PROMO: {promo.get('code', 'Special Offer')}</div>
-                <div class="promo-body">{promo.get('title', 'Check website for details')}</div>
+                <div class="promo-title">✨ PROMO: {html.escape(str(promo.get('code', 'Special Offer')))}</div>
+                <div class="promo-body">{html.escape(str(promo.get('title', 'Check website for details')))}</div>
             </div>
             """
 
+        web_url = item.get('web_url') or '#'
         html_content += f"""
                 <div class="card">
                     <div class="card-header">
-                        <img src="{avatar}" alt="{item.get('name')}" class="avatar">
+                        <img src="{html.escape(str(avatar))}" alt="{html.escape(str(item.get('name', 'N/A')))}" class="avatar">
                         <div class="listing-info">
-                            <h2>{item.get('name')}</h2>
-                            <span class="badge badge-type">{item.get('type')}</span>
-                            <span class="badge badge-rating">★ {rating} ({reviews})</span>
+                            <h2>{html.escape(str(item.get('name', 'N/A')))}</h2>
+                            <span class="badge badge-type">{html.escape(str(item.get('type', 'N/A')))}</span>
+                            <span class="badge badge-rating">★ {html.escape(str(rating))} ({reviews})</span>
                             <span class="badge {status_class}">{status_text}</span>
                         </div>
                     </div>
@@ -319,19 +321,19 @@ def generate_html_report(data, region_name="Colorado"):
                         <table class="data-table">
                             <tr>
                                 <td class="label">Address</td>
-                                <td class="value">{item.get('address', 'N/A')}</td>
+                                <td class="value">{html.escape(str(item.get('address', 'N/A')))}</td>
                             </tr>
                             <tr>
                                 <td class="label">City</td>
-                                <td class="value">{item.get('city', 'N/A')}</td>
+                                <td class="value">{html.escape(str(item.get('city', 'N/A')))}</td>
                             </tr>
                             <tr>
                                 <td class="label">Hours Today</td>
-                                <td class="value">{item.get('todays_hours_str', 'N/A')}</td>
+                                <td class="value">{html.escape(str(item.get('todays_hours_str', 'N/A')))}</td>
                             </tr>
                             <tr>
                                 <td class="label">Phone</td>
-                                <td class="value">{item.get('phone_number', 'N/A')}</td>
+                                <td class="value">{html.escape(str(item.get('phone_number', 'N/A')))}</td>
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
@@ -341,8 +343,8 @@ def generate_html_report(data, region_name="Colorado"):
                         {promo_html}
                     </div>
                     <div class="footer-actions">
-                        <span style="font-size: 0.8rem; color: var(--text-muted)">{item.get('license_type', 'Recreational')}</span>
-                        <a href="{item.get('web_url')}" target="_blank" rel="noopener noreferrer" aria-label="View {item.get('name', '').replace('"', '&quot;')} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                        <span style="font-size: 0.8rem; color: var(--text-muted)">{html.escape(str(item.get('license_type', 'Recreational')))}</span>
+                        <a href="{html.escape(str(web_url))}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get('name', 'N/A')))}" class="btn btn-primary">View on Weedmaps</a>
                     </div>
                 </div>
         """
