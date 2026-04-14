@@ -1,4 +1,3 @@
-import json
 import os
 from datetime import datetime
 from CanaData import CanaData
@@ -11,30 +10,31 @@ consumer-facing HTML report. It uses a modern, "Glassmorphism" design aesthetic
 to present cannabis listing data in a visually appealing way.
 """
 
+
 def generate_html_report(data, region_name="Colorado"):
     """
     Generates a premium HTML report from Weedmaps listing data.
-    
+
     This function takes the raw JSON response from the Weedmaps discovery API and
     transforms it into a standalone HTML file (`listing_report.html`).
-    
+
     The report features:
     - **Glassmorphism Design**: Translucent cards, blurred backgrounds, and neon accents.
     - **Responsive Grid**: Automatically adjusts columns based on screen size.
     - **Rich Metadata**: Displays ratings, reviews, open status, and promo codes.
     - **Direct Links**: 'View on Weedmaps' buttons for quick navigation.
-    
+
     Args:
         data (dict): The raw JSON dictionary returned by `CanaData.do_request`.
         region_name (str): The display name for the region header (default: "Colorado").
-        
+
     Output:
         Creates a file named `listing_report.html` in the current working directory.
     """
     listings = data.get('data', {}).get('listings', [])
     meta = data.get('meta', {})
     total_listings = meta.get('total_listings', len(listings))
-    
+
     # Modern CSS with Glasmorphism and Vibrant Colors
     css = """
     :root {
@@ -287,13 +287,14 @@ def generate_html_report(data, region_name="Colorado"):
     """
 
     for item in listings:
-        avatar = item.get('avatar_image', {}).get('original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
+        avatar = item.get('avatar_image', {}).get(
+            'original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
         rating = item.get('rating', 'N/A')
         reviews = item.get('reviews_count', 0)
         is_open = item.get('open_now', False)
         status_text = "Open Now" if is_open else "Closed"
         status_class = "badge-open" if is_open else "badge-closed"
-        
+
         promo = item.get('promo_code')
         promo_html = ""
         if promo:
@@ -353,18 +354,20 @@ def generate_html_report(data, region_name="Colorado"):
     </body>
     </html>
     """
-    
+
     with open('listing_report.html', 'w', encoding='utf-8') as f:
         f.write(html_content)
-    
-    print(f"✅ Success! Report generated: {os.path.abspath('listing_report.html')}")
+
+    print(
+        f"✅ Success! Report generated: {os.path.abspath('listing_report.html')}")
+
 
 if __name__ == "__main__":
     print("🚀 Fetching live data for Colorado...")
     cana = CanaData()
     # Use the Colorado discovery URL with a larger page size for a better report
     url = "https://api-g.weedmaps.com/discovery/v1/listings?filter[any_retailer_services][]=storefront&filter[any_retailer_services][]=delivery&filter[region_slug[deliveries]]=colorado&filter[region_slug[dispensaries]]=colorado&page_size=24&size=24"
-    
+
     data = cana.do_request(url)
     if data and data != 'break':
         generate_html_report(data)
