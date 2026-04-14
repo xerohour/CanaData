@@ -1,3 +1,6 @@
 ## 2026-02-24 - Static HTML Report Accessibility
 **Learning:** The generated HTML report (`listing_report.html`) lacked basic keyboard accessibility features like focus indicators and skip links, making it difficult for keyboard-only users to navigate the large grid of listings.
 **Action:** Added global `:focus-visible` styles and a `.skip-link` with inline CSS to `generate_report.py`. Ensure future generated reports include these styles by default.
+## 2026-04-14 - Dynamic Data Artifact Modification Risk
+**Learning:** Directly modifying generated UI artifacts (`listing_report.html`) rather than the source template script (`generate_report.py`) causes regressions, as the changes are overwritten the next time the generation script is run. Furthermore, regenerating the file during local test validation without overriding the source data creates massive, noisy diffs that pollutes PRs and overwrites intended repository mock data.
+**Action:** Always modify the *source template code* (e.g., `generate_report.py`) to inject HTML/CSS changes, not the generated artifacts. Never check in regenerated artifact diffs that overwrite mock data. Use `git restore <artifact>` if a local regeneration test pollutes the index.
