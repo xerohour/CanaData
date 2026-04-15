@@ -1,4 +1,4 @@
-## 2026-02-24 - Path Traversal in CSV Export
-**Vulnerability:** User-controlled filenames in `csv_maker` allowed writing files outside the intended directory via `../` sequences.
-**Learning:** Even internal utility functions like `csv_maker` can be vulnerable if they accept unsanitized input derived from user arguments (`searchSlug`).
-**Prevention:** Always sanitize filenames using allowlists (alphanumeric, etc.) before using them in file operations, especially when they originate from user input.
+## 2025-02-28 - XSS in Python HTML Generator Script
+**Vulnerability:** XSS vulnerability in `generate_report.py` where listing titles, region names, addresses, and other API data were injected directly into an f-string to generate HTML without escaping. In addition, unvalidated URL parameters `web_url` and `avatar_image` could potentially lead to `javascript:` execution if returned by the API.
+**Learning:** Even when building a standalone static HTML generator script that isn't connected to a live web server framework, XSS is still a massive risk if that HTML is opened locally or hosted later. Python's raw f-strings provide no automatic escaping like standard templating engines do (e.g. Jinja, Django).
+**Prevention:** Always use `html.escape()` for text data injected into HTML using raw f-strings in python scripts. Always validate that URLs enforce `http://` or `https://` to avoid schema exploits when injecting URLs directly into `src` or `href` attributes, and implement safe helper functions to catch `None` edge cases cleanly.
