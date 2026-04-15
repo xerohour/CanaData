@@ -1,7 +1,12 @@
-import json
+import html
 import os
 from datetime import datetime
 from CanaData import CanaData
+
+def safe_escape(val, default='N/A'):
+    if val is None:
+        return default
+    return html.escape(str(val))
 
 """
 HTML Report Generator Module
@@ -263,13 +268,14 @@ def generate_html_report(data, region_name="Colorado"):
     }
     """
 
+    safe_region = html.escape(str(region_name))
     html_content = f"""
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Weedmaps Discovery Report - {region_name}</title>
+        <title>Weedmaps Discovery Report - {safe_region}</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -279,7 +285,7 @@ def generate_html_report(data, region_name="Colorado"):
         <a href="#main-content" class="skip-link">Skip to main content</a>
         <div class="container" id="main-content">
             <header>
-                <h1>{region_name} Discovery</h1>
+                <h1>{safe_region} Discovery</h1>
                 <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
             </header>
 
@@ -287,30 +293,50 @@ def generate_html_report(data, region_name="Colorado"):
     """
 
     for item in listings:
-        avatar = item.get('avatar_image', {}).get('original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
-        rating = item.get('rating', 'N/A')
-        reviews = item.get('reviews_count', 0)
+        avatar = item.get('avatar_image', {}).get('original_url') or 'https://images.weedmaps.com/static/avatar/dispensary.png'
+        if not (avatar.startswith('http://') or avatar.startswith('https://')):
+            avatar = 'https://images.weedmaps.com/static/avatar/dispensary.png'
+        avatar = html.escape(avatar)
+
+        rating = safe_escape(item.get('rating'))
+        reviews = safe_escape(item.get('reviews_count'), default='0')
         is_open = item.get('open_now', False)
         status_text = "Open Now" if is_open else "Closed"
         status_class = "badge-open" if is_open else "badge-closed"
         
+        name = safe_escape(item.get('name'))
+        item_type = safe_escape(item.get('type'))
+        address = safe_escape(item.get('address'))
+        city = safe_escape(item.get('city'))
+        hours = safe_escape(item.get('todays_hours_str'))
+        phone = safe_escape(item.get('phone_number'))
+        menu_items = safe_escape(item.get('menu_items_count'), default='0')
+        license_type = safe_escape(item.get('license_type', 'Recreational'))
+
+        web_url = item.get('web_url') or '#'
+        if not (web_url.startswith('http://') or web_url.startswith('https://')):
+            web_url = '#'
+        web_url = html.escape(web_url)
+
         promo = item.get('promo_code')
         promo_html = ""
         if promo:
+            promo_code = safe_escape(promo.get('code', 'Special Offer'))
+            promo_title = safe_escape(promo.get('title', 'Check website for details'))
             promo_html = f"""
             <div class="promo-section">
-                <div class="promo-title">✨ PROMO: {promo.get('code', 'Special Offer')}</div>
-                <div class="promo-body">{promo.get('title', 'Check website for details')}</div>
+                <div class="promo-title">✨ PROMO: {promo_code}</div>
+                <div class="promo-body">{promo_title}</div>
             </div>
             """
 
         html_content += f"""
                 <div class="card">
                     <div class="card-header">
-                        <img src="{avatar}" alt="{item.get('name')}" class="avatar">
+                        <img src="{avatar}" alt="{name}" class="avatar">
                         <div class="listing-info">
-                            <h2>{item.get('name')}</h2>
-                            <span class="badge badge-type">{item.get('type')}</span>
+                            <h2>{name}</h2>
+                            <span class="badge badge-type">{item_type}</span>
                             <span class="badge badge-rating">★ {rating} ({reviews})</span>
                             <span class="badge {status_class}">{status_text}</span>
                         </div>
@@ -319,30 +345,30 @@ def generate_html_report(data, region_name="Colorado"):
                         <table class="data-table">
                             <tr>
                                 <td class="label">Address</td>
-                                <td class="value">{item.get('address', 'N/A')}</td>
+                                <td class="value">{address}</td>
                             </tr>
                             <tr>
                                 <td class="label">City</td>
-                                <td class="value">{item.get('city', 'N/A')}</td>
+                                <td class="value">{city}</td>
                             </tr>
                             <tr>
                                 <td class="label">Hours Today</td>
-                                <td class="value">{item.get('todays_hours_str', 'N/A')}</td>
+                                <td class="value">{hours}</td>
                             </tr>
                             <tr>
                                 <td class="label">Phone</td>
-                                <td class="value">{item.get('phone_number', 'N/A')}</td>
+                                <td class="value">{phone}</td>
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">{item.get('menu_items_count', 0)} items</td>
+                                <td class="value">{menu_items} items</td>
                             </tr>
                         </table>
                         {promo_html}
                     </div>
                     <div class="footer-actions">
-                        <span style="font-size: 0.8rem; color: var(--text-muted)">{item.get('license_type', 'Recreational')}</span>
-                        <a href="{item.get('web_url')}" target="_blank" rel="noopener noreferrer" aria-label="View {item.get('name', '').replace('"', '&quot;')} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                        <span style="font-size: 0.8rem; color: var(--text-muted)">{license_type}</span>
+                        <a href="{web_url}" target="_blank" rel="noopener noreferrer" aria-label="View {name} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
                     </div>
                 </div>
         """
