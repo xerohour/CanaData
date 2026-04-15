@@ -742,13 +742,15 @@ class CanaData:
         # This list will house all data after each key has been filled out
         ready_list = []
 
+        # Pre-initialize template dictionary for significant performance boost
+        template_dict = dict.fromkeys(all_keys, 'None')
+
         # Loop through the flatDictList to update any missing keys
         for item in flatDictList:
-            # Create a dictionary with all keys initialized to 'None'
-            flat_ordered_dict = {key: 'None' for key in all_keys}
-            # Update with actual values, converting to string
-            for key, value in item.items():
-                flat_ordered_dict[key] = str(value)
+            # Create dictionary from template and update with actual values
+            # (values are already converted to string in flatten_dictionary)
+            flat_ordered_dict = template_dict.copy()
+            flat_ordered_dict.update(item)
 
             ready_list.append(flat_ordered_dict)
 
