@@ -1,0 +1,3 @@
+## 2024-04-15 - Optimize Dictionary Normalization
+**Learning:** Pre-initializing a template dictionary using `dict.fromkeys(all_keys, 'None')` outside the loop, then calling `.copy()` and `.update(item)` inside the loop, is significantly faster than using a dictionary comprehension to initialize each item. Additionally, avoiding redundant `str()` calls on values returned by `flatten_dictionary` (which already stringifies leaf values) reduces CPU overhead.
+**Action:** When creating a large list of uniform dictionaries from non-uniform data, always pre-initialize a template outside the loop and update it, and remove redundant type casting.
