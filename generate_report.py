@@ -1,5 +1,6 @@
 import json
 import os
+import html
 from datetime import datetime
 from CanaData import CanaData
 
@@ -297,52 +298,72 @@ def generate_html_report(data, region_name="Colorado"):
         promo = item.get('promo_code')
         promo_html = ""
         if promo:
+            safe_promo_code = html.escape(str(promo.get('code', 'Special Offer')))
+            safe_promo_title = html.escape(str(promo.get('title', 'Check website for details')))
             promo_html = f"""
             <div class="promo-section">
-                <div class="promo-title">✨ PROMO: {promo.get('code', 'Special Offer')}</div>
-                <div class="promo-body">{promo.get('title', 'Check website for details')}</div>
+                <div class="promo-title">✨ PROMO: {safe_promo_code}</div>
+                <div class="promo-body">{safe_promo_title}</div>
             </div>
             """
+
+        safe_name = html.escape(str(item.get('name') or ''))
+        safe_type = html.escape(str(item.get('type') or ''))
+        safe_rating = html.escape(str(rating))
+        safe_reviews = html.escape(str(reviews))
+        safe_status_text = html.escape(str(status_text))
+        safe_address = html.escape(str(item.get('address') or 'N/A'))
+        safe_city = html.escape(str(item.get('city') or 'N/A'))
+        safe_hours = html.escape(str(item.get('todays_hours_str') or 'N/A'))
+        safe_phone = html.escape(str(item.get('phone_number') or 'N/A'))
+        safe_menu_items = html.escape(str(item.get('menu_items_count') or '0'))
+        safe_license = html.escape(str(item.get('license_type') or 'Recreational'))
+
+        raw_web_url = item.get('web_url') or '#'
+        safe_web_url = raw_web_url if str(raw_web_url).startswith(('http://', 'https://')) else '#'
+
+        raw_avatar = avatar
+        safe_avatar = raw_avatar if str(raw_avatar).startswith(('http://', 'https://')) else 'https://images.weedmaps.com/static/avatar/dispensary.png'
 
         html_content += f"""
                 <div class="card">
                     <div class="card-header">
-                        <img src="{avatar}" alt="{item.get('name')}" class="avatar">
+                        <img src="{safe_avatar}" alt="{safe_name}" class="avatar">
                         <div class="listing-info">
-                            <h2>{item.get('name')}</h2>
-                            <span class="badge badge-type">{item.get('type')}</span>
-                            <span class="badge badge-rating">★ {rating} ({reviews})</span>
-                            <span class="badge {status_class}">{status_text}</span>
+                            <h2>{safe_name}</h2>
+                            <span class="badge badge-type">{safe_type}</span>
+                            <span class="badge badge-rating">★ {safe_rating} ({safe_reviews})</span>
+                            <span class="badge {status_class}">{safe_status_text}</span>
                         </div>
                     </div>
                     <div class="card-body">
                         <table class="data-table">
                             <tr>
                                 <td class="label">Address</td>
-                                <td class="value">{item.get('address', 'N/A')}</td>
+                                <td class="value">{safe_address}</td>
                             </tr>
                             <tr>
                                 <td class="label">City</td>
-                                <td class="value">{item.get('city', 'N/A')}</td>
+                                <td class="value">{safe_city}</td>
                             </tr>
                             <tr>
                                 <td class="label">Hours Today</td>
-                                <td class="value">{item.get('todays_hours_str', 'N/A')}</td>
+                                <td class="value">{safe_hours}</td>
                             </tr>
                             <tr>
                                 <td class="label">Phone</td>
-                                <td class="value">{item.get('phone_number', 'N/A')}</td>
+                                <td class="value">{safe_phone}</td>
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">{item.get('menu_items_count', 0)} items</td>
+                                <td class="value">{safe_menu_items} items</td>
                             </tr>
                         </table>
                         {promo_html}
                     </div>
                     <div class="footer-actions">
-                        <span style="font-size: 0.8rem; color: var(--text-muted)">{item.get('license_type', 'Recreational')}</span>
-                        <a href="{item.get('web_url')}" target="_blank" rel="noopener noreferrer" aria-label="View {item.get('name', '').replace('"', '&quot;')} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                        <span style="font-size: 0.8rem; color: var(--text-muted)">{safe_license}</span>
+                        <a href="{safe_web_url}" target="_blank" rel="noopener noreferrer" aria-label="View {safe_name}" class="btn btn-primary">View on Weedmaps</a>
                     </div>
                 </div>
         """
