@@ -1,6 +1,18 @@
 import threading
 import time
-from CanaData import CanaData
+import os
+import sys
+
+# Ensure root directory is in path for imports to work during CI
+sys.path.insert(
+    0,
+    os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            '..')))
+
+from CanaData import CanaData  # noqa: E402
+
 
 def test_stress_locking():
     scraper = CanaData(interactive_mode=False)
