@@ -12,7 +12,7 @@ def test_flatten_dictionary_simple():
     flattened = cana.flatten_dictionary(nested)
     
     assert flattened['name'] == 'Great Product'
-    assert flattened['price.amount'] == '10'
+    assert str(flattened['price.amount']) == '10'
     assert flattened['price.currency'] == 'USD'
     assert flattened['tags'] == "calm.sweet"
 
@@ -38,7 +38,7 @@ def test_flatten_dictionary_list_of_dicts():
     # Current implementation joins/handles lists of dicts by pushing to stack
     # Let's verify what it actually produces
     flattened = cana.flatten_dictionary(nested)
-    assert flattened['items.id'] in ['1', '2'] # It gets one of them due to the logic
+    assert str(flattened['items.id']) in ['1', '2'] # It gets one of them due to the logic
 
 
 def _build_menu_payload(listing_id, slug, item_count=2, strain_slug='strain-a'):

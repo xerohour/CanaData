@@ -818,8 +818,8 @@ class CanaData:
                         stack.append(iter(v.items()))
                         break
                 else:
-                    # Leaf node: Store the value as a string
-                    result['.'.join(keys)] = str(v)
+                    # Leaf node: Store the value directly
+                    result['.'.join(keys)] = v
                     keys.pop()
             else:
                 # Finished processing an iterator: pop the path segment and the iterator itself
