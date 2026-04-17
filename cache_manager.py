@@ -1,6 +1,7 @@
 import time
-import pickle
+import json
 import hashlib
+import collections
 from typing import Any, Optional, Dict
 from pathlib import Path
 import logging
@@ -28,7 +29,7 @@ class CacheManager:
         self.cache_dir.mkdir(exist_ok=True)
         
         # Memory cache with TTL
-        self.memory_cache: Dict[str, Dict[str, Any]] = {}
+        self.memory_cache: collections.OrderedDict[str, Dict[str, Any]] = collections.OrderedDict()
         self.memory_cache_size = max(1, memory_cache_size)
         self.memory_cache_ttl = memory_cache_ttl
         
@@ -65,6 +66,7 @@ class CacheManager:
             if time.time() - entry['timestamp'] < self.memory_cache_ttl:
                 self.stats['memory_hits'] += 1
                 entry['timestamp'] = time.time()
+                self.memory_cache.move_to_end(cache_key)
                 logger.debug(f"Memory cache hit for {url}")
                 return entry['data']
             else:
@@ -81,8 +83,10 @@ class CacheManager:
                 # Load back into memory cache
                 self.memory_cache[cache_key] = {
                     'data': disk_data,
-                    'timestamp': time.time()
+                    'timestamp': time.time(),
+                    'url': url
                 }
+                self.memory_cache.move_to_end(cache_key)
                 self._prune_memory_cache()
                 logger.debug(f"Disk cache hit for {url}")
                 return disk_data
@@ -97,8 +101,10 @@ class CacheManager:
         # Store in memory cache
         self.memory_cache[cache_key] = {
             'data': data,
-            'timestamp': time.time()
+            'timestamp': time.time(),
+            'url': url
         }
+        self.memory_cache.move_to_end(cache_key)
         self._prune_memory_cache()
         
         # Store in disk cache if enabled
@@ -108,12 +114,11 @@ class CacheManager:
     def _prune_memory_cache(self) -> None:
         """Enforce memory cache size using oldest-entry eviction."""
         while len(self.memory_cache) > self.memory_cache_size:
-            oldest_key = min(self.memory_cache, key=lambda key: self.memory_cache[key]['timestamp'])
-            self.memory_cache.pop(oldest_key, None)
+            self.memory_cache.popitem(last=False)
     
     def _get_from_disk(self, cache_key: str) -> Optional[Any]:
         """Retrieve data from disk cache"""
-        cache_file = self.cache_dir / f"{cache_key}.cache"
+        cache_file = self.cache_dir / f"{cache_key}.json_cache"
         
         if not cache_file.exists():
             return None
@@ -126,21 +131,21 @@ class CacheManager:
                 return None
             
             # Load cached data
-            with open(cache_file, 'rb') as f:
-                return pickle.load(f)
+            with open(cache_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
                 
-        except (pickle.PickleError, EOFError, FileNotFoundError) as e:
+        except (json.JSONDecodeError, FileNotFoundError) as e:
             logger.warning(f"Failed to load cache file {cache_file}: {e}")
             return None
     
     def _set_to_disk(self, cache_key: str, data: Any) -> None:
         """Store data in disk cache"""
-        cache_file = self.cache_dir / f"{cache_key}.cache"
+        cache_file = self.cache_dir / f"{cache_key}.json_cache"
         
         try:
-            with open(cache_file, 'wb') as f:
-                pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
-        except pickle.PickleError as e:
+            with open(cache_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f)
+        except (TypeError, OverflowError) as e:
             logger.warning(f"Failed to save cache file {cache_file}: {e}")
     
     def invalidate(self, pattern: Optional[str] = None) -> None:
@@ -148,22 +153,22 @@ class CacheManager:
         if pattern:
             # Invalidate entries matching pattern
             keys_to_remove = []
-            for key in self.memory_cache.keys():
-                if pattern in str(key):
+            for key, entry in self.memory_cache.items():
+                if pattern in str(key) or (entry.get('url') and pattern in entry['url']):
                     keys_to_remove.append(key)
             
             for key in keys_to_remove:
                 self.memory_cache.pop(key, None)
             
             # Remove matching files from disk cache
-            for cache_file in self.cache_dir.glob("*.cache"):
+            for cache_file in self.cache_dir.glob("*.json_cache"):
                 if pattern in cache_file.name:
                     cache_file.unlink()
         else:
             # Clear all cache
             self.memory_cache.clear()
             if self.enable_disk_cache:
-                for cache_file in self.cache_dir.glob("*.cache"):
+                for cache_file in self.cache_dir.glob("*.json_cache"):
                     cache_file.unlink()
     
     def get_stats(self) -> Dict[str, Any]:
@@ -181,5 +186,5 @@ class CacheManager:
             **self.stats,
             'hit_rate_percent': hit_rate_float,
             'memory_cache_size': len(self.memory_cache),
-            'disk_cache_files': len(list(self.cache_dir.glob("*.cache"))) if self.enable_disk_cache else 0
+            'disk_cache_files': len(list(self.cache_dir.glob("*.json_cache"))) if self.enable_disk_cache else 0
         }
