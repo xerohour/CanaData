@@ -466,8 +466,7 @@ class CanaDataGUI:
                 elif kind == "error":
                     self._finish_run(
                         success=False,
-                        summary=f"Failed: {
-                            event[1]}")
+                        summary=f"Failed: {event[1]}")
                     messagebox.showerror("Run Failed", event[1])
         except queue.Empty:
             pass

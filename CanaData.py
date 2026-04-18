@@ -290,14 +290,10 @@ class CanaData:
                 # First response sets the total expected result count
                 if self.maxLocations is None:
                     self.maxLocations = locations['meta']['total_listings']
-                    logger.info(
-                        f"Set the max locations # to {
-                            self.maxLocations}")
+                    logger.info(f"Set the max locations # to {self.maxLocations}")
 
                 if self.maxLocations == 0:
-                    logger.warning(
-                        f"Found no locations for the state: {
-                            self.searchSlug}")
+                    logger.warning(f"Found no locations for the state: {self.searchSlug}")
                     if self.searchSlug:
                         self.unFriendlyStates.append(self.searchSlug)
                     self.NonGreenState = True
