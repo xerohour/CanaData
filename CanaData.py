@@ -299,11 +299,8 @@ class CanaData:
                     self.NonGreenState = True
                     break
 
-                logger.info(
-                    f'Working on locations #{
-                        self.locationsFound} through #{
-                        self.locationsFound + len(
-                            locations["data"]["listings"])}')
+                end_location_num = self.locationsFound + len(locations["data"]["listings"])
+                logger.info(f'Working on locations #{self.locationsFound} through #{end_location_num}')
 
                 for location in locations['data']['listings']:
                     self.locations.append({

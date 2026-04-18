@@ -68,11 +68,13 @@ if __name__ == '__main__':
     # regular search
     else:
         # Ask the user for what City they'd like to run
-        answer = input(
-            f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\nWhat city slug or state slug would you like to search? Can put all for all states or mylist for your custom list or slugs for the list of custom slugs from slugs.txt!\n\nOptions:\n- Use -go <slug> for quick run\n- Use -leafly with a slug for Leafly data\n- Use -cannmenus with a state code for CannMenus data\n\nKnown State Options:\n{
-                ", ".join(allStatesSlugs)}\n\nKnown Slug Options:\n{
-                ", ".join(knownSlugs)}\n\nKnown Mylist Options:\n{
-                ", ".join(mySlugList)}\n\n-- ').lower()
+        states_str = ", ".join(allStatesSlugs)
+        slugs_str = ", ".join(knownSlugs)
+        mylist_str = ", ".join(mySlugList)
+        prompt_text = (
+            f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\nWhat city slug or state slug would you like to search? Can put all for all states or mylist for your custom list or slugs for the list of custom slugs from slugs.txt!\n\nOptions:\n- Use -go <slug> for quick run\n- Use -leafly with a slug for Leafly data\n- Use -cannmenus with a state code for CannMenus data\n\nKnown State Options:\n{states_str}\n\nKnown Slug Options:\n{slugs_str}\n\nKnown Mylist Options:\n{mylist_str}\n\n-- '
+        )
+        answer = input(prompt_text).lower()
 
         # Check if user asked for all
         if answer == 'all':

@@ -27,11 +27,8 @@ def check_endpoint(url):
                     # Check for nested list
                     for k, v in data['data'].items():
                         if isinstance(v, list) and len(v) > 0:
-                            print(
-                                f"Sample data from '{k}': {
-                                    json.dumps(
-                                        v[0], indent=2)[
-                                        :500]}...")
+                            sample_json_nested = json.dumps(v[0], indent=2)[:500]
+                            print(f"Sample data from '{k}': {sample_json_nested}...")
                             break
             elif 'strains' in data:
                 print(
