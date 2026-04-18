@@ -383,7 +383,7 @@ def generate_html_report(data, region_name="Colorado"):
                     </div>
                     <div class="footer-actions">
                         <span style="font-size: 0.8rem; color: var(--text-muted)">{html.escape(str(item.get('license_type', 'Recreational')))}</span>
-                        <a href="{item.get('web_url') or '#'}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get('name', '')))} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                        <a href="{item.get('web_url') or '#'}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get('name', '')))} on Weedmaps (opens in a new tab)" class="btn btn-primary">View on Weedmaps <span aria-hidden="true">↗</span></a>
                     </div>
                 </div>
         """
