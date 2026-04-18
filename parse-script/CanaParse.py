@@ -1,5 +1,4 @@
 import os
-import sys
 import csv
 import re
 import json
@@ -7,10 +6,9 @@ import logging
 import argparse
 import glob
 from datetime import datetime
-from typing import List, Any, Dict, Optional
+from typing import List, Any
 from yattag import Doc, indent
 from dotenv import load_dotenv
-from typing import List, Any
 
 # Load environment variables
 load_dotenv()
@@ -121,7 +119,8 @@ class CanaParse:
         """Read the CSV file and pre-filter rows with pricing data."""
         file_path = os.path.join(self.csv_folder, self.csv_file)
 
-        # Fallback: If specific file not found, look for any result CSV in the folder
+        # Fallback: If specific file not found, look for any result CSV in the
+        # folder
         if not os.path.exists(file_path):
             logger.warning(
                 f"Primary CSV file not found: {file_path}. Searching for fallbacks...")
@@ -139,7 +138,8 @@ class CanaParse:
         try:
             with open(file_path, encoding="utf8") as f:
                 reader = csv.reader(f)
-                # Skip rows that don't have at least one numeric price column (indices 9-15)
+                # Skip rows that don't have at least one numeric price column
+                # (indices 9-15)
                 self.raw_data = [
                     row for row in reader
                     if len(row) > 15 and any(
@@ -177,7 +177,8 @@ class CanaParse:
             ]
 
             # Handle result limits and sorting
-            if f.limit_results_amt > -1 and len(filtered) > f.limit_results_amt:
+            if f.limit_results_amt > - \
+                    1 and len(filtered) > f.limit_results_amt:
                 filtered = sorted(filtered, key=lambda x: float(str(x[price_col])) if str(
                     x[price_col]).replace('.', '', 1).isdigit() else 999999)
                 filtered = filtered[:f.limit_results_amt]
@@ -230,7 +231,9 @@ class CanaParse:
 
         # 6. Stores (Index 29)
         if f.stores:
-            if not any(store.lower() in str(row[29]).lower() for store in f.stores):
+            if not any(
+                store.lower() in str(
+                    row[29]).lower() for store in f.stores):
                 return False
 
         # 7. Bad Words (Exclusion)
@@ -343,7 +346,7 @@ class CanaParse:
         body {
             font-family: 'Outfit', 'Inter', sans-serif;
             background-color: var(--bg);
-            background-image: 
+            background-image:
                 radial-gradient(circle at 20% 20%, rgba(0, 255, 163, 0.05) 0%, transparent 40%),
                 radial-gradient(circle at 80% 80%, rgba(0, 212, 255, 0.05) 0%, transparent 40%);
             color: var(--text);
@@ -426,14 +429,14 @@ class CanaParse:
             overflow-x: auto;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-        
+
         table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
             color: var(--text);
         }
-        
+
         th {
             text-align: left;
             padding: 1rem;
@@ -445,27 +448,27 @@ class CanaParse:
             font-size: 0.85rem;
             white-space: nowrap;
         }
-        
+
         td {
             padding: 1rem;
             border-bottom: 1px solid var(--glass-border);
             vertical-align: middle;
         }
-        
+
         tr:last-child td { border-bottom: none; }
-        
+
         tr:hover td {
             background: rgba(255, 255, 255, 0.02);
             transition: background 0.2s;
         }
-        
+
         .price-tag {
             font-weight: 700;
             color: var(--accent);
             font-family: monospace;
             font-size: 1.1rem;
         }
-        
+
         .img-thumbnail {
             width: 60px;
             height: 60px;
@@ -475,19 +478,19 @@ class CanaParse:
             background: var(--glass);
             transition: transform 0.2s, border-color 0.2s;
         }
-        
+
         .img-thumbnail:hover {
             transform: scale(1.1);
             border-color: var(--primary);
             box-shadow: 0 0 15px rgba(0, 255, 163, 0.3);
         }
-        
+
         a {
             color: var(--secondary);
             text-decoration: none;
             transition: color 0.2s;
         }
-        
+
         a:hover {
             color: var(--primary);
             text-shadow: 0 0 8px rgba(0, 255, 163, 0.4);
@@ -594,8 +597,11 @@ class CanaParse:
                 img_url = str(row[17]) if len(row) > 17 else ""
                 if img_url:
                     with tag('a', ('data-fancybox', 'gallery'), href=img_url):
-                        doc.stag('img', src=img_url, klass="img-thumbnail",
-                                 onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';")
+                        doc.stag(
+                            'img',
+                            src=img_url,
+                            klass="img-thumbnail",
+                            onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';")
                 else:
                     text("-")
 
@@ -683,9 +689,13 @@ def main():
     parser_args.add_argument(
         "--folder", help="Specific folder containing the CSV file")
     parser_args.add_argument(
-        "--output", default="output/index.html", help="Path to save the HTML report")
+        "--output",
+        default="output/index.html",
+        help="Path to save the HTML report")
     parser_args.add_argument(
-        "--no-filter", action="store_true", help="Include all results without filtering")
+        "--no-filter",
+        action="store_true",
+        help="Include all results without filtering")
 
     args = parser_args.parse_args()
 

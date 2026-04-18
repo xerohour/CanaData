@@ -64,6 +64,7 @@ class CanaData:
         NonGreenState (bool): Flag indicating current slug has no locations
         slugGrab (bool): Whether to save discovered slugs
     """
+
     def __init__(
         self,
         max_workers: int = 10,
@@ -73,11 +74,18 @@ class CanaData:
         interactive_mode: bool = True,
     ):
         # Where the Magic happens
-        self.baseUrl: str = os.getenv('WEEDMAPS_BASE_URL', 'https://api-g.weedmaps.com/discovery/v1/listings')
-        self.brandsBaseUrl: str = os.getenv('WEEDMAPS_BRANDS_URL', 'https://api-g.weedmaps.com/discovery/v1/brands')
-        self.strainsBaseUrl: str = os.getenv('WEEDMAPS_STRAINS_URL', 'https://api-g.weedmaps.com/discovery/v1/strains')
+        self.baseUrl: str = os.getenv(
+            'WEEDMAPS_BASE_URL',
+            'https://api-g.weedmaps.com/discovery/v1/listings')
+        self.brandsBaseUrl: str = os.getenv(
+            'WEEDMAPS_BRANDS_URL',
+            'https://api-g.weedmaps.com/discovery/v1/brands')
+        self.strainsBaseUrl: str = os.getenv(
+            'WEEDMAPS_STRAINS_URL',
+            'https://api-g.weedmaps.com/discovery/v1/strains')
         # Pagination & Page size
-        self.pageSize: str = f"&page_size={os.getenv('PAGE_SIZE', '100')}&size={os.getenv('PAGE_SIZE', '100')}"
+        page_size_env = os.getenv('PAGE_SIZE', '100')
+        self.pageSize: str = f"&page_size={page_size_env}&size={page_size_env}"
         # Populated with the City/State Slug
         self.searchSlug: Optional[str] = None
         # Set to True if we are grabbing storefronts
@@ -124,8 +132,7 @@ class CanaData:
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'en-US,en;q=0.9',
             'Origin': 'https://weedmaps.com',
-            'Referer': 'https://weedmaps.com/'
-        }
+            'Referer': 'https://weedmaps.com/'}
         self.interactive_mode = interactive_mode
 
         # Caching configuration
@@ -136,7 +143,8 @@ class CanaData:
                 memory_cache_size=int(os.getenv('MEMORY_CACHE_SIZE', 2000)),
                 memory_cache_ttl=cache_ttl,
                 disk_cache_ttl=cache_ttl * 6,  # Disk cache lasts longer
-                enable_disk_cache=os.getenv('ENABLE_DISK_CACHE', 'true').lower() == 'true'
+                enable_disk_cache=os.getenv(
+                    'ENABLE_DISK_CACHE', 'true').lower() == 'true'
             )
             self.api_client = CachedAPIClient(self.cache_manager)
         else:
@@ -146,7 +154,8 @@ class CanaData:
         # Data processing optimization
         self.optimize_processing = optimize_processing
         if optimize_processing:
-            self.data_processor = OptimizedDataProcessor(max_workers=max_workers)
+            self.data_processor = OptimizedDataProcessor(
+                max_workers=max_workers)
         else:
             self.data_processor = None
 
@@ -172,9 +181,9 @@ class CanaData:
             try:
                 return self.api_client.get(url, timeout=30)
             except Exception as e:
-                logger.warning(f"Cached request failed, trying without cache: {e}")
+                logger.warning(
+                    f"Cached request failed, trying without cache: {e}")
                 # Fall back to direct request
-                pass
 
         # Direct request without cache
         try:
@@ -183,20 +192,25 @@ class CanaData:
                 return req.json()
             elif req.status_code == 422:
                 try:
-                    error_detail = req.json().get('errors', [{}])[0].get('detail', req.text)
+                    error_detail = req.json().get('errors', [{}])[
+                        0].get('detail', req.text)
                     logger.error(f"Validation Error (422): {error_detail}")
                 except Exception:
                     logger.error(f"Validation Error (422): {req.text}")
                 return 'break'
             elif req.status_code == 406:
-                logger.warning("Not Acceptable (406) from requests. Trying curl fallback.")
+                logger.warning(
+                    "Not Acceptable (406) from requests. Trying curl fallback.")
                 curl_result = self._do_curl_request(url)
                 if curl_result is not False:
                     return curl_result
                 logger.error("Curl fallback also failed for 406 response.")
                 return False
             else:
-                logger.warning(f"Request failed with status {req.status_code}: {req.text}")
+                logger.warning(
+                    f"Request failed with status {
+                        req.status_code}: {
+                        req.text}")
                 return False
         except requests.exceptions.RequestException as e:
             logger.error(f"Network error occurred: {str(e)}")
@@ -216,7 +230,8 @@ class CanaData:
         ]
 
         try:
-            completed = subprocess.run(curl_cmd, capture_output=True, timeout=45)
+            completed = subprocess.run(
+                curl_cmd, capture_output=True, timeout=45)
             output = (completed.stdout or b'').decode('utf-8', 'replace')
             if '__STATUS__:' not in output:
                 logger.error("Curl output missing status marker")
@@ -230,36 +245,43 @@ class CanaData:
                 return json.loads(body)
             if status_code == 422:
                 try:
-                    error_detail = json.loads(body).get('errors', [{}])[0].get('detail', body)
-                    logger.error(f"Validation Error (422 via curl): {error_detail}")
+                    error_detail = json.loads(body).get('errors', [{}])[
+                        0].get('detail', body)
+                    logger.error(
+                        f"Validation Error (422 via curl): {error_detail}")
                 except Exception:
                     logger.error(f"Validation Error (422 via curl): {body}")
                 return 'break'
 
-            logger.warning(f"Curl request failed with status {status_code}: {body[:200]}")
+            logger.warning(
+                f"Curl request failed with status {status_code}: {body[:200]}")
             return False
         except Exception as e:
             logger.error(f"Curl fallback failed: {e}")
             return False
 
-    def getLocations(self, lat: Optional[float] = None, long: Optional[float] = None) -> None:
+    def getLocations(
+            self,
+            lat: Optional[float] = None,
+            long: Optional[float] = None) -> None:
         """
         Retrieve all dispensary/delivery locations for the current search slug.
         """
         if not self.searchSlug:
-            logger.error("No search slug provided! Use -go <slug> or specify a slug.")
+            logger.error(
+                "No search slug provided! Use -go <slug> or specify a slug.")
             return
 
         while True:
             # Construct the paginated API URL with current offset
-            url = f'{self.baseUrl}?offset={str(self.locationsFound)}{self.pageSize}'
+            url = f"{self.baseUrl}?offset={self.locationsFound}{self.pageSize}"
 
             # Add filters based on user selection or defaults
             if self.storefronts:
-                url += f'&filter[any_retailer_services][]=storefront&filter[region_slug[dispensaries]]={self.searchSlug}'
+                url += f"&filter[any_retailer_services][]=storefront&filter[region_slug[dispensaries]]={self.searchSlug}"
 
             if self.deliveries:
-                url += f'&filter[any_retailer_services][]=delivery&filter[region_slug[deliveries]]={self.searchSlug}'
+                url += f"&filter[any_retailer_services][]=delivery&filter[region_slug[deliveries]]={self.searchSlug}"
 
             # Execute the request
             locations = self.do_request(url)
@@ -271,16 +293,24 @@ class CanaData:
                 # First response sets the total expected result count
                 if self.maxLocations is None:
                     self.maxLocations = locations['meta']['total_listings']
-                    logger.info(f"Set the max locations # to {self.maxLocations}")
+                    logger.info(
+                        f"Set the max locations # to {
+                            self.maxLocations}")
 
                 if self.maxLocations == 0:
-                        logger.warning(f"Found no locations for the state: {self.searchSlug}")
-                        if self.searchSlug:
-                            self.unFriendlyStates.append(self.searchSlug)
-                        self.NonGreenState = True
-                        break
+                    logger.warning(
+                        f"Found no locations for the state: {
+                            self.searchSlug}")
+                    if self.searchSlug:
+                        self.unFriendlyStates.append(self.searchSlug)
+                    self.NonGreenState = True
+                    break
 
-                logger.info(f'Working on locations #{self.locationsFound} through #{self.locationsFound+len(locations["data"]["listings"])}')
+                logger.info(
+                    f'Working on locations #{
+                        self.locationsFound} through #{
+                        self.locationsFound + len(
+                            locations["data"]["listings"])}')
 
                 for location in locations['data']['listings']:
                     self.locations.append({
@@ -295,15 +325,18 @@ class CanaData:
                     self.locationsFound += 1
 
                 if self.maxLocations is not None and self.locationsFound >= self.maxLocations:
-                    logger.info('Retrieved all locations! Moving to pull Menus')
+                    logger.info(
+                        'Retrieved all locations! Moving to pull Menus')
                     break
             else:
                 if not self.interactive_mode:
-                    logger.error("Issue with page request; exiting location fetch in non-interactive mode.")
+                    logger.error(
+                        "Issue with page request; exiting location fetch in non-interactive mode.")
                     self.NonGreenState = True
                     break
 
-                retry = input('Issue with Page. Retry? (n/no or hit enter)\n\n- ').lower()
+                retry = input(
+                    'Issue with Page. Retry? (n/no or hit enter)\n\n- ').lower()
                 if 'n' in retry:
                     self.NonGreenState = True
                     break
@@ -316,7 +349,9 @@ class CanaData:
             return
 
         # Check if we should use concurrent processing
-        use_concurrent = os.getenv('USE_CONCURRENT_PROCESSING', 'false').lower() == 'true'
+        use_concurrent = os.getenv(
+            'USE_CONCURRENT_PROCESSING',
+            'false').lower() == 'true'
 
         if use_concurrent:
             self._getMenusConcurrent()
@@ -327,7 +362,8 @@ class CanaData:
         """Original sequential menu fetching implementation"""
         for i, location in enumerate(self.locations):
             location_slug = location["slug"]
-            logger.info(f"Processing menu ({i+1}/{len(self.locations)}) --> {location_slug}")
+            logger.info(
+                f"Processing menu ({i + 1}/{len(self.locations)}) --> {location_slug}")
             self._fetch_and_process_menu(location)
 
         logger.info("Finished gathering menus. Organizing for export...")
@@ -335,13 +371,15 @@ class CanaData:
 
     def _getMenusConcurrent(self):
         """Concurrent menu fetching implementation"""
-        logger.info(f"Processing {len(self.locations)} locations concurrently...")
+        logger.info(
+            f"Processing {len(self.locations)} locations concurrently...")
 
         # Create processor with configuration from environment or defaults
         max_workers = int(os.getenv('MAX_WORKERS', self.max_workers))
         rate_limit = float(os.getenv('RATE_LIMIT', self.rate_limit))
 
-        processor = ConcurrentMenuProcessor(max_workers=max_workers, rate_limit=rate_limit)
+        processor = ConcurrentMenuProcessor(
+            max_workers=max_workers, rate_limit=rate_limit)
 
         # Define the processing function for a single location
         def process_location_menu(location):
@@ -357,9 +395,13 @@ class CanaData:
 
         # Log any errors that occurred
         if processor.errors:
-            logger.warning(f"Encountered {len(processor.errors)} errors during processing")
+            logger.warning(
+                f"Encountered {len(processor.errors)} errors during processing")
             for error in processor.errors[:5]:  # Log first 5 errors
-                logger.warning(f"Error for {error['location']['slug']}: {error['error']}")
+                logger.warning(
+                    f"Error for {
+                        error['location']['slug']}: {
+                        error['error']}")
 
     def _fetch_and_process_menu(self, location: Dict[str, Any]) -> bool:
         """Fetch and process menu for a single location"""
@@ -368,7 +410,8 @@ class CanaData:
 
         try:
             listing_path_type = self._to_listing_path_type(location_type)
-            discovery_items = self._fetch_discovery_menu_items(location_slug, listing_path_type)
+            discovery_items = self._fetch_discovery_menu_items(
+                location_slug, listing_path_type)
             if discovery_items is not None:
                 self.process_menu_items_json(discovery_items, location)
                 return True
@@ -378,12 +421,17 @@ class CanaData:
             if self.testMode:
                 logger.debug(f"Legacy menu URL: {legacy_url}")
 
-            resp = requests.get(legacy_url, headers=self.default_headers, timeout=30)
+            resp = requests.get(
+                legacy_url,
+                headers=self.default_headers,
+                timeout=30)
             if resp.status_code == 200:
                 self.process_menu_json(resp.json())
                 return True
 
-            logger.error(f"Failed to fetch menu for {location_slug}: {resp.status_code}")
+            logger.error(
+                f"Failed to fetch menu for {location_slug}: {
+                    resp.status_code}")
             return False
 
         except Exception as e:
@@ -396,7 +444,8 @@ class CanaData:
             return 'deliveries'
         return 'dispensaries'
 
-    def _fetch_discovery_menu_items(self, location_slug: str, listing_path_type: str) -> Optional[Dict[str, Any]]:
+    def _fetch_discovery_menu_items(
+            self, location_slug: str, listing_path_type: str) -> Optional[Dict[str, Any]]:
         """Fetch paginated menu items from discovery endpoint."""
         page = 1
         page_size = int(os.getenv('MENU_PAGE_SIZE', 100))
@@ -462,7 +511,8 @@ class CanaData:
         NOTE: This endpoint is currently unreliable (often 404/406).
         Consider using extracted menu strain data instead.
         """
-        logger.warning("Global Strains endpoint is currently unreliable. Proceeding with attempt, but menu-based extraction is recommended.")
+        logger.warning(
+            "Global Strains endpoint is currently unreliable. Proceeding with attempt, but menu-based extraction is recommended.")
         offset: int = 0
         while True:
             url = f'{self.strainsBaseUrl}?offset={str(offset)}{self.pageSize}'
@@ -473,7 +523,13 @@ class CanaData:
                 strains_list = data.get('data', {}).get('strains', [])
                 if not strains_list:
                     # Try alternate key if 'strains' not found
-                    strains_list = data.get('data', {}).get('taxonomy', {}).get('strains', [])
+                    strains_list = data.get(
+                        'data',
+                        {}).get(
+                        'taxonomy',
+                        {}).get(
+                        'strains',
+                        [])
                     if not strains_list:
                         break
 
@@ -487,7 +543,8 @@ class CanaData:
                 offset += len(strains_list)
             else:
                 # If 404, we might be using the wrong version/path for strains
-                logger.warning(f"Could not fetch strains from {url}. Status might be 404 or restricted.")
+                logger.warning(
+                    f"Could not fetch strains from {url}. Status might be 404 or restricted.")
                 break
         logger.info(f"Retrieved {self.strainsFound} strains.")
 
@@ -499,10 +556,12 @@ class CanaData:
         listing_id = listing.get('id')
         listing_slug = listing.get('slug')
         if listing_id is None:
-            logger.warning(f"Skipping menu without listing id for {listing_slug}")
+            logger.warning(
+                f"Skipping menu without listing id for {listing_slug}")
             return
 
-        listing_type = 'deliveries' if listing.get('_type') == 'delivery' else 'dispensaries'
+        listing_type = 'deliveries' if listing.get(
+            '_type') == 'delivery' else 'dispensaries'
         listing_url = f'/{listing_type}/{listing_slug}'
 
         categories = menu_json.get('categories', [])
@@ -531,7 +590,8 @@ class CanaData:
                             if slug:
                                 local_extracted_strains[slug] = strain
                     elif 'strain' in item_copy:
-                        # Sometimes it's just 'strain' and might be a dict or ID
+                        # Sometimes it's just 'strain' and might be a dict or
+                        # ID
                         strain = item_copy['strain']
                         if isinstance(strain, dict):
                             slug = strain.get('slug')
@@ -558,10 +618,12 @@ class CanaData:
 
         logger.info(f"Processed {menu_items_count} items for {listing_slug}")
 
-    def process_menu_items_json(self, menu_json: Dict[str, Any], location: Dict[str, Any]) -> None:
+    def process_menu_items_json(
+            self, menu_json: Dict[str, Any], location: Dict[str, Any]) -> None:
         """Process discovery/v1/listings/{type}/{slug}/menu_items payload."""
         listing_slug = location.get('slug')
-        listing_type = self._to_listing_path_type(location.get('type', 'dispensary'))
+        listing_type = self._to_listing_path_type(
+            location.get('type', 'dispensary'))
         listing_url = f'/{listing_type}/{listing_slug}'
         listing_id = location.get('id') or location.get('wmid') or listing_slug
         listing_wmid = location.get('wmid')
@@ -618,7 +680,8 @@ class CanaData:
             self.menuItemsFound += menu_items_count
             self.totalLocations.append(listing_copy)
 
-        logger.info(f"Processed {menu_items_count} items for {listing_slug} via discovery menu_items")
+        logger.info(
+            f"Processed {menu_items_count} items for {listing_slug} via discovery menu_items")
 
     def getLeaflyData(self):
         """
@@ -633,10 +696,13 @@ class CanaData:
 
         if leafly_items:
             # Map Leafly items to our structure
-            # Since Apify returns a list of items, we'll group them by a dummy ID or store ID if present
+            # Since Apify returns a list of items, we'll group them by a dummy
+            # ID or store ID if present
             self.allMenuItems['leafly_export'] = leafly_items
             self.menuItemsFound = len(leafly_items)
-            logger.info(f"Successfully integrated {self.menuItemsFound} Leafly items.")
+            logger.info(
+                f"Successfully integrated {
+                    self.menuItemsFound} Leafly items.")
         else:
             logger.warning("No data retrieved from Leafly.")
 
@@ -664,7 +730,9 @@ class CanaData:
         retailers = client.get_retailers(search_term)
 
         if not retailers:
-            logger.warning(f"No retailers found on CannMenus for: {self.searchSlug}")
+            logger.warning(
+                f"No retailers found on CannMenus for: {
+                    self.searchSlug}")
             return
 
         for shop in retailers:
@@ -679,7 +747,9 @@ class CanaData:
                 # Mock a listing entry for totalLocations
                 self.totalLocations.append(shop)
 
-        logger.info(f"Finished CannMenus integration. Total items: {self.menuItemsFound}")
+        logger.info(
+            f"Finished CannMenus integration. Total items: {
+                self.menuItemsFound}")
 
     def organize_into_clean_list(self):
         """
@@ -707,7 +777,8 @@ class CanaData:
         # Use optimized data processor if enabled
         if self.optimize_processing and self.data_processor:
             logger.info("Using optimized data processing pipeline")
-            self.finishedMenuItems = self.data_processor.process_menu_data(self.allMenuItems)
+            self.finishedMenuItems = self.data_processor.process_menu_data(
+                self.allMenuItems)
         else:
             # Fall back to original method
             logger.info("Using original data processing method")
@@ -752,7 +823,8 @@ class CanaData:
 
             ready_list.append(flat_ordered_dict)
 
-        # Replace our finished menu items list with our flat, ordered, dictionary list
+        # Replace our finished menu items list with our flat, ordered,
+        # dictionary list
         self.finishedMenuItems = ready_list
 
     def flatten_dictionary(self, d: Dict[str, Any]) -> Dict[str, str]:
@@ -777,15 +849,19 @@ class CanaData:
             dot-notation paths. Handles lists, dicts, and primitive values
             with special logic for empty containers.
         """
-        # Custom iterative implementation using a stack to handle recursion without recursion depth issues
+        # Custom iterative implementation using a stack to handle recursion
+        # without recursion depth issues
         result = {}
-        stack = [iter(d.items())] # Stack contains iterators of dictionary items
-        keys = []                 # Tracks the current path in the dictionary (e.g., ['price', 'amount'])
+        # Stack contains iterators of dictionary items
+        stack = [iter(d.items())]
+        # Tracks the current path in the dictionary (e.g., ['price', 'amount'])
+        keys = []
         while stack:
             for k, v in stack[-1]:
                 keys.append(k)
                 if isinstance(v, list):
-                    # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
+                    # Handle lists: if it's a list of dicts, go deeper; if
+                    # primitives, join them
                     if len(v) > 0:
                         for item in v:
                             if item:
@@ -796,12 +872,15 @@ class CanaData:
                                         # Push the nested dict onto the stack
                                         stack.append(iter(item.items()))
                                 elif isinstance(item, list):
-                                    # Fallback for nested lists (semi-unsupported)
+                                    # Fallback for nested lists
+                                    # (semi-unsupported)
                                     result['.'.join(keys)] = '.'.join(item)
                                     keys.pop()
                                 else:
-                                    # Primitives in a list are joined by dot notation
-                                    result['.'.join(keys)] = '.'.join(str(x) for x in v)
+                                    # Primitives in a list are joined by dot
+                                    # notation
+                                    result['.'.join(keys)] = '.'.join(
+                                        str(x) for x in v)
                                     keys.pop()
                                     break
                         break
@@ -822,7 +901,8 @@ class CanaData:
                     result['.'.join(keys)] = str(v)
                     keys.pop()
             else:
-                # Finished processing an iterator: pop the path segment and the iterator itself
+                # Finished processing an iterator: pop the path segment and the
+                # iterator itself
                 if keys:
                     keys.pop()
                 stack.pop()
@@ -839,7 +919,8 @@ class CanaData:
             str: Sanitized filename containing only alphanumeric, underscore, dash, and dot.
         """
         # Remove any character that is not alphanumeric, underscore, dash, or dot
-        # This effectively removes slashes (preventing traversal) and other unsafe chars
+        # This effectively removes slashes (preventing traversal) and other
+        # unsafe chars
         return re.sub(r'[^a-zA-Z0-9_\-\.]', '', filename)
 
     # Function recieves a city name and sets to searchSlug
@@ -847,7 +928,11 @@ class CanaData:
         # Set searchSlug to City/State provided
         self.searchSlug = search
 
-    def csv_maker(self, filename: str, data: List[Dict[str, Any]], preorganized: bool = False) -> None:
+    def csv_maker(self,
+                  filename: str,
+                  data: List[Dict[str,
+                                  Any]],
+                  preorganized: bool = False) -> None:
         """
         Export a list of dictionaries to a CSV file with timestamp.
 
@@ -901,8 +986,10 @@ class CanaData:
                 # Write row of item's values
                 output.writerow(row.values())
 
-            # Print visual notification of finished export & number of items seen
-            print(f'Successfully exported ({str(len(data))} items) to CSV -> {sanitized_filename}.csv')
+            # Print visual notification of finished export & number of items
+            # seen
+            print(
+                f'Successfully exported ({str(len(data))} items) to CSV -> {sanitized_filename}.csv')
 
     def dataToCSV(self) -> None:
         """
@@ -922,17 +1009,21 @@ class CanaData:
 
         # Attempt detailed results export
         try:
-            self.csv_maker(f'{self.searchSlug}_results', self.finishedMenuItems)
+            self.csv_maker(f'{self.searchSlug}_results',
+                           self.finishedMenuItems)
         except Exception as e:
             print(f'Error: {str(e)}')
-            print('^^ Probably were no actual items (if error says \'list index out of range\')')
+            print(
+                '^^ Probably were no actual items (if error says \'list index out of range\')')
 
         # Attempt high-level listings export
         try:
-            self.csv_maker(f'{self.searchSlug}_total_listings', self.totalLocations)
+            self.csv_maker(f'{self.searchSlug}_total_listings',
+                           self.totalLocations)
         except Exception as e:
             print(f'Error: {str(e)}')
-            print('^^ Musta been a bad search query? (if error says \'list index out of range\')')
+            print(
+                '^^ Musta been a bad search query? (if error says \'list index out of range\')')
 
         # Attempt Brands export
         if self.brands:
@@ -954,9 +1045,11 @@ class CanaData:
                 # Convert dict values to list for CSV
                 extracted_list = list(self.extractedStrains.values())
                 # Use current search slug in filename if available
-                filename = f'{self.searchSlug}_extracted_strains' if self.searchSlug else 'extracted_strains'
+                filename = f'{
+                    self.searchSlug}_extracted_strains' if self.searchSlug else 'extracted_strains'
                 self.csv_maker(filename, extracted_list)
-                print(f'- Exported {len(extracted_list)} unique strains found in menus.')
+                print(
+                    f'- Exported {len(extracted_list)} unique strains found in menus.')
             except Exception as e:
                 print(f'Error exporting extracted strains: {str(e)}')
 
@@ -987,7 +1080,6 @@ class CanaData:
         self.NonGreenState = False
         self.extractedStrains = {}
 
-
     def identifyNaughtyStates(self) -> None:
         """
         Print a summary of slugs that returned no results.
@@ -995,18 +1087,22 @@ class CanaData:
         if len(self.unFriendlyStates) > 0:
             # Ensure all items are strings
             slugs = [str(s) for s in self.unFriendlyStates]
-            print(f'\nThese States were found to have 0 listings!\n{", ".join(slugs)}')
+            print(
+                f'\nThese States were found to have 0 listings!\n{
+                    ", ".join(slugs)}')
 
     def identifyDataTypes(self) -> None:
         """
         Interactive prompt to toggle storefront vs delivery scraping.
         """
         # Default is True for both; user can opt-out here
-        dispensaryChoice = input('\n\nAre we pulling Dispensary Info? (No/n or hit enter for yes)\n\n--').lower()
+        dispensaryChoice = input(
+            '\n\nAre we pulling Dispensary Info? (No/n or hit enter for yes)\n\n--').lower()
         if 'n' in dispensaryChoice or 'no' in dispensaryChoice:
             self.storefronts = False
 
-        deliveriesChoice = input('\n\nAre we pulling Deliveries Info? (No/N or hit enter for yes)\n\n--').lower()
+        deliveriesChoice = input(
+            '\n\nAre we pulling Deliveries Info? (No/N or hit enter for yes)\n\n--').lower()
         if 'n' in deliveriesChoice or 'no' in deliveriesChoice:
             self.deliveries = False
 
@@ -1028,7 +1124,10 @@ class CanaData:
     def set_city_slug(self, search: str) -> None:
         self.setCitySlug(search)
 
-    def get_locations(self, lat: Optional[float] = None, long: Optional[float] = None) -> None:
+    def get_locations(
+            self,
+            lat: Optional[float] = None,
+            long: Optional[float] = None) -> None:
         self.getLocations(lat=lat, long=long)
 
     def get_menus(self) -> None:
@@ -1060,5 +1159,3 @@ class CanaData:
 
     def test_mode(self) -> None:
         self.TestMode()
-
-
