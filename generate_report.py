@@ -400,9 +400,7 @@ def generate_html_report(data, region_name="Colorado"):
     with open('listing_report.html', 'w', encoding='utf-8') as f:
         f.write(html_content)
 
-    print(
-        f"✅ Success! Report generated: {
-            os.path.abspath('listing_report.html')}")
+    print(f"✅ Success! Report generated: {os.path.abspath('listing_report.html')}")
 
 
 if __name__ == "__main__":

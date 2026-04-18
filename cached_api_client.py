@@ -63,8 +63,5 @@ class CachedAPIClient:
                     raise
 
                 wait_time = 2 ** attempt  # Exponential backoff
-                logger.warning(
-                    f"Request failed (attempt {
-                        attempt +
-                        1}), retrying in {wait_time}s: {e}")
+                logger.warning(f"Request failed (attempt {attempt + 1}), retrying in {wait_time}s: {e}")
                 time.sleep(wait_time)

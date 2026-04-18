@@ -207,10 +207,7 @@ class CanaData:
                 logger.error("Curl fallback also failed for 406 response.")
                 return False
             else:
-                logger.warning(
-                    f"Request failed with status {
-                        req.status_code}: {
-                        req.text}")
+                logger.warning(f"Request failed with status {req.status_code}: {req.text}")
                 return False
         except requests.exceptions.RequestException as e:
             logger.error(f"Network error occurred: {str(e)}")

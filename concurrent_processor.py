@@ -71,9 +71,7 @@ class ConcurrentMenuProcessor:
                         'location': location,
                         'error': str(exc)
                     })
-                    logger.error(
-                        f"Location {
-                            location['slug']} generated an exception: {exc}")
+                    logger.error(f"Location {location['slug']} generated an exception: {exc}")
 
         return self.results
 

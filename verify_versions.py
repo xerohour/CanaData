@@ -16,12 +16,8 @@ def check_url(url, description, headers=None):
         if resp.status_code == 200:
             data = resp.json()
             if 'data' in data:
-                print(
-                    f"  [SUCCESS] Found data keys: {
-                        list(
-                            data.get(
-                                'data',
-                                {}).keys())}")
+                keys_list = list(data.get('data', {}).keys())
+                print(f"  [SUCCESS] Found data keys: {keys_list}")
                 if 'meta' in data:
                     print(f"  [SUCCESS] Meta: {data.get('meta')}")
                 return True

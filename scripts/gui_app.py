@@ -402,10 +402,7 @@ class CanaDataGUI:
                             cana.get_menus()
 
                     cana.data_to_csv()
-                    run_summaries.append(
-                        f"{slug}: {
-                            cana.locationsFound} locations, {
-                            cana.menuItemsFound} items")
+                    run_summaries.append(f"{slug}: {cana.locationsFound} locations, {cana.menuItemsFound} items")
                     cana.reset_data_sets()
 
                 self.event_queue.put(("progress", 100))

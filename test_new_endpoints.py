@@ -18,11 +18,8 @@ def check_endpoint(url):
             print("Successfully fetched data.")
             # Print keys and a sample
             if 'data' in data:
-                print(
-                    f"Data keys: {
-                        data['data'].keys() if isinstance(
-                            data['data'],
-                            dict) else 'List data'}")
+                keys_str = data['data'].keys() if isinstance(data['data'], dict) else 'List data'
+                print(f"Data keys: {keys_str}")
                 if isinstance(data['data'], list) and len(data['data']) > 0:
                     print(
                         f"Sample data: {

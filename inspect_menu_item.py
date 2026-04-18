@@ -39,10 +39,7 @@ def inspect_menu(slug):
                 for cat in categories:
                     items = cat.get('items', [])
                     if items:
-                        print(
-                            f"Found {
-                                len(items)} items in category '{
-                                cat.get('title')}'.")
+                        print(f"Found {len(items)} items in category '{cat.get('title')}'.")
                         item = items[0]
                         print("\n--- Item Keys ---")
                         print(list(item.keys()))

@@ -61,12 +61,7 @@ if __name__ == '__main__':
         else:
             searchSlugs = [argv[searchSlug].lower()]
         # Visual queue of start (in place of question for search slug)
-        print(
-            f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\n\n\nStarting Quickrun on {
-                str(
-                    len(searchSlugs))} Slugs: \n{
-                str(
-                    ", ".join(searchSlugs))}\n\n\n')
+        print(f'\n\n   !!~~-- Welcome to CanaData  (>-_-)>  --~~!!\n\n\n\nStarting Quickrun on {len(searchSlugs)} Slugs: \n{", ".join(searchSlugs)}\n\n\n')
 
     # If user is not doing Quickrun
     # Ask them for a slug then determine if its one of our preset 3 or a
