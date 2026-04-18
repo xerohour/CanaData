@@ -1,4 +1,3 @@
-import json
 import os
 from datetime import datetime
 import html
@@ -60,7 +59,7 @@ def generate_html_report(data, region_name="Colorado"):
     body {
         font-family: 'Outfit', 'Inter', sans-serif;
         background-color: var(--bg);
-        background-image: 
+        background-image:
             radial-gradient(circle at 20% 20%, rgba(0, 255, 163, 0.05) 0%, transparent 40%),
             radial-gradient(circle at 80% 80%, rgba(0, 212, 255, 0.05) 0%, transparent 40%);
         color: var(--text);
@@ -327,8 +326,11 @@ def generate_html_report(data, region_name="Colorado"):
         """
 
     for item in listings:
-        avatar = item.get('avatar_image', {}).get(
-            'original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
+        avatar = item.get(
+            'avatar_image',
+            {}).get(
+            'original_url',
+            'https://images.weedmaps.com/static/avatar/dispensary.png')
         rating = item.get('rating', 'N/A')
         reviews = item.get('reviews_count', 0)
         is_open = item.get('open_now', False)
@@ -398,14 +400,14 @@ def generate_html_report(data, region_name="Colorado"):
     with open('listing_report.html', 'w', encoding='utf-8') as f:
         f.write(html_content)
 
-    print(
-        f"✅ Success! Report generated: {os.path.abspath('listing_report.html')}")
+    print(f"✅ Success! Report generated: {os.path.abspath('listing_report.html')}")
 
 
 if __name__ == "__main__":
     print("🚀 Fetching live data for Colorado...")
     cana = CanaData()
-    # Use the Colorado discovery URL with a larger page size for a better report
+    # Use the Colorado discovery URL with a larger page size for a better
+    # report
     url = "https://api-g.weedmaps.com/discovery/v1/listings?filter[any_retailer_services][]=storefront&filter[any_retailer_services][]=delivery&filter[region_slug[deliveries]]=colorado&filter[region_slug[dispensaries]]=colorado&page_size=24&size=24"
 
     data = cana.do_request(url)

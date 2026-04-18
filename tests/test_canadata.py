@@ -1,6 +1,6 @@
-import pytest
 import concurrent.futures
 from CanaData import CanaData
+
 
 def test_flatten_dictionary_simple():
     cana = CanaData()
@@ -10,11 +10,12 @@ def test_flatten_dictionary_simple():
         'tags': ['calm', 'sweet']
     }
     flattened = cana.flatten_dictionary(nested)
-    
+
     assert flattened['name'] == 'Great Product'
     assert flattened['price.amount'] == '10'
     assert flattened['price.currency'] == 'USD'
     assert flattened['tags'] == "calm.sweet"
+
 
 def test_flatten_dictionary_empty():
     cana = CanaData()
@@ -23,9 +24,10 @@ def test_flatten_dictionary_empty():
         'empty_list': []
     }
     flattened = cana.flatten_dictionary(nested)
-    
+
     assert flattened['empty_dict'] == 'None'
     assert flattened['empty_list'] == 'None'
+
 
 def test_flatten_dictionary_list_of_dicts():
     cana = CanaData()
@@ -38,10 +40,15 @@ def test_flatten_dictionary_list_of_dicts():
     # Current implementation joins/handles lists of dicts by pushing to stack
     # Let's verify what it actually produces
     flattened = cana.flatten_dictionary(nested)
-    assert flattened['items.id'] in ['1', '2'] # It gets one of them due to the logic
+    # It gets one of them due to the logic
+    assert flattened['items.id'] in ['1', '2']
 
 
-def _build_menu_payload(listing_id, slug, item_count=2, strain_slug='strain-a'):
+def _build_menu_payload(
+        listing_id,
+        slug,
+        item_count=2,
+        strain_slug='strain-a'):
     items = []
     for i in range(item_count):
         items.append({
@@ -72,12 +79,16 @@ def test_process_menu_json_thread_safe_counts_and_collections():
     items_per_payload = 3
 
     payloads = [
-        _build_menu_payload(listing_id=f'loc-{i}', slug=f'slug-{i}', item_count=items_per_payload)
-        for i in range(total_payloads)
-    ]
+        _build_menu_payload(
+            listing_id=f'loc-{i}',
+            slug=f'slug-{i}',
+            item_count=items_per_payload) for i in range(total_payloads)]
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        futures = [executor.submit(cana.process_menu_json, payload) for payload in payloads]
+        futures = [
+            executor.submit(
+                cana.process_menu_json,
+                payload) for payload in payloads]
         for future in concurrent.futures.as_completed(futures):
             future.result()
 
@@ -91,12 +102,17 @@ def test_process_menu_json_thread_safe_deduplicates_extracted_strains():
     total_payloads = 20
 
     payloads = [
-        _build_menu_payload(listing_id=f'loc-{i}', slug=f'slug-{i}', item_count=1, strain_slug='same-strain')
-        for i in range(total_payloads)
-    ]
+        _build_menu_payload(
+            listing_id=f'loc-{i}',
+            slug=f'slug-{i}',
+            item_count=1,
+            strain_slug='same-strain') for i in range(total_payloads)]
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        futures = [executor.submit(cana.process_menu_json, payload) for payload in payloads]
+        futures = [
+            executor.submit(
+                cana.process_menu_json,
+                payload) for payload in payloads]
         for future in concurrent.futures.as_completed(futures):
             future.result()
 
