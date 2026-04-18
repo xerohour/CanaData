@@ -43,3 +43,6 @@ The system is heavily state-dependent and relies on thread locking (`_menu_data_
 
 - **Before:** Global mutable array (`allMenuItems`) protected by thread locking forces synchronous write operations.
 - **After (Proposed Architecture):** Moving from global state arrays to asynchronous queues (e.g., RabbitMQ, Redis Pub/Sub) combined with stateless worker nodes. This will remove the `_menu_data_lock` bottleneck entirely, permitting infinite horizontal node deployment.
+
+## 5. Memory Profiling
+Memory profiling indicates that `OptimizedDataProcessor` incurs significant memory overhead when instantiating large DataFrames from JSON structures. To scale horizontally, stateful components and locks (`_menu_data_lock`) should be replaced with message queues and stateless workers.
