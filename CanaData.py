@@ -739,21 +739,10 @@ class CanaData:
 
         all_keys = sorted(list(all_keys_set))
 
-        # This list will house all data after each key has been filled out
-        ready_list = []
-
         template_dict = dict.fromkeys(all_keys, 'None')
-        # Loop through the flatDictList to update any missing keys
-        for item in flatDictList:
-            # Create a dictionary with all keys initialized to 'None'
-            flat_ordered_dict = template_dict.copy()
-            # Update with actual values
-            flat_ordered_dict.update(item)
-
-            ready_list.append(flat_ordered_dict)
 
         # Replace our finished menu items list with our flat, ordered, dictionary list
-        self.finishedMenuItems = ready_list
+        self.finishedMenuItems = [{**template_dict, **item} for item in flatDictList]
 
     def flatten_dictionary(self, d: Dict[str, Any]) -> Dict[str, str]:
         """
@@ -784,18 +773,20 @@ class CanaData:
         while stack:
             for k, v in stack[-1]:
                 keys.append(k)
-                if isinstance(v, list):
+                v_type = type(v)
+                if v_type is list:
                     # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
-                    if len(v) > 0:
+                    if v:
                         for item in v:
                             if item:
-                                if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
-                                        result['.'.join(keys)] = 'None'
-                                    else:
+                                item_type = type(item)
+                                if item_type is dict:
+                                    if item:
                                         # Push the nested dict onto the stack
                                         stack.append(iter(item.items()))
-                                elif isinstance(item, list):
+                                    else:
+                                        result['.'.join(keys)] = 'None'
+                                elif item_type is list:
                                     # Fallback for nested lists (semi-unsupported)
                                     result['.'.join(keys)] = '.'.join(item)
                                     keys.pop()
@@ -808,9 +799,9 @@ class CanaData:
                     else:
                         result['.'.join(keys)] = 'None'
                         keys.pop()
-                elif isinstance(v, dict):
+                elif v_type is dict:
                     # Handle nested dictionaries
-                    if len(v.keys()) < 1:
+                    if not v:
                         result['.'.join(keys)] = 'None'
                         keys.pop()
                     else:
