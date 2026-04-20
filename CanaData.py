@@ -60,7 +60,7 @@ class CanaData:
         allMenuItems (dict): Menu items organized by location ID
         finishedMenuItems (list): Flattened menu items ready for export
         totalLocations (list): All location metadata
-        unFriendlyStates (list): Slugs with zero locations found
+        empty_states (list): Slugs with zero locations found
         NonGreenState (bool): Flag indicating current slug has no locations
         slugGrab (bool): Whether to save discovered slugs
     """
@@ -103,7 +103,7 @@ class CanaData:
         # List of total flattened locations
         self.totalLocations: List[Dict[str, Any]] = []
         # List of States with No locations
-        self.unFriendlyStates: List[str] = []
+        self.empty_states: List[str] = []
         # Set to True if there are no locations
         self.NonGreenState: bool = False
         # Sets whether or not we grab the slugs for the search
@@ -242,7 +242,7 @@ class CanaData:
             logger.error(f"Curl fallback failed: {e}")
             return False
 
-    def getLocations(self, lat: Optional[float] = None, long: Optional[float] = None) -> None:
+    def get_locations(self, lat: Optional[float] = None, long: Optional[float] = None) -> None:
         """
         Retrieve all dispensary/delivery locations for the current search slug.
         """
@@ -276,7 +276,7 @@ class CanaData:
                 if self.maxLocations == 0:
                         logger.warning(f"Found no locations for the state: {self.searchSlug}")
                         if self.searchSlug:
-                            self.unFriendlyStates.append(self.searchSlug)
+                            self.empty_states.append(self.searchSlug)
                         self.NonGreenState = True
                         break
 
@@ -308,7 +308,7 @@ class CanaData:
                     self.NonGreenState = True
                     break
 
-    def getMenus(self) -> None:
+    def get_menus(self) -> None:
         """
         Fetch and process menu data for all retrieved locations.
         """
@@ -319,11 +319,11 @@ class CanaData:
         use_concurrent = os.getenv('USE_CONCURRENT_PROCESSING', 'false').lower() == 'true'
 
         if use_concurrent:
-            self._getMenusConcurrent()
+            self._get_menus_concurrent()
         else:
-            self._getMenusSequential()
+            self._get_menus_sequential()
 
-    def _getMenusSequential(self):
+    def _get_menus_sequential(self):
         """Original sequential menu fetching implementation"""
         for i, location in enumerate(self.locations):
             location_slug = location["slug"]
@@ -333,7 +333,7 @@ class CanaData:
         logger.info("Finished gathering menus. Organizing for export...")
         self.organize_into_clean_list()
 
-    def _getMenusConcurrent(self):
+    def _get_menus_concurrent(self):
         """Concurrent menu fetching implementation"""
         logger.info(f"Processing {len(self.locations)} locations concurrently...")
 
@@ -429,7 +429,7 @@ class CanaData:
 
         return {'meta': meta, 'data': {'menu_items': all_items}}
 
-    def getBrands(self) -> None:
+    def get_brands(self) -> None:
         """
         Retrieve all brands from Weedmaps discovery API.
         """
@@ -456,7 +456,7 @@ class CanaData:
                 break
         logger.info(f"Retrieved {self.brandsFound} brands.")
 
-    def getStrains(self) -> None:
+    def get_strains(self) -> None:
         """
         Retrieve all strains from Weedmaps discovery API.
         NOTE: This endpoint is currently unreliable (often 404/406).
@@ -620,7 +620,7 @@ class CanaData:
 
         logger.info(f"Processed {menu_items_count} items for {listing_slug} via discovery menu_items")
 
-    def getLeaflyData(self):
+    def get_leafly_data(self):
         """
         Fetch data from Leafly using the Apify Scraper.
         """
@@ -640,7 +640,7 @@ class CanaData:
         else:
             logger.warning("No data retrieved from Leafly.")
 
-    def getCannMenusData(self):
+    def get_cannmenus_data(self):
         """
         Fetch data from CannMenus using their official API.
         """
@@ -843,7 +843,7 @@ class CanaData:
         return re.sub(r'[^a-zA-Z0-9_\-\.]', '', filename)
 
     # Function recieves a city name and sets to searchSlug
-    def setCitySlug(self, search: str) -> None:
+    def set_city_slug(self, search: str) -> None:
         # Set searchSlug to City/State provided
         self.searchSlug = search
 
@@ -904,7 +904,7 @@ class CanaData:
             # Print visual notification of finished export & number of items seen
             print(f'Successfully exported ({str(len(data))} items) to CSV -> {sanitized_filename}.csv')
 
-    def dataToCSV(self) -> None:
+    def data_to_csv(self) -> None:
         """
         Main entry point for triggering CSV generation.
 
@@ -962,7 +962,7 @@ class CanaData:
 
         print(f'\n\nResults for -> {self.searchSlug}:\n- {str(self.locationsFound)} Locations\n- {str(len(self.allMenuItems.keys()))} Menus\n- {str(len(self.emptyMenus.keys()))} Empty Menus\n- {str(self.menuItemsFound)} Menu Items')
 
-    def resetDataSets(self) -> None:
+    def reset_data_sets(self) -> None:
         """
         Reset stateful attributes before processing the next search slug.
 
@@ -988,16 +988,16 @@ class CanaData:
         self.extractedStrains = {}
 
 
-    def identifyNaughtyStates(self) -> None:
+    def identify_empty_states(self) -> None:
         """
         Print a summary of slugs that returned no results.
         """
-        if len(self.unFriendlyStates) > 0:
+        if len(self.empty_states) > 0:
             # Ensure all items are strings
-            slugs = [str(s) for s in self.unFriendlyStates]
+            slugs = [str(s) for s in self.empty_states]
             print(f'\nThese States were found to have 0 listings!\n{", ".join(slugs)}')
 
-    def identifyDataTypes(self) -> None:
+    def identify_data_types(self) -> None:
         """
         Interactive prompt to toggle storefront vs delivery scraping.
         """
@@ -1017,48 +1017,10 @@ class CanaData:
         print('Set slugGrab to true!')
         self.slugGrab = True
 
-    def TestMode(self) -> None:
+    def test_mode(self) -> None:
         """
         Enable troubleshooting mode for more verbose output.
         """
         print('Set Troubleshooting Mode to True')
         self.testMode = True
-
-    # Snake_case aliases for consistency with Python naming conventions.
-    def set_city_slug(self, search: str) -> None:
-        self.setCitySlug(search)
-
-    def get_locations(self, lat: Optional[float] = None, long: Optional[float] = None) -> None:
-        self.getLocations(lat=lat, long=long)
-
-    def get_menus(self) -> None:
-        self.getMenus()
-
-    def get_brands(self) -> None:
-        self.getBrands()
-
-    def get_strains(self) -> None:
-        self.getStrains()
-
-    def get_leafly_data(self) -> None:
-        self.getLeaflyData()
-
-    def get_cannmenus_data(self) -> None:
-        self.getCannMenusData()
-
-    def data_to_csv(self) -> None:
-        self.dataToCSV()
-
-    def reset_data_sets(self) -> None:
-        self.resetDataSets()
-
-    def identify_naughty_states(self) -> None:
-        self.identifyNaughtyStates()
-
-    def identify_data_types(self) -> None:
-        self.identifyDataTypes()
-
-    def test_mode(self) -> None:
-        self.TestMode()
-
 
