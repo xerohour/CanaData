@@ -14,27 +14,35 @@ sys.path.insert(
 from CanaData import CanaData  # noqa: E402
 
 
+import concurrent.futures
+
 def test_stress_locking():
     scraper = CanaData(interactive_mode=False)
-    scraper.allMenuItems = []
 
     def worker(i):
+        local_results = []
         for j in range(100):
-            with scraper._menu_data_lock:
-                scraper.allMenuItems.append({'id': i * 100 + j})
+            local_results.append({'id': i * 100 + j})
             time.sleep(0.001)
+        return {
+            'listing_id': f'worker_{i}',
+            'local_menu_items': local_results,
+            'is_empty_menu': False,
+            'listing_copy': {'id': i},
+            'local_extracted_strains': {},
+            'menu_items_count': 100
+        }
 
-    threads = []
     start_time = time.time()
-    for i in range(10):
-        t = threading.Thread(target=worker, args=(i,))
-        threads.append(t)
-        t.start()
-
-    for t in threads:
-        t.join()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(worker, i) for i in range(10)]
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            if result:
+                scraper._merge_menu_result(result)
 
     duration = time.time() - start_time
 
-    assert len(scraper.allMenuItems) == 1000
+    total_items = sum(len(items) for items in scraper.allMenuItems.values())
+    assert total_items == 1000
     print(f"Stress test completed successfully in {duration:.2f} seconds.")
