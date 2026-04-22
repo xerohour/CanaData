@@ -5,3 +5,6 @@
 ## 2026-04-15 - HTML Report Empty State
 **Learning:** Generating empty grids without feedback leaves users wondering if the report is broken.
 **Action:** Added an explicit, visually distinct `.empty-state` container with an icon (using `aria-hidden="true"`) and helpful guidance when zero listings are found.
+## 2024-04-22 - Semantic HTML for Screen Readers
+**Learning:** Using `<td>` for visual row labels in HTML reports causes screen readers to misinterpret data tables. A semantic `<main>` tag helps skip links function predictably, while changing row labels to `<th scope="row">` ensures proper auditory associations between labels and data points.
+**Action:** Always use `<main>` for primary content and `<th scope="row">` for horizontal data labels in generated HTML reports to enforce strict accessibility.
