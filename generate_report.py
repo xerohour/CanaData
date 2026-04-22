@@ -307,7 +307,7 @@ def generate_html_report(data, region_name="Colorado"):
     </head>
     <body>
         <a href="#main-content" class="skip-link">Skip to main content</a>
-        <div class="container" id="main-content">
+        <main class="container" id="main-content">
             <header>
                 <h1>{html.escape(str(region_name))} Discovery</h1>
                 <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
@@ -359,23 +359,23 @@ def generate_html_report(data, region_name="Colorado"):
                     <div class="card-body">
                         <table class="data-table">
                             <tr>
-                                <td class="label">Address</td>
+                                <th scope="row" class="label">Address</th>
                                 <td class="value">{html.escape(str(item.get('address', 'N/A')))}</td>
                             </tr>
                             <tr>
-                                <td class="label">City</td>
+                                <th scope="row" class="label">City</th>
                                 <td class="value">{html.escape(str(item.get('city', 'N/A')))}</td>
                             </tr>
                             <tr>
-                                <td class="label">Hours Today</td>
+                                <th scope="row" class="label">Hours Today</th>
                                 <td class="value">{html.escape(str(item.get('todays_hours_str', 'N/A')))}</td>
                             </tr>
                             <tr>
-                                <td class="label">Phone</td>
+                                <th scope="row" class="label">Phone</th>
                                 <td class="value">{html.escape(str(item.get('phone_number', 'N/A')))}</td>
                             </tr>
                             <tr>
-                                <td class="label">Menu Items</td>
+                                <th scope="row" class="label">Menu Items</th>
                                 <td class="value">{html.escape(str(item.get('menu_items_count', 0)))} items</td>
                             </tr>
                         </table>
@@ -390,7 +390,7 @@ def generate_html_report(data, region_name="Colorado"):
 
     html_content += """
             </div>
-        </div>
+        </main>
     </body>
     </html>
     """
