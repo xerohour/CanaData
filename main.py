@@ -30,7 +30,7 @@ if __name__ == '__main__':
     argList = list(argv)
 
     if '-tshoot' in argList:
-        cana.TestMode()
+        cana.test_mode()
 
     # Check if arguments were passed
     if len(argList) > 1:
@@ -83,9 +83,9 @@ if __name__ == '__main__':
 
     # Global data fetch (if requested)
     if '-brands' in argList:
-        cana.getBrands()
+        cana.get_brands()
     if '-strains' in argList:
-        cana.getStrains()
+        cana.get_strains()
 
     metadata_only = (
         ('-brands' in argList or '-strains' in argList)
@@ -94,8 +94,8 @@ if __name__ == '__main__':
     )
 
     if metadata_only:
-        cana.setCitySlug('global')
-        cana.dataToCSV()
+        cana.set_city_slug('global')
+        cana.data_to_csv()
         raise SystemExit(0)
 
     for slug in searchSlugs:
@@ -103,22 +103,22 @@ if __name__ == '__main__':
             # Visual queue of starting a state
             print(f'\n\nStarting on {slug}')
             # Set our searchSlug to the State we are working on
-            cana.setCitySlug(slug)
+            cana.set_city_slug(slug)
 
             if '-leafly' in argList:
-                cana.getLeaflyData()
+                cana.get_leafly_data()
             elif '-cannmenus' in argList:
-                cana.getCannMenusData()
+                cana.get_cannmenus_data()
             else:
                 # Default to Weedmaps
                 # Get the locations for the given slug
-                cana.getLocations()
+                cana.get_locations()
                 # Get the Menus for the locations found
-                cana.getMenus()
+                cana.get_menus()
 
             # Convert our Datasets to CSV's (1 for Menu Items & 1 for Listing Info)
-            cana.dataToCSV()
+            cana.data_to_csv()
             # Reset the self variables to avoid using old data from other states/slugs
-            cana.resetDataSets()
+            cana.reset_data_sets()
     # Print out the list of Non-Cannabis friendly states
-    cana.identifyNaughtyStates()
+    cana.identify_empty_states()

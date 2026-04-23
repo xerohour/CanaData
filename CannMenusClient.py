@@ -37,6 +37,10 @@ class CannMenusClient:
             "X-Token": f"{self.api_token}",
             "Accept": "application/json"
         }
+        self.session = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=10)
+        self.session.mount('https://', adapter)
+        self.session.mount('http://', adapter)
 
     def get_retailers(self, state):
         """
@@ -61,7 +65,7 @@ class CannMenusClient:
 
         url = f"{self.base_url}/retailers?state={state}"
         try:
-            response = requests.get(url, headers=self.headers, timeout=30)
+            response = self.session.get(url, headers=self.headers, timeout=30)
             response.raise_for_status()
             return response.json().get('data', [])
         except Exception as e:
@@ -82,7 +86,7 @@ class CannMenusClient:
         """
         url = f"{self.base_url}/retailers/{retailer_id}/menu"
         try:
-            response = requests.get(url, headers=self.headers, timeout=30)
+            response = self.session.get(url, headers=self.headers, timeout=30)
             response.raise_for_status()
             # Returns already flattened/normalized menu items
             return response.json().get('data', [])

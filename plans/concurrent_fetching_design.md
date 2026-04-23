@@ -258,7 +258,7 @@ def _fetch_with_retry(self, url: str) -> Dict:
 ### Implementation Steps
 
 1. Create `ConcurrentMenuProcessor` class
-2. Modify `CanaData.getMenus()` to use concurrent processing
+2. Modify `CanaData.get_menus()` to use concurrent processing
 3. Add configuration options for concurrent processing
 4. Implement retry logic with exponential backoff
 5. Add progress tracking and error reporting
