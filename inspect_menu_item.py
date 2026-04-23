@@ -1,6 +1,4 @@
 import requests
-import json
-import time
 
 def get_valid_slug():
     # Remove region filter to ensure we get *any* listing
@@ -25,7 +23,7 @@ def inspect_menu(slug):
         return
 
     url = f"https://weedmaps.com/api/web/v1/listings/{slug}/menu?type=dispensary"
-    headers = {
+    _headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
     }
     print(f"Fetching menu for {slug}...")
