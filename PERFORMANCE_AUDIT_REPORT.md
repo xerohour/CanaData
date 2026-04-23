@@ -1,45 +1,24 @@
-# Performance & Scalability Audit Report
+# Performance Audit Report
 
-## 1. Codebase Profiling
-
-**Findings:**
-- A substantial bottleneck existed within the legacy `CanaData.flatten_dictionary` recursive logic. Profiling showed 2,287 function calls taking 0.003 seconds for simple JSON objects when operating in `optimize_processing=False` mode.
-- The newly introduced `OptimizedDataProcessor` processes batches utilizing Pandas DataFrames. Profiling this processor revealed 73,952 internal calls taking roughly 0.090 seconds per batch. This clearly indicates an architectural shift away from per-item iteration toward batched DataFrame transformations, making throughput highly dependent on `chunk_size` and memory availability.
+## 1. Codebase Profiling & Bottlenecks
+- **N+1 / Pandas Instantiation Overhead:** Utilizing Pandas DataFrames for small data transformations in `OptimizedDataProcessor` introduces substantial initialization latency (~35ms per instantiation vs. ~0.2ms for native processing). The Pandas pipeline must exclusively use batching techniques.
+- **Locking:** The concurrency model uses a lock-free map-reduce architecture. Direct state mutation within workers (e.g., using a global `_menu_data_lock`) was tested and is unnecessary. Workers return isolated parsed dictionaries which are sequentially merged via `_merge_menu_result()`.
 
 ## 2. Performance Benchmarking
+- Automated benchmarks were added in `performance_tests/test_performance_audit.py` and `test_benchmark_processing.py`.
+- **Latency Data:**
+  - Legacy native processing (`flatten_dictionary`): ~0.23 ms mean execution time.
+  - Optimized Pandas processing (`process_menu_data` without batching): ~35.5 ms mean execution time.
+- **Resource Utilization:** Profiling with cProfile confirmed Pandas object overhead is the primary bottleneck when processing small payloads.
 
-A baseline suite of automated benchmarks was implemented (`performance_tests/test_benchmark_processing.py`) utilizing `pytest-benchmark`.
+## 3. Deep Testing & Edge Cases
+- Rigorous integration and stress tests were implemented in `performance_tests/test_stress_concurrency.py`.
+- The tests verified that simulating the lock-free map-reduce model (by isolated state capture) functions flawlessly without race conditions when scaling beyond 10 concurrent worker threads.
 
-**Latency vs Throughput:**
-- **Legacy Iterative Flattening:** The baseline `CanaData.flatten_dictionary` showed a mean execution time of ~256 μs per iteration, supporting roughly ~3,900 operations per second.
-- **Optimized DataFrame Processor:** The `OptimizedDataProcessor.process_menu_data` exhibited a much larger mean latency of ~37.5 ms. However, this is a *batch* operation. The legacy system operates iteratively (item by item), whereas the new processor handles bulk DataFrame ingestion.
+## 4. Scalability Analytics
+- **Architecture Scalability:** The current lock-free map-reduce model is highly horizontally scalable.
+- **Risks:** The primary risk is the "noisy neighbor" effect when `OptimizedDataProcessor` spawns large Pandas DataFrames concurrently inside small containers, potentially causing memory spikes. Elastic scaling is better suited with the low-latency native processor for continuous streams, reserving Pandas for heavy batch jobs.
 
-**Conclusion on Benchmarking:** The new `OptimizedDataProcessor` handles batched ingestion well but incurs significant DataFrame instantiation overhead (notably `pandas/core/internals`). If the upstream systems produce continuous, low-latency single item data, the `OptimizedDataProcessor` will underperform due to initialization overhead.
-
-## 3. Deep Testing & Stress Testing
-
-A concurrency stress test (`performance_tests/test_stress_concurrency.py`) was implemented, deploying 10 overlapping worker threads that aggressively populate the central data structure.
-
-**Results:**
-The test successfully managed to populate 1,000 entities in 0.12 seconds without data loss.
-
-**Identified Risk (State Management):**
-The `CanaData` class manages all data directly within an internal state variable:
-```python
-scraper.allMenuItems = []
-```
-And synchronizes thread access via a single central lock:
-```python
-with scraper._menu_data_lock:
-```
-This is a classic "noisy neighbor" vulnerability under high horizontal load. As worker count increases, threads will spend disproportionately more time blocked awaiting lock acquisition to append to the global state.
-
-## 4. Scalability Analytics & Optimization Projections
-
-**Current Architecture:**
-The system is heavily state-dependent and relies on thread locking (`_menu_data_lock`), strictly limiting it to vertical scaling on a single machine.
-
-**Optimization Projections:**
-
-- **Before:** Global mutable array (`allMenuItems`) protected by thread locking forces synchronous write operations.
-- **After (Proposed Architecture):** Moving from global state arrays to asynchronous queues (e.g., RabbitMQ, Redis Pub/Sub) combined with stateless worker nodes. This will remove the `_menu_data_lock` bottleneck entirely, permitting infinite horizontal node deployment.
+## 5. Before vs. After Optimization Projection
+- **Current State:** Using `OptimizedDataProcessor` on individual location datasets incurs an initialization penalty of 35-40ms per call, leading to extreme N+1 slowdowns as the number of locations scale. Concurrency model functions safely via map-reduce, but worker performance degrades rapidly under high threading due to context switching combined with Pandas overhead.
+- **Projected Future State:** By replacing the iterative Pandas calls with a global batch operation—accumulating all dictionaries from all worker threads first, and transforming them with a *single* DataFrame instantiation—we project eliminating 99% of the initialization overhead. Time-to-process for 1,000 locations is projected to drop from ~35,000ms to <100ms.
