@@ -3,6 +3,7 @@ yattag==1.12.2
 python-dotenv>=1.0.0
 # Removed explicit urllib3/chardet/idna to let requests handle them
 pytest
+pytest-benchmark
 responses
 apify-client
 pandas
