@@ -16,23 +16,37 @@ from CanaData import CanaData  # noqa: E402
 
 def test_stress_locking():
     scraper = CanaData(interactive_mode=False)
-    scraper.allMenuItems = []
+    scraper.allMenuItems = {}
 
     def worker(i):
+        results = []
         for j in range(100):
-            with scraper._menu_data_lock:
-                scraper.allMenuItems.append({'id': i * 100 + j})
+            result_id = i * 100 + j
+            # Simulate worker producing isolated data
+            results.append({
+                'listing_id': result_id,
+                'local_menu_items': [{'id': result_id}],
+                'is_empty_menu': False,
+                'listing_copy': {'id': result_id},
+                'local_extracted_strains': {},
+                'menu_items_count': 1,
+                'listing_slug': f'slug-{result_id}',
+                'discovery': False
+            })
             time.sleep(0.001)
+        return results
 
-    threads = []
+    import concurrent.futures
     start_time = time.time()
-    for i in range(10):
-        t = threading.Thread(target=worker, args=(i,))
-        threads.append(t)
-        t.start()
 
-    for t in threads:
-        t.join()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(worker, i) for i in range(10)]
+
+        # Sequentially merge lock-free map-reduce results
+        for future in concurrent.futures.as_completed(futures):
+            worker_results = future.result()
+            for result in worker_results:
+                scraper._merge_menu_result(result)
 
     duration = time.time() - start_time
 

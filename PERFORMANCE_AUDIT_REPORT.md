@@ -43,3 +43,15 @@ The system is heavily state-dependent and relies on thread locking (`_menu_data_
 
 - **Before:** Global mutable array (`allMenuItems`) protected by thread locking forces synchronous write operations.
 - **After (Proposed Architecture):** Moving from global state arrays to asynchronous queues (e.g., RabbitMQ, Redis Pub/Sub) combined with stateless worker nodes. This will remove the `_menu_data_lock` bottleneck entirely, permitting infinite horizontal node deployment.
+
+## 5. Architectural Improvements
+
+**Lock-Free Map-Reduce Implementation:**
+Based on the concurrency vulnerability identified in `test_stress_concurrency.py`, the state management architecture has been fundamentally redesigned. The `_menu_data_lock` forced all thread execution to serialize during state append operations.
+
+The new design transitions to a map-reduce model:
+1. **Map Phase:** `process_menu_json` and `process_menu_items_json` run statelessly in isolated worker threads. They return a structured dictionary containing all localized data artifacts.
+2. **Reduce Phase:** The `_merge_menu_result` method operates purely on the main thread loop (e.g., inside `_getMenusConcurrent`), sequentially reducing worker dictionaries into the primary `CanaData` state matrices.
+
+**Result Projection:**
+By eliminating `threading.Lock()` overhead during active data parsing, scaling out `MAX_WORKERS` will now yield near-linear throughput increases limited solely by I/O and available CPU cores rather than thread contention.
