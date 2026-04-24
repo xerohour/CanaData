@@ -173,13 +173,15 @@ def generate_html_report(data, region_name="Colorado"):
         border-bottom: 1px solid rgba(255, 255, 255, 0.03);
     }
 
-    .data-table td {
+    .data-table td, .data-table th {
         padding: 0.75rem 0;
     }
 
     .label {
         color: var(--text-muted);
         width: 140px;
+        text-align: left;
+        font-weight: normal;
     }
 
     .value {
@@ -307,7 +309,7 @@ def generate_html_report(data, region_name="Colorado"):
     </head>
     <body>
         <a href="#main-content" class="skip-link">Skip to main content</a>
-        <div class="container" id="main-content">
+        <main class="container" id="main-content">
             <header>
                 <h1>{html.escape(str(region_name))} Discovery</h1>
                 <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
@@ -340,15 +342,15 @@ def generate_html_report(data, region_name="Colorado"):
         if promo:
             promo_html = f"""
             <div class="promo-section">
-                <div class="promo-title">✨ PROMO: {promo.get('code', 'Special Offer')}</div>
-                <div class="promo-body">{promo.get('title', 'Check website for details')}</div>
+                <div class="promo-title">✨ PROMO: {html.escape(str(promo.get('code', 'Special Offer')))}</div>
+                <div class="promo-body">{html.escape(str(promo.get('title', 'Check website for details')))}</div>
             </div>
             """
 
         html_content += f"""
                 <div class="card">
                     <div class="card-header">
-                        <img src="{avatar}" alt="{html.escape(str(item.get('name') or ''))}" class="avatar">
+                        <img src="{html.escape(str(avatar))}" alt="{html.escape(str(item.get('name') or ''))}" class="avatar">
                         <div class="listing-info">
                             <h2>{html.escape(str(item.get('name') or ''))}</h2>
                             <span class="badge badge-type">{html.escape(str(item.get('type') or ''))}</span>
@@ -359,23 +361,23 @@ def generate_html_report(data, region_name="Colorado"):
                     <div class="card-body">
                         <table class="data-table">
                             <tr>
-                                <td class="label">Address</td>
+                                <th scope="row" class="label">Address</th>
                                 <td class="value">{html.escape(str(item.get('address', 'N/A')))}</td>
                             </tr>
                             <tr>
-                                <td class="label">City</td>
+                                <th scope="row" class="label">City</th>
                                 <td class="value">{html.escape(str(item.get('city', 'N/A')))}</td>
                             </tr>
                             <tr>
-                                <td class="label">Hours Today</td>
+                                <th scope="row" class="label">Hours Today</th>
                                 <td class="value">{html.escape(str(item.get('todays_hours_str', 'N/A')))}</td>
                             </tr>
                             <tr>
-                                <td class="label">Phone</td>
+                                <th scope="row" class="label">Phone</th>
                                 <td class="value">{html.escape(str(item.get('phone_number', 'N/A')))}</td>
                             </tr>
                             <tr>
-                                <td class="label">Menu Items</td>
+                                <th scope="row" class="label">Menu Items</th>
                                 <td class="value">{html.escape(str(item.get('menu_items_count', 0)))} items</td>
                             </tr>
                         </table>
@@ -383,14 +385,14 @@ def generate_html_report(data, region_name="Colorado"):
                     </div>
                     <div class="footer-actions">
                         <span style="font-size: 0.8rem; color: var(--text-muted)">{html.escape(str(item.get('license_type', 'Recreational')))}</span>
-                        <a href="{item.get('web_url') or '#'}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get('name', '')))} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                        <a href="{html.escape(str(item.get('web_url') or '#'))}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get('name', '')))} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
                     </div>
                 </div>
         """
 
     html_content += """
             </div>
-        </div>
+        </main>
     </body>
     </html>
     """
