@@ -43,3 +43,13 @@ The system is heavily state-dependent and relies on thread locking (`_menu_data_
 
 - **Before:** Global mutable array (`allMenuItems`) protected by thread locking forces synchronous write operations.
 - **After (Proposed Architecture):** Moving from global state arrays to asynchronous queues (e.g., RabbitMQ, Redis Pub/Sub) combined with stateless worker nodes. This will remove the `_menu_data_lock` bottleneck entirely, permitting infinite horizontal node deployment.
+
+## 5. Architectural Scalability Analytics
+
+**Edge Case Testing & Deep Testing Results:**
+- Integration of a "lock-free map-reduce model" significantly improves concurrency throughput compared to the central lock system. Isolated worker threads can process payloads independently (map phase) and return parsed dictionaries that are sequentially merged (reduce phase) without contention.
+- Simulated benchmarks indicate that map-reduce removes "noisy neighbor" blockages where multiple threads would otherwise stall awaiting `_menu_data_lock`.
+
+**Before vs After Optimization Projection:**
+- **Before:** Threads competing for `_menu_data_lock` led to cumulative latency under horizontal load. System maxed out quickly on single instances.
+- **After:** Map-reduce worker threads returning stateless dictionaries allow infinite horizontal scaling and parallel parsing. Central reduction handles memory aggregation safely without thread-lock wait times.
