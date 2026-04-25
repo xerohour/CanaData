@@ -32,6 +32,25 @@ def test_processing_benchmark_optimized(benchmark):
     assert len(result) > 0
 
 
+def test_processing_benchmark_map_reduce(benchmark):
+    sample_file = os.path.join(
+        os.path.dirname(__file__),
+        '..',
+        'sample_products.json')
+    with open(sample_file) as f:
+        data = json.load(f)
+
+    scraper = CanaData(optimize_processing=False, interactive_mode=False)
+    products = data.get('data', {}).get('products', [])
+
+    def process_data():
+        # Simulate map-reduce by directly capturing and returning dictionary
+        return {"test-loc": [scraper.flatten_dictionary(item) for item in products]}
+
+    result = benchmark(process_data)
+    assert "test-loc" in result
+
+
 def test_processing_benchmark_legacy(benchmark):
     sample_file = os.path.join(
         os.path.dirname(__file__),
