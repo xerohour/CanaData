@@ -5,3 +5,7 @@
 ## 2026-04-15 - HTML Report Empty State
 **Learning:** Generating empty grids without feedback leaves users wondering if the report is broken.
 **Action:** Added an explicit, visually distinct `.empty-state` container with an icon (using `aria-hidden="true"`) and helpful guidance when zero listings are found.
+
+## 2024-04-25 - Improve semantic HTML and table accessibility
+**Learning:** The HTML report lacked semantic landmarks (`<main>`) and proper association for data table rows, impeding accessibility.
+**Action:** When generating HTML reports, enforce accessibility by using semantic landmarks (like `<main>`) for primary content areas and `<th scope="row">` for data table row labels. Adjust associated CSS to maintain visual consistency.
