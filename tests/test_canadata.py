@@ -66,7 +66,7 @@ def _build_menu_payload(listing_id, slug, item_count=2, strain_slug='strain-a'):
     }
 
 
-def test_process_menu_json_thread_safe_counts_and_collections():
+def test_process_menu_json_map_reduce_counts_and_collections():
     cana = CanaData()
     total_payloads = 25
     items_per_payload = 3
@@ -76,17 +76,16 @@ def test_process_menu_json_thread_safe_counts_and_collections():
         for i in range(total_payloads)
     ]
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        futures = [executor.submit(cana.process_menu_json, payload) for payload in payloads]
-        for future in concurrent.futures.as_completed(futures):
-            future.result()
+    for payload in payloads:
+        result = cana.process_menu_json(payload)
+        cana._merge_menu_result(result)
 
     assert len(cana.allMenuItems) == total_payloads
     assert len(cana.totalLocations) == total_payloads
     assert cana.menuItemsFound == total_payloads * items_per_payload
 
 
-def test_process_menu_json_thread_safe_deduplicates_extracted_strains():
+def test_process_menu_json_map_reduce_deduplicates_extracted_strains():
     cana = CanaData()
     total_payloads = 20
 
@@ -95,10 +94,9 @@ def test_process_menu_json_thread_safe_deduplicates_extracted_strains():
         for i in range(total_payloads)
     ]
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        futures = [executor.submit(cana.process_menu_json, payload) for payload in payloads]
-        for future in concurrent.futures.as_completed(futures):
-            future.result()
+    for payload in payloads:
+        result = cana.process_menu_json(payload)
+        cana._merge_menu_result(result)
 
     assert 'same-strain' in cana.extractedStrains
     assert len(cana.extractedStrains) == 1
