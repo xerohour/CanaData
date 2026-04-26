@@ -740,20 +740,10 @@ class CanaData:
         all_keys = sorted(list(all_keys_set))
 
         # This list will house all data after each key has been filled out
-        ready_list = []
-
         template_dict = dict.fromkeys(all_keys, 'None')
-        # Loop through the flatDictList to update any missing keys
-        for item in flatDictList:
-            # Create a dictionary with all keys initialized to 'None'
-            flat_ordered_dict = template_dict.copy()
-            # Update with actual values
-            flat_ordered_dict.update(item)
-
-            ready_list.append(flat_ordered_dict)
-
         # Replace our finished menu items list with our flat, ordered, dictionary list
-        self.finishedMenuItems = ready_list
+        # Use dictionary unpacking for better performance compared to iterative .copy() and .update()
+        self.finishedMenuItems = [{**template_dict, **item} for item in flatDictList]
 
     def flatten_dictionary(self, d: Dict[str, Any]) -> Dict[str, str]:
         """
