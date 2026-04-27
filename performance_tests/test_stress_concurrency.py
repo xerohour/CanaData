@@ -14,25 +14,35 @@ sys.path.insert(
 from CanaData import CanaData  # noqa: E402
 
 
-def test_stress_locking():
+def test_stress_concurrency():
     scraper = CanaData(interactive_mode=False)
-    scraper.allMenuItems = []
+    scraper.allMenuItems = {}
 
     def worker(i):
+        state = {
+            'allMenuItems': {},
+            'emptyMenus': {},
+            'extractedStrains': {},
+            'menuItemsFound': 0,
+            'totalLocations': []
+        }
         for j in range(100):
-            with scraper._menu_data_lock:
-                scraper.allMenuItems.append({'id': i * 100 + j})
+            listing_id = f"listing_{i}_{j}"
+            state['allMenuItems'][listing_id] = [{'id': i * 100 + j}]
             time.sleep(0.001)
+        return state
 
-    threads = []
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     start_time = time.time()
-    for i in range(10):
-        t = threading.Thread(target=worker, args=(i,))
-        threads.append(t)
-        t.start()
+    states = []
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(worker, i) for i in range(10)]
+        for future in as_completed(futures):
+            states.append(future.result())
 
-    for t in threads:
-        t.join()
+    for state in states:
+        scraper._merge_menu_result(state)
 
     duration = time.time() - start_time
 
