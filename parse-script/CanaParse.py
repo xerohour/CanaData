@@ -249,8 +249,6 @@ class CanaParse:
             if thc_val < f.thc_floor:
                 if f.thc_floor_strict:
                     return False
-            else:
-                row.append(f"thc+{thc_val}")
 
         # 10. CBD Floor
         if f.cbd_floor > 0.001:
@@ -258,8 +256,6 @@ class CanaParse:
             if cbd_val < f.cbd_floor:
                 if f.cbd_floor_strict:
                     return False
-            else:
-                row.append(f"cbd+{cbd_val}")
 
         return True
 
@@ -617,16 +613,16 @@ class CanaParse:
                 with tag('span', style="background: rgba(0, 212, 255, 0.1); color: var(--secondary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;"):
                     text(str(row[20]))
 
+            row_str = " ".join([str(x) for x in row]).lower()
+
             # THC
-            thc_val = next(
-                (str(s).split("+")[1] for s in row if str(s).startswith("thc+")), "0")
+            thc_val = self.extract_cannabinoid(row_str, 'thc')
             with tag('td'):
                 text(self.as_percentage(thc_val))
 
             # CBD
             if f.cbd_floor > 0:
-                cbd_val = next(
-                    (str(s).split("+")[1] for s in row if str(s).startswith("cbd+")), "0")
+                cbd_val = self.extract_cannabinoid(row_str, 'cbd')
                 with tag('td'):
                     text(self.as_percentage(cbd_val))
 
