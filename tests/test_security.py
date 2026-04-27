@@ -4,6 +4,8 @@ from CanaData import CanaData
 import re
 from datetime import datetime
 import shutil
+import json
+from cache_manager import CacheManager
 
 class TestSecurity:
 
@@ -90,3 +92,31 @@ class TestSecurity:
         assert cana._sanitize_filename("invalid/characters!@#") == "invalidcharacters"
         assert cana._sanitize_filename("..\\windows\\style") == "..windowsstyle"
         assert cana._sanitize_filename("foo bar") == "foobar" # spaces removed
+
+    def test_cache_json_serialization(self, tmp_path):
+        """Test that CacheManager serializes data to JSON, not pickle."""
+        # Create a CacheManager with a temporary directory
+        cache_dir = tmp_path / "test_cache"
+        manager = CacheManager(cache_dir=str(cache_dir), enable_disk_cache=True)
+
+        # Test data to cache
+        test_data = {"user": "sentinel", "role": "security", "permissions": ["read", "write"]}
+        test_url = "https://api.example.com/security"
+
+        # Store in cache
+        manager.set(test_url, test_data)
+
+        # Find the cache file generated
+        cache_files = list(cache_dir.glob("*.cache"))
+        assert len(cache_files) == 1, "Cache file should be created"
+        cache_file = cache_files[0]
+
+        # Read the file to ensure it's valid JSON
+        with open(cache_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            assert data == test_data, "Cache file contents should match JSON output"
+
+        # Ensure _get_from_disk retrieves it correctly
+        cache_key = manager._generate_cache_key(test_url)
+        retrieved = manager._get_from_disk(cache_key)
+        assert retrieved == test_data, "Should retrieve and deserialize JSON successfully"
