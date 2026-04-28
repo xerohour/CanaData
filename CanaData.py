@@ -869,6 +869,12 @@ class CanaData:
             - Subsequent rows: dictionary values in same order
             - UTF-8 encoding for special characters
         """
+        # Handle empty data case
+        if not data:
+            logger.warning(f"No data to export for {filename}.csv")
+            print(f'No data to export for {filename}.csv')
+            return
+
         today = datetime.today().strftime('%m-%d-%Y')
         # Variable on where to save the file
         home_dir = f'{path[0]}/CanaData_{today}'
@@ -877,12 +883,6 @@ class CanaData:
         if not ospath.exists(home_dir):
             # If not exist, create
             makedirs(home_dir)
-
-        # Handle empty data case
-        if not data:
-            logger.warning(f"No data to export for {filename}.csv")
-            print(f'No data to export for {filename}.csv')
-            return
 
         # Create CSV file as outfile
         sanitized_filename = self._sanitize_filename(filename)
@@ -898,8 +898,8 @@ class CanaData:
 
             # Loop through the dataset
             for row in data:
-                # Write row of item's values
-                output.writerow(row.values())
+                # Write row of item's values using all_keys to maintain column alignment
+                output.writerow([row.get(k) for k in all_keys])
 
             # Print visual notification of finished export & number of items seen
             print(f'Successfully exported ({str(len(data))} items) to CSV -> {sanitized_filename}.csv')
