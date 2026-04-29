@@ -307,7 +307,7 @@ def generate_html_report(data, region_name="Colorado"):
     </head>
     <body>
         <a href="#main-content" class="skip-link">Skip to main content</a>
-        <div class="container" id="main-content">
+        <main class="container" id="main-content" tabindex="-1">
             <header>
                 <h1>{html.escape(str(region_name))} Discovery</h1>
                 <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
@@ -348,7 +348,7 @@ def generate_html_report(data, region_name="Colorado"):
         html_content += f"""
                 <div class="card">
                     <div class="card-header">
-                        <img src="{avatar}" alt="{html.escape(str(item.get('name') or ''))}" class="avatar">
+                        <img src="{avatar}" alt="" aria-hidden="true" class="avatar">
                         <div class="listing-info">
                             <h2>{html.escape(str(item.get('name') or ''))}</h2>
                             <span class="badge badge-type">{html.escape(str(item.get('type') or ''))}</span>
@@ -390,7 +390,7 @@ def generate_html_report(data, region_name="Colorado"):
 
     html_content += """
             </div>
-        </div>
+        </main>
     </body>
     </html>
     """
