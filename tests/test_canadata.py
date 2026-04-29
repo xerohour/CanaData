@@ -79,7 +79,7 @@ def test_process_menu_json_thread_safe_counts_and_collections():
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
         futures = [executor.submit(cana.process_menu_json, payload) for payload in payloads]
         for future in concurrent.futures.as_completed(futures):
-            future.result()
+            cana._merge_menu_result(future.result())
 
     assert len(cana.allMenuItems) == total_payloads
     assert len(cana.totalLocations) == total_payloads
@@ -98,7 +98,7 @@ def test_process_menu_json_thread_safe_deduplicates_extracted_strains():
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
         futures = [executor.submit(cana.process_menu_json, payload) for payload in payloads]
         for future in concurrent.futures.as_completed(futures):
-            future.result()
+            cana._merge_menu_result(future.result())
 
     assert 'same-strain' in cana.extractedStrains
     assert len(cana.extractedStrains) == 1
