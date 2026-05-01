@@ -12,6 +12,10 @@ from yattag import Doc, indent
 from dotenv import load_dotenv
 from typing import List, Any
 
+# Precompile regex patterns for performance
+THC_PATTERN = re.compile(r"thc[:\s-]*(\d+\.?\d*)")
+CBD_PATTERN = re.compile(r"cbd[:\s-]*(\d+\.?\d*)")
+
 # Load environment variables
 load_dotenv()
 
@@ -162,6 +166,10 @@ class CanaParse:
             if not self.load_csv_data():
                 return
 
+        # Initialize row_strings if missing or out of sync (for external modification)
+        if not hasattr(self, 'row_strings') or len(self.row_strings) != len(self.raw_data):
+            self.row_strings = [" ".join([str(x) for x in row]).lower() for row in self.raw_data]
+
         self.filtered_tables = []
         for f in self.filters:
             logger.info(f"Filtering for: {f.name}")
@@ -171,9 +179,8 @@ class CanaParse:
 
             # Apply filters
             filtered: List[Any] = [
-                # copy row to avoid mutating raw_data
-                row[:] for row in self.raw_data
-                if self.is_match(row, f, price_col)
+                row[:] for row, row_str in zip(self.raw_data, self.row_strings)
+                if self.is_match(row, row_str, f, price_col)
             ]
 
             # Handle result limits and sorting
@@ -198,7 +205,7 @@ class CanaParse:
         }
         return mapping.get(key, 9)
 
-    def is_match(self, row, f, price_col):
+    def is_match(self, row, row_str, f, price_col):
         """
         Check if a single CSV row matches the filter criteria.
         """
@@ -214,9 +221,6 @@ class CanaParse:
         if f.categories:
             if str(row[20]).lower() not in [c.lower() for c in f.categories]:
                 return False
-
-        # 3. Join row for word-based searches
-        row_str = " ".join([str(x) for x in row]).lower()
 
         # 4. Brands
         if f.brands:
@@ -246,27 +250,21 @@ class CanaParse:
         # 9. THC Floor
         if f.thc_floor > 0:
             thc_val = self.extract_cannabinoid(row_str, 'thc')
-            if thc_val < f.thc_floor:
-                if f.thc_floor_strict:
-                    return False
-            else:
-                row.append(f"thc+{thc_val}")
+            if thc_val < f.thc_floor and f.thc_floor_strict:
+                return False
 
         # 10. CBD Floor
         if f.cbd_floor > 0.001:
             cbd_val = self.extract_cannabinoid(row_str, 'cbd')
-            if cbd_val < f.cbd_floor:
-                if f.cbd_floor_strict:
-                    return False
-            else:
-                row.append(f"cbd+{cbd_val}")
+            if cbd_val < f.cbd_floor and f.cbd_floor_strict:
+                return False
 
         return True
 
     def extract_cannabinoid(self, text, type_name):
         """Extract numeric value for THC or CBD from text."""
-        pattern = rf"{type_name}[:\s-]*(\d+\.?\d*)"
-        match = re.search(pattern, text)
+        pattern = THC_PATTERN if type_name == 'thc' else CBD_PATTERN
+        match = pattern.search(text)
         if match:
             try:
                 return float(match.group(1))
@@ -617,16 +615,17 @@ class CanaParse:
                 with tag('span', style="background: rgba(0, 212, 255, 0.1); color: var(--secondary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;"):
                     text(str(row[20]))
 
+            # Calculate row string for extraction
+            row_str = " ".join([str(x) for x in row]).lower()
+
             # THC
-            thc_val = next(
-                (str(s).split("+")[1] for s in row if str(s).startswith("thc+")), "0")
+            thc_val = self.extract_cannabinoid(row_str, 'thc')
             with tag('td'):
                 text(self.as_percentage(thc_val))
 
             # CBD
             if f.cbd_floor > 0:
-                cbd_val = next(
-                    (str(s).split("+")[1] for s in row if str(s).startswith("cbd+")), "0")
+                cbd_val = self.extract_cannabinoid(row_str, 'cbd')
                 with tag('td'):
                     text(self.as_percentage(cbd_val))
 
