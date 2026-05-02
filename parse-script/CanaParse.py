@@ -12,6 +12,11 @@ from yattag import Doc, indent
 from dotenv import load_dotenv
 from typing import List, Any
 
+CANNABINOID_PATTERNS = {
+    'thc': re.compile(r"thc[:\s-]*(\d+\.?\d*)"),
+    'cbd': re.compile(r"cbd[:\s-]*(\d+\.?\d*)")
+}
+
 # Load environment variables
 load_dotenv()
 
@@ -163,6 +168,10 @@ class CanaParse:
                 return
 
         self.filtered_tables = []
+
+        # Pre-calculate lowercase string representation for all rows
+        row_strings = [" ".join([str(x) for x in row]).lower() for row in self.raw_data]
+
         for f in self.filters:
             logger.info(f"Filtering for: {f.name}")
 
@@ -172,8 +181,8 @@ class CanaParse:
             # Apply filters
             filtered: List[Any] = [
                 # copy row to avoid mutating raw_data
-                row[:] for row in self.raw_data
-                if self.is_match(row, f, price_col)
+                row[:] for row, row_str in zip(self.raw_data, row_strings)
+                if self.is_match(row, row_str, f, price_col)
             ]
 
             # Handle result limits and sorting
@@ -198,7 +207,7 @@ class CanaParse:
         }
         return mapping.get(key, 9)
 
-    def is_match(self, row, f, price_col):
+    def is_match(self, row, row_str, f, price_col):
         """
         Check if a single CSV row matches the filter criteria.
         """
@@ -215,58 +224,53 @@ class CanaParse:
             if str(row[20]).lower() not in [c.lower() for c in f.categories]:
                 return False
 
-        # 3. Join row for word-based searches
-        row_str = " ".join([str(x) for x in row]).lower()
-
-        # 4. Brands
+        # 3. Brands
         if f.brands:
             if not any(brand.lower() in row_str for brand in f.brands):
                 return False
 
-        # 5. Strains
+        # 4. Strains
         if f.strains:
             if not any(strain.lower() in row_str for strain in f.strains):
                 return False
 
-        # 6. Stores (Index 29)
+        # 5. Stores (Index 29)
         if f.stores:
             if not any(store.lower() in str(row[29]).lower() for store in f.stores):
                 return False
 
-        # 7. Bad Words (Exclusion)
+        # 6. Bad Words (Exclusion)
         if f.bad_words:
             if any(word.lower() in row_str for word in f.bad_words):
                 return False
 
-        # 8. Good Words (Required)
+        # 7. Good Words (Required)
         if f.good_words:
             if not any(word.lower() in row_str for word in f.good_words):
                 return False
 
-        # 9. THC Floor
+        # 8. THC Floor
         if f.thc_floor > 0:
             thc_val = self.extract_cannabinoid(row_str, 'thc')
             if thc_val < f.thc_floor:
                 if f.thc_floor_strict:
                     return False
-            else:
-                row.append(f"thc+{thc_val}")
 
-        # 10. CBD Floor
+        # 9. CBD Floor
         if f.cbd_floor > 0.001:
             cbd_val = self.extract_cannabinoid(row_str, 'cbd')
             if cbd_val < f.cbd_floor:
                 if f.cbd_floor_strict:
                     return False
-            else:
-                row.append(f"cbd+{cbd_val}")
 
         return True
 
     def extract_cannabinoid(self, text, type_name):
         """Extract numeric value for THC or CBD from text."""
-        pattern = rf"{type_name}[:\s-]*(\d+\.?\d*)"
-        match = re.search(pattern, text)
+        pattern = CANNABINOID_PATTERNS.get(type_name)
+        if not pattern:
+            return 0
+        match = pattern.search(text)
         if match:
             try:
                 return float(match.group(1))
@@ -617,18 +621,19 @@ class CanaParse:
                 with tag('span', style="background: rgba(0, 212, 255, 0.1); color: var(--secondary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;"):
                     text(str(row[20]))
 
+            # Pre-calculate string representation for cannabinoid extraction
+            row_str = " ".join([str(x) for x in row]).lower()
+
             # THC
-            thc_val = next(
-                (str(s).split("+")[1] for s in row if str(s).startswith("thc+")), "0")
+            thc_val = self.extract_cannabinoid(row_str, 'thc')
             with tag('td'):
-                text(self.as_percentage(thc_val))
+                text(self.as_percentage(thc_val) if thc_val is not None and thc_val != "" else "")
 
             # CBD
             if f.cbd_floor > 0:
-                cbd_val = next(
-                    (str(s).split("+")[1] for s in row if str(s).startswith("cbd+")), "0")
+                cbd_val = self.extract_cannabinoid(row_str, 'cbd')
                 with tag('td'):
-                    text(self.as_percentage(cbd_val))
+                    text(self.as_percentage(cbd_val) if cbd_val is not None and cbd_val != "" else "")
 
             # Dispensary
             with tag('td'):

@@ -1,6 +1,3 @@
-## Performance Learnings
-
-
-## 2024-04-16 - Concurrency Bottleneck in CanaData
-**Learning:** Centralized thread locking (`_menu_data_lock`) over the `self.allMenuItems` list prevents effective parallel execution during high-volume data accumulation, restricting application to vertical scaling.
-**Action:** Future designs should avoid global mutable state or implement asynchronous chunk aggregation prior to merging.
+## 2026-05-02 - O(N*M) Slowdown from Mutating Rows in List Comprehensions
+**Learning:** Mutating source elements (like `row.append()`) within a list comprehension's filter condition (e.g., `if is_match(row)`) causes memory leaks and performance regressions. Furthermore, repeatedly generating string representations and dynamically compiling regex patterns inside loop conditions creates massive O(N*M) overheads.
+**Action:** Keep filter functions pure. Pre-calculate string representations of data rows and precompile regex patterns using `re.compile` at the module level before entering heavy loops.
