@@ -5,3 +5,7 @@
 ## 2026-04-15 - HTML Report Empty State
 **Learning:** Generating empty grids without feedback leaves users wondering if the report is broken.
 **Action:** Added an explicit, visually distinct `.empty-state` container with an icon (using `aria-hidden="true"`) and helpful guidance when zero listings are found.
+
+## 2024-05-02 - Improve Screen Reader Accessibility
+**Learning:** Skip-link targets require `tabindex="-1"` to receive programmatic focus. Avatar images adjacent to identical heading text cause redundant screen reader announcements.
+**Action:** Use `<main tabindex="-1">` for skip-link targets and `alt="" aria-hidden="true"` for decorative avatars.
