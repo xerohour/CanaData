@@ -12,6 +12,10 @@ from yattag import Doc, indent
 from dotenv import load_dotenv
 from typing import List, Any
 
+# Pre-compiled Regex Patterns for Performance
+_THC_PATTERN = re.compile(r"thc[:\s-]*(\d+\.?\d*)")
+_CBD_PATTERN = re.compile(r"cbd[:\s-]*(\d+\.?\d*)")
+
 # Load environment variables
 load_dotenv()
 
@@ -169,12 +173,24 @@ class CanaParse:
             # Identify the column index for the price key (gram, eighth, etc.)
             price_col = self.get_col_by_key(f.key)
 
+            # Pre-calculate lowercase arrays for O(1) attribute access per iteration
+            f.categories_lower = [c.lower() for c in f.categories] if f.categories else []
+            f.brands_lower = [b.lower() for b in f.brands] if f.brands else []
+            f.strains_lower = [s.lower() for s in f.strains] if f.strains else []
+            f.stores_lower = [s.lower() for s in f.stores] if f.stores else []
+            f.bad_words_lower = [w.lower() for w in f.bad_words] if f.bad_words else []
+            f.good_words_lower = [w.lower() for w in f.good_words] if f.good_words else []
+
+            filtered: List[Any] = []
+
             # Apply filters
-            filtered: List[Any] = [
-                # copy row to avoid mutating raw_data
-                row[:] for row in self.raw_data
-                if self.is_match(row, f, price_col)
-            ]
+            for row in self.raw_data:
+                # Conditionally calculate row_str only if it is actually required by text searches
+                needs_row_str = f.brands_lower or f.strains_lower or f.bad_words_lower or f.good_words_lower or f.thc_floor > 0 or f.cbd_floor > 0.001
+                row_str = " ".join([str(x) for x in row]).lower() if needs_row_str else ""
+
+                if self.is_match(row, f, price_col, row_str):
+                    filtered.append(row[:])
 
             # Handle result limits and sorting
             if f.limit_results_amt > -1 and len(filtered) > f.limit_results_amt:
@@ -198,7 +214,7 @@ class CanaParse:
         }
         return mapping.get(key, 9)
 
-    def is_match(self, row, f, price_col):
+    def is_match(self, row, f, price_col, row_str=""):
         """
         Check if a single CSV row matches the filter criteria.
         """
@@ -211,62 +227,66 @@ class CanaParse:
                 return False
 
         # 2. Categories (Index 20)
-        if f.categories:
-            if str(row[20]).lower() not in [c.lower() for c in f.categories]:
+        if f.categories_lower:
+            if str(row[20]).lower() not in f.categories_lower:
                 return False
 
-        # 3. Join row for word-based searches
-        row_str = " ".join([str(x) for x in row]).lower()
+        # 3. Stores (Index 29)
+        if f.stores_lower:
+            store_val = str(row[29]).lower()
+            if not any(store in store_val for store in f.stores_lower):
+                return False
+
+        # Skip row_str operations if it is empty
+        if not row_str:
+            return True
 
         # 4. Brands
-        if f.brands:
-            if not any(brand.lower() in row_str for brand in f.brands):
+        if f.brands_lower:
+            if not any(brand in row_str for brand in f.brands_lower):
                 return False
 
         # 5. Strains
-        if f.strains:
-            if not any(strain.lower() in row_str for strain in f.strains):
+        if f.strains_lower:
+            if not any(strain in row_str for strain in f.strains_lower):
                 return False
 
-        # 6. Stores (Index 29)
-        if f.stores:
-            if not any(store.lower() in str(row[29]).lower() for store in f.stores):
+        # 6. Bad Words (Exclusion)
+        if f.bad_words_lower:
+            if any(word in row_str for word in f.bad_words_lower):
                 return False
 
-        # 7. Bad Words (Exclusion)
-        if f.bad_words:
-            if any(word.lower() in row_str for word in f.bad_words):
+        # 7. Good Words (Required)
+        if f.good_words_lower:
+            if not any(word in row_str for word in f.good_words_lower):
                 return False
 
-        # 8. Good Words (Required)
-        if f.good_words:
-            if not any(word.lower() in row_str for word in f.good_words):
-                return False
-
-        # 9. THC Floor
+        # 8. THC Floor
         if f.thc_floor > 0:
             thc_val = self.extract_cannabinoid(row_str, 'thc')
             if thc_val < f.thc_floor:
                 if f.thc_floor_strict:
                     return False
-            else:
-                row.append(f"thc+{thc_val}")
 
-        # 10. CBD Floor
+        # 9. CBD Floor
         if f.cbd_floor > 0.001:
             cbd_val = self.extract_cannabinoid(row_str, 'cbd')
             if cbd_val < f.cbd_floor:
                 if f.cbd_floor_strict:
                     return False
-            else:
-                row.append(f"cbd+{cbd_val}")
 
         return True
 
     def extract_cannabinoid(self, text, type_name):
-        """Extract numeric value for THC or CBD from text."""
-        pattern = rf"{type_name}[:\s-]*(\d+\.?\d*)"
-        match = re.search(pattern, text)
+        """Extract numeric value for THC or CBD from text using precompiled patterns."""
+        if type_name == 'thc':
+            match = _THC_PATTERN.search(text)
+        elif type_name == 'cbd':
+            match = _CBD_PATTERN.search(text)
+        else:
+            pattern = rf"{type_name}[:\s-]*(\d+\.?\d*)"
+            match = re.search(pattern, text)
+
         if match:
             try:
                 return float(match.group(1))
@@ -583,6 +603,9 @@ class CanaParse:
     def _generate_row(self, doc, tag, text, row, f):
         """Generate a single table row."""
         price_col = self.get_col_by_key(f.key)
+        # Compute row_str dynamically since we removed mutations from the filter logic
+        row_str = " ".join([str(x) for x in row]).lower()
+
         with tag('tr'):
             # Price
             with tag('td'):
@@ -618,15 +641,13 @@ class CanaParse:
                     text(str(row[20]))
 
             # THC
-            thc_val = next(
-                (str(s).split("+")[1] for s in row if str(s).startswith("thc+")), "0")
+            thc_val = self.extract_cannabinoid(row_str, 'thc')
             with tag('td'):
                 text(self.as_percentage(thc_val))
 
             # CBD
             if f.cbd_floor > 0:
-                cbd_val = next(
-                    (str(s).split("+")[1] for s in row if str(s).startswith("cbd+")), "0")
+                cbd_val = self.extract_cannabinoid(row_str, 'cbd')
                 with tag('td'):
                     text(self.as_percentage(cbd_val))
 
