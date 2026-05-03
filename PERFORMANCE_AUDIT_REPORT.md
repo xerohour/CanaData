@@ -43,3 +43,25 @@ The system is heavily state-dependent and relies on thread locking (`_menu_data_
 
 - **Before:** Global mutable array (`allMenuItems`) protected by thread locking forces synchronous write operations.
 - **After (Proposed Architecture):** Moving from global state arrays to asynchronous queues (e.g., RabbitMQ, Redis Pub/Sub) combined with stateless worker nodes. This will remove the `_menu_data_lock` bottleneck entirely, permitting infinite horizontal node deployment.
+
+## 5. Raw Benchmark & Profiling Data
+
+### Benchmarking (`pytest-benchmark`)
+
+| Name                                | Mean Latency (us) | OPS          |
+|-------------------------------------|-------------------|--------------|
+| test_processing_benchmark_legacy    | 204.6490          | 4,886.4146   |
+| test_processing_benchmark_optimized | 32,081.4216       | 31.1707      |
+
+*Analysis*: While the "optimized" processor handles larger volumes in batch logic, its overhead limits its Operations Per Second (OPS) dramatically compared to the legacy code processing single items iteratively.
+
+### Concurrency Stress Test Profiling (`cProfile`)
+
+Profiling the `test_stress_concurrency.py` script handling 10 overlapping worker threads managing 1,000 items:
+
+- **Total Function Calls**: 4093 function calls (3036 primitive calls) in 0.121 seconds
+- **Significant Time Sinks**:
+  - `_thread.lock` objects' `acquire` method: ~70 calls
+  - `time.sleep`: 1,000 calls simulating processing delay
+
+*Analysis*: The central global lock (`_menu_data_lock`) within `CanaData.py` prevents true parallel processing, artificially limiting maximum throughput when expanding horizontally to multiple workers. Moving to lock-free asynchronous queue systems is heavily advised.
