@@ -22,6 +22,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+_HTML_CLEANER = re.compile('<.*?>')
+_THC_PATTERN = re.compile(r"thc[:\s-]*(\d+\.?\d*)")
+_CBD_PATTERN = re.compile(r"cbd[:\s-]*(\d+\.?\d*)")
+
 
 class FlowerFilter:
     """
@@ -249,8 +253,6 @@ class CanaParse:
             if thc_val < f.thc_floor:
                 if f.thc_floor_strict:
                     return False
-            else:
-                row.append(f"thc+{thc_val}")
 
         # 10. CBD Floor
         if f.cbd_floor > 0.001:
@@ -258,15 +260,18 @@ class CanaParse:
             if cbd_val < f.cbd_floor:
                 if f.cbd_floor_strict:
                     return False
-            else:
-                row.append(f"cbd+{cbd_val}")
 
         return True
 
     def extract_cannabinoid(self, text, type_name):
         """Extract numeric value for THC or CBD from text."""
-        pattern = rf"{type_name}[:\s-]*(\d+\.?\d*)"
-        match = re.search(pattern, text)
+        if type_name == 'thc':
+            match = _THC_PATTERN.search(text)
+        elif type_name == 'cbd':
+            match = _CBD_PATTERN.search(text)
+        else:
+            return 0
+
         if match:
             try:
                 return float(match.group(1))
@@ -293,8 +298,7 @@ class CanaParse:
 
     def clean_html(self, raw_html):
         """Remove HTML tags from a string."""
-        cleanr = re.compile('<.*?>')
-        return re.sub(cleanr, '', str(raw_html))
+        return _HTML_CLEANER.sub('', str(raw_html))
 
     def generate_html(self):
         """Build the full HTML dashboard."""
@@ -617,18 +621,18 @@ class CanaParse:
                 with tag('span', style="background: rgba(0, 212, 255, 0.1); color: var(--secondary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;"):
                     text(str(row[20]))
 
+            row_str = " ".join([str(x) for x in row]).lower()
+
             # THC
-            thc_val = next(
-                (str(s).split("+")[1] for s in row if str(s).startswith("thc+")), "0")
+            thc_val = self.extract_cannabinoid(row_str, 'thc')
             with tag('td'):
-                text(self.as_percentage(thc_val))
+                text(self.as_percentage(thc_val) if thc_val else self.as_percentage(0))
 
             # CBD
             if f.cbd_floor > 0:
-                cbd_val = next(
-                    (str(s).split("+")[1] for s in row if str(s).startswith("cbd+")), "0")
+                cbd_val = self.extract_cannabinoid(row_str, 'cbd')
                 with tag('td'):
-                    text(self.as_percentage(cbd_val))
+                    text(self.as_percentage(cbd_val) if cbd_val else self.as_percentage(0))
 
             # Dispensary
             with tag('td'):
