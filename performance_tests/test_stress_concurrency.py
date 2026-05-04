@@ -38,3 +38,31 @@ def test_stress_locking():
 
     assert len(scraper.allMenuItems) == 1000
     print(f"Stress test completed successfully in {duration:.2f} seconds.")
+
+def test_high_concurrency_lock_contention():
+    scraper = CanaData(interactive_mode=False)
+    scraper.allMenuItems = []
+    scraper.emptyMenus = {}
+
+    def worker(i):
+        for j in range(500):
+            with scraper._menu_data_lock:
+                scraper.allMenuItems.append({'id': i * 500 + j})
+                if j % 10 == 0:
+                    scraper.emptyMenus[f"menu_{i}_{j}"] = True
+
+    threads = []
+    start_time = time.time()
+    for i in range(50):
+        t = threading.Thread(target=worker, args=(i,))
+        threads.append(t)
+        t.start()
+
+    for t in threads:
+        t.join()
+
+    duration = time.time() - start_time
+
+    assert len(scraper.allMenuItems) == 25000
+    assert len(scraper.emptyMenus) == 2500
+    print(f"High concurrency test completed successfully in {duration:.2f} seconds.")

@@ -11,7 +11,23 @@ sys.path.insert(
             '..')))
 
 from optimized_data_processor import OptimizedDataProcessor  # noqa: E402
+from concurrent_processor import ConcurrentMenuProcessor  # noqa: E402
 from CanaData import CanaData  # noqa: E402
+
+
+def test_processing_benchmark_concurrent_processor(benchmark):
+    processor = ConcurrentMenuProcessor(max_workers=4, rate_limit=0.0)
+    # Simulate a lightweight API call (e.g. data fetch process)
+    def mock_fetch(location):
+        return {"id": location["id"], "menu": [1, 2, 3]}
+
+    locations = [{"id": i, "slug": f"loc-{i}"} for i in range(100)]
+
+    def process_data():
+        return processor.process_locations(locations, mock_fetch)
+
+    result = benchmark(process_data)
+    assert len(result) == 100
 
 
 def test_processing_benchmark_optimized(benchmark):
