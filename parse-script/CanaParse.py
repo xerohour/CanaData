@@ -162,6 +162,9 @@ class CanaParse:
             if not self.load_csv_data():
                 return
 
+        # Pre-calculate row_str for all rows once to avoid O(N*M) string joining and compilation
+        row_strings = [" ".join([str(x) for x in row]).lower() for row in self.raw_data]
+
         self.filtered_tables = []
         for f in self.filters:
             logger.info(f"Filtering for: {f.name}")
@@ -172,8 +175,8 @@ class CanaParse:
             # Apply filters
             filtered: List[Any] = [
                 # copy row to avoid mutating raw_data
-                row[:] for row in self.raw_data
-                if self.is_match(row, f, price_col)
+                row[:] for i, row in enumerate(self.raw_data)
+                if self.is_match(row, f, price_col, row_strings[i])
             ]
 
             # Handle result limits and sorting
@@ -198,7 +201,7 @@ class CanaParse:
         }
         return mapping.get(key, 9)
 
-    def is_match(self, row, f, price_col):
+    def is_match(self, row, f, price_col, row_str=None):
         """
         Check if a single CSV row matches the filter criteria.
         """
@@ -216,7 +219,8 @@ class CanaParse:
                 return False
 
         # 3. Join row for word-based searches
-        row_str = " ".join([str(x) for x in row]).lower()
+        if row_str is None:
+            row_str = " ".join([str(x) for x in row]).lower()
 
         # 4. Brands
         if f.brands:
@@ -249,8 +253,6 @@ class CanaParse:
             if thc_val < f.thc_floor:
                 if f.thc_floor_strict:
                     return False
-            else:
-                row.append(f"thc+{thc_val}")
 
         # 10. CBD Floor
         if f.cbd_floor > 0.001:
@@ -258,15 +260,17 @@ class CanaParse:
             if cbd_val < f.cbd_floor:
                 if f.cbd_floor_strict:
                     return False
-            else:
-                row.append(f"cbd+{cbd_val}")
 
         return True
 
     def extract_cannabinoid(self, text, type_name):
         """Extract numeric value for THC or CBD from text."""
-        pattern = rf"{type_name}[:\s-]*(\d+\.?\d*)"
-        match = re.search(pattern, text)
+        if not hasattr(self.__class__, '_thc_pattern'):
+            self.__class__._thc_pattern = re.compile(r"thc[:\s-]*(\d+\.?\d*)")
+            self.__class__._cbd_pattern = re.compile(r"cbd[:\s-]*(\d+\.?\d*)")
+
+        pattern = self.__class__._thc_pattern if type_name == 'thc' else self.__class__._cbd_pattern
+        match = pattern.search(text)
         if match:
             try:
                 return float(match.group(1))
@@ -618,15 +622,25 @@ class CanaParse:
                     text(str(row[20]))
 
             # THC
-            thc_val = next(
-                (str(s).split("+")[1] for s in row if str(s).startswith("thc+")), "0")
+            # Calculate value dynamically instead of mutating row data during is_match
+            row_str = " ".join([str(x) for x in row]).lower()
+            thc_extracted = self.extract_cannabinoid(row_str, 'thc')
+            if thc_extracted > 0:
+                thc_val = str(thc_extracted)
+            else:
+                thc_val = next(
+                    (str(s).split("+")[1] for s in row if str(s).startswith("thc+")), "0")
             with tag('td'):
                 text(self.as_percentage(thc_val))
 
             # CBD
             if f.cbd_floor > 0:
-                cbd_val = next(
-                    (str(s).split("+")[1] for s in row if str(s).startswith("cbd+")), "0")
+                cbd_extracted = self.extract_cannabinoid(row_str, 'cbd')
+                if cbd_extracted > 0:
+                    cbd_val = str(cbd_extracted)
+                else:
+                    cbd_val = next(
+                        (str(s).split("+")[1] for s in row if str(s).startswith("cbd+")), "0")
                 with tag('td'):
                     text(self.as_percentage(cbd_val))
 
