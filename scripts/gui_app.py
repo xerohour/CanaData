@@ -420,7 +420,7 @@ class CanaDataGUI:
 
 def main() -> None:
     root = tk.Tk()
-    app = CanaDataGUI(root)
+    CanaDataGUI(root)
     root.mainloop()
 
 
