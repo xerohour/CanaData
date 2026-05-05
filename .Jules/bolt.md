@@ -1,0 +1,3 @@
+## 2024-05-24 - Pure Filter Functions and Precompiled Regexes
+**Learning:** Mutating data structures (like appending to rows) inside a list comprehension or filter loop causes severe memory leaks and performance degradations across successive filters. Furthermore, uncompiled regexes in hot loops (like data filtering) add massive O(N) overhead.
+**Action:** Precompile regex patterns at the class level using `re.compile`. Ensure filter functions remain pure by avoiding side effects, and defer extracting derived values to rendering functions. Pre-calculate string representations for data rows early in the pipeline to avoid dynamic recreation during filtering.

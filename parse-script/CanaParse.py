@@ -81,6 +81,9 @@ class CanaParse:
     Main class for parsing CanaData CSV results and generating HTML reports.
     """
 
+    THC_PATTERN = re.compile(r"thc[:\s-]*(\d+\.?\d*)")
+    CBD_PATTERN = re.compile(r"cbd[:\s-]*(\d+\.?\d*)")
+
     def __init__(self, csv_file=None, csv_folder=None, no_filter=False):
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.csv_file = csv_file or os.getenv(
@@ -140,14 +143,15 @@ class CanaParse:
             with open(file_path, encoding="utf8") as f:
                 reader = csv.reader(f)
                 # Skip rows that don't have at least one numeric price column (indices 9-15)
-                self.raw_data = [
-                    row for row in reader
+                self.raw_data = []
+                for row in reader:
                     if len(row) > 15 and any(
                         str(row[i]).replace(
                             '.', '', 1).isdigit() and float(row[i]) > 0
                         for i in range(9, 16)
-                    )
-                ]
+                    ):
+                        row.append(" ".join([str(x) for x in row]).lower())
+                        self.raw_data.append(row)
             logger.info(f"Loaded {len(self.raw_data)} rows with pricing data.")
             return True
         except Exception as e:
@@ -216,7 +220,7 @@ class CanaParse:
                 return False
 
         # 3. Join row for word-based searches
-        row_str = " ".join([str(x) for x in row]).lower()
+        row_str = row[-1]
 
         # 4. Brands
         if f.brands:
@@ -249,8 +253,6 @@ class CanaParse:
             if thc_val < f.thc_floor:
                 if f.thc_floor_strict:
                     return False
-            else:
-                row.append(f"thc+{thc_val}")
 
         # 10. CBD Floor
         if f.cbd_floor > 0.001:
@@ -258,15 +260,15 @@ class CanaParse:
             if cbd_val < f.cbd_floor:
                 if f.cbd_floor_strict:
                     return False
-            else:
-                row.append(f"cbd+{cbd_val}")
 
         return True
 
     def extract_cannabinoid(self, text, type_name):
         """Extract numeric value for THC or CBD from text."""
-        pattern = rf"{type_name}[:\s-]*(\d+\.?\d*)"
-        match = re.search(pattern, text)
+        if type_name == 'thc':
+            match = self.THC_PATTERN.search(text)
+        else:
+            match = self.CBD_PATTERN.search(text)
         if match:
             try:
                 return float(match.group(1))
@@ -618,15 +620,13 @@ class CanaParse:
                     text(str(row[20]))
 
             # THC
-            thc_val = next(
-                (str(s).split("+")[1] for s in row if str(s).startswith("thc+")), "0")
+            thc_val = str(self.extract_cannabinoid(row[-1], 'thc'))
             with tag('td'):
                 text(self.as_percentage(thc_val))
 
             # CBD
             if f.cbd_floor > 0:
-                cbd_val = next(
-                    (str(s).split("+")[1] for s in row if str(s).startswith("cbd+")), "0")
+                cbd_val = str(self.extract_cannabinoid(row[-1], 'cbd'))
                 with tag('td'):
                     text(self.as_percentage(cbd_val))
 
