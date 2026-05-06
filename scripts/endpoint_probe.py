@@ -4,7 +4,6 @@ import subprocess
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Tuple
 
-
 DEFAULT_HEADERS: List[str] = [
     "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
     "Accept: application/json, text/plain, */*",
@@ -103,9 +102,12 @@ def run_curl(url: str, timeout_seconds: int = 30) -> Dict[str, Any]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Probe Weedmaps endpoints and emit JSON health report.")
-    parser.add_argument("--output", help="Optional file path to write JSON report")
-    parser.add_argument("--timeout", type=int, default=30, help="curl timeout in seconds")
+    parser = argparse.ArgumentParser(
+        description="Probe Weedmaps endpoints and emit JSON health report.")
+    parser.add_argument(
+        "--output", help="Optional file path to write JSON report")
+    parser.add_argument("--timeout", type=int, default=30,
+                        help="curl timeout in seconds")
     args = parser.parse_args()
 
     checks: List[Dict[str, Any]] = []

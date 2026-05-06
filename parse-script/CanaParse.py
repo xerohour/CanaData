@@ -1,16 +1,15 @@
-import os
-import sys
+import argparse
 import csv
-import re
+import glob
 import json
 import logging
-import argparse
-import glob
+import os
+import re
 from datetime import datetime
-from typing import List, Any, Dict, Optional
-from yattag import Doc, indent
+from typing import Any, List
+
 from dotenv import load_dotenv
-from typing import List, Any
+from yattag import Doc, indent
 
 # Load environment variables
 load_dotenv()

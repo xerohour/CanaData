@@ -1,11 +1,10 @@
-import os
 import logging
+import os
 import shutil
 
-from CanaData import CanaData
 from cache_manager import CacheManager
+from CanaData import CanaData
 from optimized_data_processor import OptimizedDataProcessor
-
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -30,10 +30,10 @@ Repository Status:
 - [ ] Documentation up-to-date
 
 Code Quality:
-- [ ] Linting passes (npm run lint)
-- [ ] Type checking passes (tsc --noEmit)
-- [ ] No TODO/FIXME comments for release blockers
-- [ ] Security audit clean (npm audit)
+- [ ] Linting passes (flake8 .)
+- [ ] Type checking passes (mypy .)
+- [ ] No TODO/FIXME comments for release blockers (python scripts/check_release_blockers.py)
+- [ ] Security audit clean (pip-audit)
 
 Dependencies:
 - [ ] All dependencies up-to-date
@@ -118,19 +118,17 @@ Run complete build and test suite:
 🔨 Build & Test
 
 Running:
-1. Clean build: npm run clean (if exists)
-2. Full build: npm run build
-3. Test suite: npm test
-4. Integration tests: npm run test:integration (if exists)
-5. E2E tests: npm run test:e2e (if exists)
+1. Clean build: rm -rf dist/ build/ *.egg-info (if exists)
+2. Full build: python -m build (if applicable)
+3. Test suite: PYTHONPATH=.:./parse-script pytest tests/ performance_tests/
 ```
 
 Execute commands:
 
 ```bash
-npm run clean || true
-npm run build
-npm test
+python -m flake8 .
+PYTHONPATH=.:./parse-script pytest tests/ performance_tests/
+python scripts/check_release_blockers.py
 ```
 
 **If build fails**:
@@ -508,9 +506,8 @@ git push origin v[version]
 
 **Common deploy commands**:
 ```bash
-npm publish              # npm
-npx wrangler deploy      # Cloudflare Workers
-vercel --prod            # Vercel
+python -m build          # build
+twine upload dist/*      # PyPI publish
 docker push [image]      # Docker
 ```
 

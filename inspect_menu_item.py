@@ -1,11 +1,11 @@
+
 import requests
-import json
-import time
+
 
 def get_valid_slug():
     # Remove region filter to ensure we get *any* listing
     url = "https://api-g.weedmaps.com/discovery/v1/listings?filter[any_retailer_services][]=storefront&page_size=1"
-    
+
     try:
         print("Finding a valid dispensary slug...")
         req = requests.get(url, timeout=10)
@@ -19,6 +19,7 @@ def get_valid_slug():
     except Exception as e:
         print(f"Error finding slug: {e}")
     return None
+
 
 def inspect_menu(slug):
     if not slug:
@@ -39,11 +40,12 @@ def inspect_menu(slug):
                 for cat in categories:
                     items = cat.get('items', [])
                     if items:
-                        print(f"Found {len(items)} items in category '{cat.get('title')}'.")
+                        print(
+                            f"Found {len(items)} items in category '{cat.get('title')}'.")
                         item = items[0]
                         print("\n--- Item Keys ---")
                         print(list(item.keys()))
-                        
+
                         # Check for strain specific fields
                         print("\n--- Strain Related Data ---")
                         found_strain_data = False
@@ -51,7 +53,7 @@ def inspect_menu(slug):
                             if key in item:
                                 print(f"{key}: {item[key]}")
                                 found_strain_data = True
-                        
+
                         if not found_strain_data:
                             print("No direct strain fields found.")
 
@@ -59,14 +61,15 @@ def inspect_menu(slug):
                         if 'strain' in item and isinstance(item['strain'], dict):
                             print("\n--- Strain Object Keys ---")
                             print(list(item['strain'].keys()))
-                        
-                        return # Inspect only one item
+
+                        return  # Inspect only one item
             else:
                 print("No categories found.")
         else:
             print(f"Failed: {req.status_code}")
     except Exception as e:
         print(f"Error: {e}")
+
 
 if __name__ == "__main__":
     slug = "metropolitan-wellness-center"
