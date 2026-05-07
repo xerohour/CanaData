@@ -79,9 +79,18 @@ def test_process_menu_json_thread_safe_counts_and_collections():
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
         futures = [executor.submit(cana.process_menu_json, payload) for payload in payloads]
         for future in concurrent.futures.as_completed(futures):
-            future.result()
+                result = future.result()
+                if result:
+                    listing_id, local_menu_items, empty_menu, strains_dict, menu_items_count, locations_list = result
+                    cana.allMenuItems[listing_id] = local_menu_items
+                    cana.emptyMenus.update(empty_menu)
+                    for slug, strain in strains_dict.items():
+                        if slug not in cana.extractedStrains:
+                            cana.extractedStrains[slug] = strain
+                    cana.menuItemsFound += menu_items_count
+                    cana.totalLocations.extend(locations_list)
 
-    assert len(cana.allMenuItems) == total_payloads
+        assert len(cana.allMenuItems) == total_payloads
     assert len(cana.totalLocations) == total_payloads
     assert cana.menuItemsFound == total_payloads * items_per_payload
 
@@ -98,7 +107,16 @@ def test_process_menu_json_thread_safe_deduplicates_extracted_strains():
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
         futures = [executor.submit(cana.process_menu_json, payload) for payload in payloads]
         for future in concurrent.futures.as_completed(futures):
-            future.result()
+                result = future.result()
+                if result:
+                    listing_id, local_menu_items, empty_menu, strains_dict, menu_items_count, locations_list = result
+                    cana.allMenuItems[listing_id] = local_menu_items
+                    cana.emptyMenus.update(empty_menu)
+                    for slug, strain in strains_dict.items():
+                        if slug not in cana.extractedStrains:
+                            cana.extractedStrains[slug] = strain
+                    cana.menuItemsFound += menu_items_count
+                    cana.totalLocations.extend(locations_list)
 
-    assert 'same-strain' in cana.extractedStrains
+        assert 'same-strain' in cana.extractedStrains
     assert len(cana.extractedStrains) == 1

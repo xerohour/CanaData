@@ -11,30 +11,41 @@ sys.path.insert(
             os.path.dirname(__file__),
             '..')))
 
-from CanaData import CanaData  # noqa: E402
+from concurrent_processor import ConcurrentMenuProcessor  # noqa: E402
 
 
-def test_stress_locking():
-    scraper = CanaData(interactive_mode=False)
-    scraper.allMenuItems = []
+def test_stress_concurrency():
+    # Instantiate ConcurrentMenuProcessor with rate_limit=0.0 to prevent timeouts
+    processor = ConcurrentMenuProcessor(max_workers=10, rate_limit=0.0)
 
-    def worker(i):
-        for j in range(100):
-            with scraper._menu_data_lock:
-                scraper.allMenuItems.append({'id': i * 100 + j})
-            time.sleep(0.001)
+    # We will simulate processing 1000 locations
+    locations = [{'slug': f'loc_{i}'} for i in range(1000)]
 
-    threads = []
+    def mock_process_location(location):
+        # Simulate some work
+        time.sleep(0.001)
+        # Return mocked data struct:
+        # (listing_id, local_menu_items, empty_menu, strains_dict, menu_items_count, locations_list)
+        return (
+            location['slug'],
+            [{'id': f"{location['slug']}_item"}],
+            {},
+            {},
+            1,
+            [{'slug': location['slug']}]
+        )
+
     start_time = time.time()
-    for i in range(10):
-        t = threading.Thread(target=worker, args=(i,))
-        threads.append(t)
-        t.start()
+    processor.process_locations(locations, mock_process_location)
 
-    for t in threads:
-        t.join()
+    # Simulate the main thread aggregation that happens in _getMenusConcurrent
+    all_menu_items = {}
+    for result in processor.results.values():
+        if result:
+            listing_id, local_menu_items, empty_menu, strains_dict, menu_items_count, locations_list = result
+            all_menu_items[listing_id] = local_menu_items
 
     duration = time.time() - start_time
 
-    assert len(scraper.allMenuItems) == 1000
+    assert len(all_menu_items) == 1000
     print(f"Stress test completed successfully in {duration:.2f} seconds.")
