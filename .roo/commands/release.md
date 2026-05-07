@@ -30,14 +30,12 @@ Repository Status:
 - [ ] Documentation up-to-date
 
 Code Quality:
-- [ ] Linting passes (npm run lint)
-- [ ] Type checking passes (tsc --noEmit)
-- [ ] No TODO/FIXME comments for release blockers
-- [ ] Security audit clean (npm audit)
+- [ ] Linting passes (flake8 .)
+- [ ] Tests pass (pytest)
+- [ ] No TODO/FIXME comments for release blockers (python scripts/check_release_blockers.py)
 
 Dependencies:
-- [ ] All dependencies up-to-date
-- [ ] No deprecated packages
+- [ ] All dependencies up-to-date (requirements.txt)
 - [ ] Licenses compatible
 
 Completed? (y/n)
@@ -112,25 +110,21 @@ Check these common locations:
 
 ### Step 3: Build & Test
 
-Run complete build and test suite:
+Run complete test suite:
 
 ```
 🔨 Build & Test
 
 Running:
-1. Clean build: npm run clean (if exists)
-2. Full build: npm run build
-3. Test suite: npm test
-4. Integration tests: npm run test:integration (if exists)
-5. E2E tests: npm run test:e2e (if exists)
+1. Test suite: pytest
+2. Check release blockers: python scripts/check_release_blockers.py
 ```
 
 Execute commands:
 
 ```bash
-npm run clean || true
-npm run build
-npm test
+pytest
+python scripts/check_release_blockers.py
 ```
 
 **If build fails**:
