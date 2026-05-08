@@ -11,30 +11,33 @@ sys.path.insert(
             os.path.dirname(__file__),
             '..')))
 
-from CanaData import CanaData  # noqa: E402
+from concurrent_processor import ConcurrentMenuProcessor  # noqa: E402
 
 
-def test_stress_locking():
-    scraper = CanaData(interactive_mode=False)
-    scraper.allMenuItems = []
+def test_stress_concurrent_processor():
+    processor = ConcurrentMenuProcessor(max_workers=10, rate_limit=0.0)
 
-    def worker(i):
-        for j in range(100):
-            with scraper._menu_data_lock:
-                scraper.allMenuItems.append({'id': i * 100 + j})
-            time.sleep(0.001)
+    locations = [{'id': i, 'slug': f'loc_{i}'} for i in range(1000)]
 
-    threads = []
+    def process_func(location):
+        time.sleep(0.001)  # Simulate small processing delay
+        return {
+            'listing_id': location['id'],
+            'menu_items': [{'id': location['id']}],
+            'listing_copy': location,
+            'extracted_strains': {},
+            'is_empty': False,
+            'count': 1
+        }
+
     start_time = time.time()
-    for i in range(10):
-        t = threading.Thread(target=worker, args=(i,))
-        threads.append(t)
-        t.start()
 
-    for t in threads:
-        t.join()
+    processor.process_locations(locations, process_func)
 
     duration = time.time() - start_time
 
-    assert len(scraper.allMenuItems) == 1000
+    assert len(processor.results) == 1000
+    total_count = sum(result['count'] for result in processor.results.values())
+    assert total_count == 1000
+
     print(f"Stress test completed successfully in {duration:.2f} seconds.")
