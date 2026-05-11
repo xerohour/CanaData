@@ -1,4 +1,4 @@
-## 2026-02-24 - Path Traversal in CSV Export
-**Vulnerability:** User-controlled filenames in `csv_maker` allowed writing files outside the intended directory via `../` sequences.
-**Learning:** Even internal utility functions like `csv_maker` can be vulnerable if they accept unsanitized input derived from user arguments (`searchSlug`).
-**Prevention:** Always sanitize filenames using allowlists (alphanumeric, etc.) before using them in file operations, especially when they originate from user input.
+## 2024-05-11 - Comprehensive XSS Sink Audit in HTML Generation
+**Vulnerability:** Multiple Cross-Site Scripting (XSS) vulnerabilities found in `generate_report.py` across different attributes (href, src) and text nodes (`region_name`, `total_listings`, `promo_code`).
+**Learning:** When generating HTML via manual string interpolation, developers often escape the primary variables but neglect secondary data points like URLs, promo details, and aggregate metrics. Fixing just one sink leaves the others exposed.
+**Prevention:** Perform a comprehensive audit of all dynamic variables in the same context whenever a string interpolation vulnerability is discovered. Always apply consistent escaping to all external or user-controlled inputs.
