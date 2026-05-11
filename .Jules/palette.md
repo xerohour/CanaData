@@ -5,3 +5,7 @@
 ## 2026-04-15 - HTML Report Empty State
 **Learning:** Generating empty grids without feedback leaves users wondering if the report is broken.
 **Action:** Added an explicit, visually distinct `.empty-state` container with an icon (using `aria-hidden="true"`) and helpful guidance when zero listings are found.
+
+## 2026-05-11 - Rating Badge Context & Accessibility
+**Learning:** Concatenated symbols and numbers like `★ 4.5 (100)` lack context for sighted users (what does 100 mean?) and are read poorly by screen readers ("Star four point five one hundred").
+**Action:** Wrapped the rating badge content in `aria-hidden="true"`, added a descriptive `aria-label` for screen readers, and provided a `title` tooltip to explain the reviews count. Handled the 'N/A' empty state gracefully.

@@ -335,6 +335,8 @@ def generate_html_report(data, region_name="Colorado"):
         status_text = "Open Now" if is_open else "Closed"
         status_class = "badge-open" if is_open else "badge-closed"
 
+        rating_aria = f"Rating: {html.escape(str(rating))} out of 5 stars from {html.escape(str(reviews))} reviews" if str(rating) != 'N/A' else "No ratings yet"
+
         promo = item.get('promo_code')
         promo_html = ""
         if promo:
@@ -352,7 +354,9 @@ def generate_html_report(data, region_name="Colorado"):
                         <div class="listing-info">
                             <h2>{html.escape(str(item.get('name') or ''))}</h2>
                             <span class="badge badge-type">{html.escape(str(item.get('type') or ''))}</span>
-                            <span class="badge badge-rating">★ {html.escape(str(rating))} ({html.escape(str(reviews))})</span>
+                            <span class="badge badge-rating" title="{rating_aria}" aria-label="{rating_aria}">
+                                <span aria-hidden="true">★ {html.escape(str(rating))} ({html.escape(str(reviews))})</span>
+                            </span>
                             <span class="badge {status_class}">{status_text}</span>
                         </div>
                     </div>
