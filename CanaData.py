@@ -280,7 +280,7 @@ class CanaData:
                         self.NonGreenState = True
                         break
 
-                logger.info(f'Working on locations #{self.locationsFound} through #{self.locationsFound+len(locations["data"]["listings"])}')
+                logger.info(f'Working on locations #{self.locationsFound} through #{self.locationsFound + len(locations["data"]["listings"])}')
 
                 for location in locations['data']['listings']:
                     self.locations.append({
@@ -327,7 +327,7 @@ class CanaData:
         """Original sequential menu fetching implementation"""
         for i, location in enumerate(self.locations):
             location_slug = location["slug"]
-            logger.info(f"Processing menu ({i+1}/{len(self.locations)}) --> {location_slug}")
+            logger.info(f"Processing menu ({i + 1}/{len(self.locations)}) --> {location_slug}")
             self._fetch_and_process_menu(location)
 
         logger.info("Finished gathering menus. Organizing for export...")
@@ -514,29 +514,22 @@ class CanaData:
         if is_empty_menu:
             logger.info(f"Location {listing_slug} has no categories.")
         else:
+            common_updates = {
+                'listing_id': listing_id,
+                'listing_wmid': listing.get('wmid')
+            }
             for category in categories:
                 for item in category.get('items', []):
                     item_copy = dict(item)
-                    item_copy.update({
-                        'locations_found_at': [listing_url],
-                        'listing_id': listing_id,
-                        'listing_wmid': listing.get('wmid')
-                    })
+                    item_copy['locations_found_at'] = [listing_url]
+                    item_copy.update(common_updates)
 
                     # Extract strain data if present
-                    if 'strain_data' in item_copy:
-                        strain = item_copy['strain_data']
-                        if isinstance(strain, dict):
-                            slug = strain.get('slug')
-                            if slug:
-                                local_extracted_strains[slug] = strain
-                    elif 'strain' in item_copy:
-                        # Sometimes it's just 'strain' and might be a dict or ID
-                        strain = item_copy['strain']
-                        if isinstance(strain, dict):
-                            slug = strain.get('slug')
-                            if slug:
-                                local_extracted_strains[slug] = strain
+                    strain = item_copy.get('strain_data') or item_copy.get('strain')
+                    if isinstance(strain, dict):
+                        slug = strain.get('slug')
+                        if slug:
+                            local_extracted_strains[slug] = strain
 
                     local_menu_items.append(item_copy)
                     menu_items_count += 1
@@ -575,16 +568,18 @@ class CanaData:
         local_menu_items: List[Dict[str, Any]] = []
         local_extracted_strains: Dict[str, Any] = {}
 
+        common_updates = {
+            'listing_id': listing_id,
+            'listing_wmid': listing_wmid,
+        }
+
         for item in menu_items:
             if not isinstance(item, dict):
                 continue
 
             item_copy = dict(item)
-            item_copy.update({
-                'locations_found_at': [listing_url],
-                'listing_id': listing_id,
-                'listing_wmid': listing_wmid,
-            })
+            item_copy['locations_found_at'] = [listing_url]
+            item_copy.update(common_updates)
 
             strain_data = item_copy.get('strain_data')
             if isinstance(strain_data, dict):
