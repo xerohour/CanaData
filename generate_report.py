@@ -335,6 +335,13 @@ def generate_html_report(data, region_name="Colorado"):
         status_text = "Open Now" if is_open else "Closed"
         status_class = "badge-open" if is_open else "badge-closed"
 
+        phone_raw = str(item.get('phone_number', 'N/A'))
+        if phone_raw and phone_raw != 'N/A':
+            phone_clean = ''.join(filter(str.isdigit, phone_raw))
+            phone_display = f'<a href="tel:{phone_clean}" style="color: inherit; text-decoration: underline; text-underline-offset: 2px;">{html.escape(phone_raw)}</a>'
+        else:
+            phone_display = "N/A"
+
         promo = item.get('promo_code')
         promo_html = ""
         if promo:
@@ -372,7 +379,7 @@ def generate_html_report(data, region_name="Colorado"):
                             </tr>
                             <tr>
                                 <td class="label">Phone</td>
-                                <td class="value">{html.escape(str(item.get('phone_number', 'N/A')))}</td>
+                                <td class="value">{phone_display}</td>
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
