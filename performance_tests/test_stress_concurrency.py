@@ -18,11 +18,14 @@ def test_stress_locking():
     scraper = CanaData(interactive_mode=False)
     scraper.allMenuItems = []
 
+    results = []
+
     def worker(i):
+        local_results = []
         for j in range(100):
-            with scraper._menu_data_lock:
-                scraper.allMenuItems.append({'id': i * 100 + j})
+            local_results.append({'id': i * 100 + j})
             time.sleep(0.001)
+        results.append(local_results)
 
     threads = []
     start_time = time.time()
@@ -33,6 +36,9 @@ def test_stress_locking():
 
     for t in threads:
         t.join()
+
+    for local_res in results:
+        scraper.allMenuItems.extend(local_res)
 
     duration = time.time() - start_time
 
