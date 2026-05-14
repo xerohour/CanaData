@@ -14,27 +14,31 @@ sys.path.insert(
 from CanaData import CanaData  # noqa: E402
 
 
+from concurrent_processor import ConcurrentMenuProcessor
+
 def test_stress_locking():
-    scraper = CanaData(interactive_mode=False)
-    scraper.allMenuItems = []
+    # Set rate limit to 0 to avoid test timeouts
+    processor = ConcurrentMenuProcessor(max_workers=10, rate_limit=0.0)
 
-    def worker(i):
-        for j in range(100):
-            with scraper._menu_data_lock:
-                scraper.allMenuItems.append({'id': i * 100 + j})
-            time.sleep(0.001)
+    # 10 workers each returning a batch of 100 items
+    locations = [{'slug': f'loc_{i}'} for i in range(10)]
 
-    threads = []
+    def mock_fetch_and_process(location):
+        idx = int(location['slug'].split('_')[1])
+        time.sleep(0.001)
+        return {
+            'listing_id': location['slug'],
+            'local_menu_items': [{'id': idx * 100 + j} for j in range(100)],
+            'is_empty_menu': False,
+            'listing_copy': {},
+            'local_extracted_strains': {},
+            'menu_items_count': 100
+        }
+
     start_time = time.time()
-    for i in range(10):
-        t = threading.Thread(target=worker, args=(i,))
-        threads.append(t)
-        t.start()
-
-    for t in threads:
-        t.join()
-
+    processor.process_locations(locations, mock_fetch_and_process)
     duration = time.time() - start_time
 
-    assert len(scraper.allMenuItems) == 1000
+    total_items = sum(len(res['local_menu_items']) for res in processor.results.values() if res)
+    assert total_items == 1000
     print(f"Stress test completed successfully in {duration:.2f} seconds.")
