@@ -173,13 +173,16 @@ def generate_html_report(data, region_name="Colorado"):
         border-bottom: 1px solid rgba(255, 255, 255, 0.03);
     }
 
-    .data-table td {
+    .data-table td,
+    .data-table th {
         padding: 0.75rem 0;
+        text-align: left;
     }
 
     .label {
         color: var(--text-muted);
         width: 140px;
+        font-weight: normal;
     }
 
     .value {
@@ -352,30 +355,30 @@ def generate_html_report(data, region_name="Colorado"):
                         <div class="listing-info">
                             <h2>{html.escape(str(item.get('name') or ''))}</h2>
                             <span class="badge badge-type">{html.escape(str(item.get('type') or ''))}</span>
-                            <span class="badge badge-rating">★ {html.escape(str(rating))} ({html.escape(str(reviews))})</span>
+                            <span class="badge badge-rating" aria-label="Rating {html.escape(str(rating))} stars, {html.escape(str(reviews))} reviews"><span aria-hidden="true">★</span> {html.escape(str(rating))} ({html.escape(str(reviews))})</span>
                             <span class="badge {status_class}">{status_text}</span>
                         </div>
                     </div>
                     <div class="card-body">
                         <table class="data-table">
                             <tr>
-                                <td class="label">Address</td>
+                                <th scope="row" class="label">Address</th>
                                 <td class="value">{html.escape(str(item.get('address', 'N/A')))}</td>
                             </tr>
                             <tr>
-                                <td class="label">City</td>
+                                <th scope="row" class="label">City</th>
                                 <td class="value">{html.escape(str(item.get('city', 'N/A')))}</td>
                             </tr>
                             <tr>
-                                <td class="label">Hours Today</td>
+                                <th scope="row" class="label">Hours Today</th>
                                 <td class="value">{html.escape(str(item.get('todays_hours_str', 'N/A')))}</td>
                             </tr>
                             <tr>
-                                <td class="label">Phone</td>
+                                <th scope="row" class="label">Phone</th>
                                 <td class="value">{html.escape(str(item.get('phone_number', 'N/A')))}</td>
                             </tr>
                             <tr>
-                                <td class="label">Menu Items</td>
+                                <th scope="row" class="label">Menu Items</th>
                                 <td class="value">{html.escape(str(item.get('menu_items_count', 0)))} items</td>
                             </tr>
                         </table>
