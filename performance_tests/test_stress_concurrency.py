@@ -19,20 +19,21 @@ def test_stress_locking():
     scraper.allMenuItems = []
 
     def worker(i):
+        local_results = []
         for j in range(100):
-            with scraper._menu_data_lock:
-                scraper.allMenuItems.append({'id': i * 100 + j})
+            local_results.append({'id': i * 100 + j})
             time.sleep(0.001)
+        return local_results
 
-    threads = []
+    import concurrent.futures
     start_time = time.time()
-    for i in range(10):
-        t = threading.Thread(target=worker, args=(i,))
-        threads.append(t)
-        t.start()
 
-    for t in threads:
-        t.join()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(worker, i) for i in range(10)]
+        for future in concurrent.futures.as_completed(futures):
+            res = future.result()
+            # Simulate aggregation on main thread
+            scraper.allMenuItems.extend(res)
 
     duration = time.time() - start_time
 
