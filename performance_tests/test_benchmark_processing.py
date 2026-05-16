@@ -31,6 +31,22 @@ def test_processing_benchmark_optimized(benchmark):
     result = benchmark(process_data)
     assert len(result) > 0
 
+def test_concurrent_fetching_benchmark(benchmark):
+    from concurrent_processor import ConcurrentMenuProcessor
+    locations = [{'slug': f'loc_{i}', 'type': 'dispensary'} for i in range(10)]
+
+    # Provide rate_limit=0.0 to prevent timeouts during testing
+    processor = ConcurrentMenuProcessor(max_workers=5, rate_limit=0.0)
+
+    def mock_fetch(loc):
+        return {'status': 'success', 'slug': loc['slug']}
+
+    def run_concurrent():
+        return processor.process_locations(locations, mock_fetch)
+
+    result = benchmark(run_concurrent)
+    assert len(result.keys()) == 10
+
 
 def test_processing_benchmark_legacy(benchmark):
     sample_file = os.path.join(
