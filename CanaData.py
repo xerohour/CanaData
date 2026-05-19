@@ -777,52 +777,47 @@ class CanaData:
             dot-notation paths. Handles lists, dicts, and primitive values
             with special logic for empty containers.
         """
-        # Custom iterative implementation using a stack to handle recursion without recursion depth issues
+        # Optimized iterative implementation using a stack to handle recursion
         result = {}
-        stack = [iter(d.items())] # Stack contains iterators of dictionary items
-        keys = []                 # Tracks the current path in the dictionary (e.g., ['price', 'amount'])
+        stack = [iter(d.items())]  # Stack contains iterators of dictionary items
+        keys = []                 # Tracks the current path in the dictionary
+        join_keys = '.'.join      # Pre-cache repetitive built-in method
+
         while stack:
             for k, v in stack[-1]:
                 keys.append(k)
+
                 if isinstance(v, list):
-                    # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
-                    if len(v) > 0:
+                    if v:
                         for item in v:
                             if item:
                                 if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
-                                        result['.'.join(keys)] = 'None'
+                                    if not item:
+                                        result[join_keys(keys)] = 'None'
                                     else:
-                                        # Push the nested dict onto the stack
                                         stack.append(iter(item.items()))
                                 elif isinstance(item, list):
-                                    # Fallback for nested lists (semi-unsupported)
-                                    result['.'.join(keys)] = '.'.join(item)
+                                    result[join_keys(keys)] = join_keys(item)
                                     keys.pop()
                                 else:
-                                    # Primitives in a list are joined by dot notation
-                                    result['.'.join(keys)] = '.'.join(str(x) for x in v)
+                                    result[join_keys(keys)] = join_keys(str(x) for x in v)
                                     keys.pop()
                                     break
                         break
                     else:
-                        result['.'.join(keys)] = 'None'
+                        result[join_keys(keys)] = 'None'
                         keys.pop()
                 elif isinstance(v, dict):
-                    # Handle nested dictionaries
-                    if len(v.keys()) < 1:
-                        result['.'.join(keys)] = 'None'
+                    if not v:
+                        result[join_keys(keys)] = 'None'
                         keys.pop()
                     else:
-                        # Push the nested dict onto the stack
                         stack.append(iter(v.items()))
                         break
                 else:
-                    # Leaf node: Store the value as a string
-                    result['.'.join(keys)] = str(v)
+                    result[join_keys(keys)] = str(v)
                     keys.pop()
             else:
-                # Finished processing an iterator: pop the path segment and the iterator itself
                 if keys:
                     keys.pop()
                 stack.pop()
