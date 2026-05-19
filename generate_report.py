@@ -1,5 +1,6 @@
 import json
 import os
+import urllib.parse
 from datetime import datetime
 import html
 from CanaData import CanaData
@@ -187,6 +188,17 @@ def generate_html_report(data, region_name="Colorado"):
         text-align: right;
     }
 
+    .value a {
+        color: var(--secondary);
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .value a:hover, .value a:focus-visible {
+        color: var(--primary);
+        text-decoration: underline;
+    }
+
     .promo-section {
         margin-top: 1rem;
         padding: 1rem;
@@ -345,6 +357,21 @@ def generate_html_report(data, region_name="Colorado"):
             </div>
             """
 
+        address = item.get('address', 'N/A')
+        city = item.get('city', 'N/A')
+        if address != 'N/A' and city != 'N/A':
+            query = urllib.parse.quote(f"{address}, {city}")
+            address_html = f'<a href="https://maps.google.com/?q={query}" target="_blank" rel="noopener noreferrer" aria-label="Open {html.escape(address)} in Google Maps">{html.escape(address)}</a>'
+        else:
+            address_html = html.escape(str(address))
+
+        phone = item.get('phone_number', 'N/A')
+        if phone and phone != 'N/A':
+            clean_phone = ''.join(c for c in str(phone) if c.isdigit() or c == '+')
+            phone_html = f'<a href="tel:{clean_phone}" aria-label="Call {html.escape(str(phone))}">{html.escape(str(phone))}</a>'
+        else:
+            phone_html = html.escape(str(phone))
+
         html_content += f"""
                 <div class="card">
                     <div class="card-header">
@@ -360,11 +387,11 @@ def generate_html_report(data, region_name="Colorado"):
                         <table class="data-table">
                             <tr>
                                 <td class="label">Address</td>
-                                <td class="value">{html.escape(str(item.get('address', 'N/A')))}</td>
+                                <td class="value">{address_html}</td>
                             </tr>
                             <tr>
                                 <td class="label">City</td>
-                                <td class="value">{html.escape(str(item.get('city', 'N/A')))}</td>
+                                <td class="value">{html.escape(str(city))}</td>
                             </tr>
                             <tr>
                                 <td class="label">Hours Today</td>
@@ -372,7 +399,7 @@ def generate_html_report(data, region_name="Colorado"):
                             </tr>
                             <tr>
                                 <td class="label">Phone</td>
-                                <td class="value">{html.escape(str(item.get('phone_number', 'N/A')))}</td>
+                                <td class="value">{phone_html}</td>
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
