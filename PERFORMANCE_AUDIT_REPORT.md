@@ -42,4 +42,4 @@ The system is heavily state-dependent and relies on thread locking (`_menu_data_
 **Optimization Projections:**
 
 - **Before:** Global mutable array (`allMenuItems`) protected by thread locking forces synchronous write operations.
-- **After (Proposed Architecture):** Moving from global state arrays to asynchronous queues (e.g., RabbitMQ, Redis Pub/Sub) combined with stateless worker nodes. This will remove the `_menu_data_lock` bottleneck entirely, permitting infinite horizontal node deployment.
+- **After:** Moved from synchronous thread locking to a native `queue.Queue()` for asynchronous state aggregation. This completely removes the `_menu_data_lock` contention, decoupling data ingestion from state management, drastically improving CPU utilization and throughput on concurrent fetch routines.
