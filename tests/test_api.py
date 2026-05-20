@@ -2,8 +2,6 @@ import pytest
 import responses
 from CanaData import CanaData
 from CannMenusClient import CannMenusClient
-from LeaflyScraper import scrape_leafly
-import json
 
 @pytest.fixture
 def cana():
@@ -97,6 +95,9 @@ def test_extract_strains_from_menu(cana):
     # Process the mock menu
     cana.process_menu_json(mock_menu_json)
     
+    # Flush queue to sync state
+    cana._aggregate_results()
+
     # Verify extraction
     assert "og-kush" in cana.extractedStrains
     assert cana.extractedStrains["og-kush"]["genetics"] == "hybrid"
