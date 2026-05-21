@@ -20,7 +20,7 @@ def test_connection():
     # Use the Colorado discovery URL
     url = "https://api-g.weedmaps.com/discovery/v1/listings?filter[any_retailer_services][]=storefront&filter[any_retailer_services][]=delivery&filter[region_slug[deliveries]]=colorado&filter[region_slug[dispensaries]]=colorado&page_size=1&size=1"
     
-    print(f"\n[Verification] Testing Weedmaps API Connection...")
+    print("\n[Verification] Testing Weedmaps API Connection...")
     print(f"[Verification] URL: {url}")
     
     result = cana.do_request(url)

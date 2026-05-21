@@ -13,7 +13,7 @@ from typing import Optional, List, Dict, Any
 from dotenv import load_dotenv
 from LeaflyScraper import scrape_leafly
 from CannMenusClient import CannMenusClient
-import threading
+import queue
 from concurrent_processor import ConcurrentMenuProcessor
 from cache_manager import CacheManager
 from cached_api_client import CachedAPIClient
@@ -118,7 +118,7 @@ class CanaData:
         # Concurrent processing configuration
         self.max_workers = max_workers
         self.rate_limit = rate_limit
-        self._menu_data_lock = threading.Lock()
+        self._results_queue = queue.Queue()
         self.default_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
             'Accept': 'application/json, text/plain, */*',
@@ -330,6 +330,7 @@ class CanaData:
             logger.info(f"Processing menu ({i+1}/{len(self.locations)}) --> {location_slug}")
             self._fetch_and_process_menu(location)
 
+        self._aggregate_results()
         logger.info("Finished gathering menus. Organizing for export...")
         self.organize_into_clean_list()
 
@@ -351,7 +352,8 @@ class CanaData:
         processor.process_locations(self.locations, process_location_menu)
 
         # Update instance variables with results
-        # The _fetch_and_process_menu method already updates self.allMenuItems
+        self._aggregate_results()
+
         logger.info("Finished gathering menus. Organizing for export...")
         self.organize_into_clean_list()
 
@@ -544,17 +546,14 @@ class CanaData:
         listing_copy = dict(listing)
         listing_copy['num_menu_items'] = str(menu_items_count)
 
-        with self._menu_data_lock:
-            self.allMenuItems[listing_id] = local_menu_items
-            if is_empty_menu:
-                self.emptyMenus[listing_id] = listing_copy
-
-            for slug, strain in local_extracted_strains.items():
-                if slug not in self.extractedStrains:
-                    self.extractedStrains[slug] = strain
-
-            self.menuItemsFound += menu_items_count
-            self.totalLocations.append(listing_copy)
+        self._results_queue.put({
+            'listing_id': listing_id,
+            'local_menu_items': local_menu_items,
+            'is_empty_menu': is_empty_menu,
+            'listing_copy': listing_copy,
+            'local_extracted_strains': local_extracted_strains,
+            'menu_items_count': menu_items_count
+        })
 
         logger.info(f"Processed {menu_items_count} items for {listing_slug}")
 
@@ -606,9 +605,34 @@ class CanaData:
             'num_menu_items': str(menu_items_count),
         }
 
-        with self._menu_data_lock:
+        self._results_queue.put({
+            'listing_id': listing_id,
+            'local_menu_items': local_menu_items,
+            'is_empty_menu': menu_items_count == 0,
+            'listing_copy': listing_copy,
+            'local_extracted_strains': local_extracted_strains,
+            'menu_items_count': menu_items_count
+        })
+
+        logger.info(f"Processed {menu_items_count} items for {listing_slug} via discovery menu_items")
+
+    def _aggregate_results(self) -> None:
+        """Flushes the results queue and updates instance variables thread-safely."""
+        while not self._results_queue.empty():
+            try:
+                result = self._results_queue.get_nowait()
+            except queue.Empty:
+                break
+
+            listing_id = result['listing_id']
+            local_menu_items = result['local_menu_items']
+            is_empty_menu = result['is_empty_menu']
+            listing_copy = result['listing_copy']
+            local_extracted_strains = result['local_extracted_strains']
+            menu_items_count = result['menu_items_count']
+
             self.allMenuItems[listing_id] = local_menu_items
-            if menu_items_count == 0:
+            if is_empty_menu:
                 self.emptyMenus[listing_id] = listing_copy
 
             for slug, strain in local_extracted_strains.items():
@@ -617,8 +641,6 @@ class CanaData:
 
             self.menuItemsFound += menu_items_count
             self.totalLocations.append(listing_copy)
-
-        logger.info(f"Processed {menu_items_count} items for {listing_slug} via discovery menu_items")
 
     def getLeaflyData(self):
         """
