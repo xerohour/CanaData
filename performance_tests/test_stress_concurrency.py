@@ -16,12 +16,17 @@ from CanaData import CanaData  # noqa: E402
 
 def test_stress_locking():
     scraper = CanaData(interactive_mode=False)
-    scraper.allMenuItems = []
 
     def worker(i):
         for j in range(100):
-            with scraper._menu_data_lock:
-                scraper.allMenuItems.append({'id': i * 100 + j})
+            scraper._results_queue.put({
+                'listing_id': f'listing_{i}_{j}',
+                'local_menu_items': [{'id': i * 100 + j}],
+                'is_empty_menu': False,
+                'listing_copy': {},
+                'local_extracted_strains': {},
+                'menu_items_count': 1
+            })
             time.sleep(0.001)
 
     threads = []
@@ -36,5 +41,8 @@ def test_stress_locking():
 
     duration = time.time() - start_time
 
-    assert len(scraper.allMenuItems) == 1000
+    scraper._aggregate_results()
+
+    count = sum(len(items) for items in scraper.allMenuItems.values())
+    assert count == 1000
     print(f"Stress test completed successfully in {duration:.2f} seconds.")
