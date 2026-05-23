@@ -136,10 +136,11 @@ class OptimizedDataProcessor:
         # Use iterative approach with explicit stack
         stack = [iter(d.items())]
         keys = []
+        join_keys = '.'.join
         
         while stack:
             for k, v in stack[-1]:
-                key = '.'.join(keys + [k]) if keys else k
+                key = join_keys(keys + [k]) if keys else k
                 
                 if isinstance(v, dict):
                     # Push nested dict to stack
