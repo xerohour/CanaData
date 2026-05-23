@@ -1,5 +1,4 @@
 import os
-import sys
 import csv
 import re
 import json
@@ -7,10 +6,9 @@ import logging
 import argparse
 import glob
 from datetime import datetime
-from typing import List, Any, Dict, Optional
+from typing import List, Any
 from yattag import Doc, indent
 from dotenv import load_dotenv
-from typing import List, Any
 
 # Load environment variables
 load_dotenv()
@@ -305,7 +303,9 @@ class CanaParse:
             with tag('head'):
                 self._add_html_head(doc)
             with tag('body'):
-                with tag('div', klass="container-fluid main"):
+                with tag('a', href="#main-content", klass="skip-link"):
+                    text("Skip to main content")
+                with tag('div', id="main-content", klass="container-fluid main"):
                     self._generate_navbar(doc, tag, text)
                     for i, f in enumerate(self.filters):
                         self._generate_filter_section(doc, tag, text, i, f)
@@ -512,6 +512,30 @@ class CanaParse:
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: var(--card-bg); border-radius: 5px; border: 1px solid var(--glass-border); }
         ::-webkit-scrollbar-thumb:hover { background: var(--glass-border); }
+
+        /* Accessibility */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary);
+            color: var(--bg);
+            padding: 8px;
+            z-index: 100;
+            transition: top 0.3s;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 0 0 8px 0;
+        }
+
+        .skip-link:focus {
+            top: 0;
+        }
+
+        *:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 4px;
+        }
         """
 
         with doc.tag('style'):
