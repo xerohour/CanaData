@@ -136,18 +136,20 @@ class OptimizedDataProcessor:
         # Use iterative approach with explicit stack
         stack = [iter(d.items())]
         keys = []
+        join_keys = '.'.join
+        dumps = json.dumps
         
         while stack:
             for k, v in stack[-1]:
-                key = '.'.join(keys + [k]) if keys else k
+                keys.append(k)
+                key = join_keys(keys)
                 
-                if isinstance(v, dict):
+                if type(v) is dict:
                     # Push nested dict to stack
-                    keys.append(k)
                     stack.append(iter(v.items()))
                     break
-                elif isinstance(v, list):
-                    if v and isinstance(v[0], dict):
+                elif type(v) is list:
+                    if v and type(v[0]) is dict:
                         # Handle list of dicts by taking first item or joining
                         if len(v) == 1:
                             # Single item, flatten it
@@ -155,7 +157,7 @@ class OptimizedDataProcessor:
                             result.update(nested_dict)
                         else:
                             # Multiple items, convert to JSON string
-                            result[key] = json.dumps(v)
+                            result[key] = dumps(v)
                     else:
                         # Simple list, convert to string representation
                         result[key] = str(v) if v else 'None'
@@ -163,6 +165,7 @@ class OptimizedDataProcessor:
                     result[key] = 'None'
                 else:
                     result[key] = str(v)
+                keys.pop()
             else:
                 # Pop from stack when iterator is exhausted
                 if len(stack) > 1:
