@@ -1,6 +1,4 @@
 import requests
-import json
-import time
 
 def check_endpoint(name, url):
     print(f"\n--- Testing: {name} ---")
