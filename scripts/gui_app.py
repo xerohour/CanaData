@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from CanaData import CanaData
+from CanaData import CanaData  # noqa: E402
 
 
 @dataclass
@@ -101,15 +101,23 @@ class CanaDataGUI:
 
         controls = ttk.Frame(container, padding=(0, 10, 0, 8))
         controls.pack(fill=tk.X)
-        self.start_button = ttk.Button(controls, text="Start Run", command=self.start_run)
+        self.start_button = ttk.Button(
+            controls, text="Start Run", command=self.start_run
+        )
         self.start_button.pack(side=tk.LEFT)
-        self.cancel_button = ttk.Button(controls, text="Cancel", command=self.cancel_run, state=tk.DISABLED)
+        self.cancel_button = ttk.Button(
+            controls, text="Cancel", command=self.cancel_run, state=tk.DISABLED
+        )
         self.cancel_button.pack(side=tk.LEFT, padx=8)
-        ttk.Button(controls, text="Open Output Folder", command=self.open_output_folder).pack(side=tk.LEFT)
+        ttk.Button(
+            controls, text="Open Output Folder", command=self.open_output_folder
+        ).pack(side=tk.LEFT)
 
         self.progressbar = ttk.Progressbar(container, mode="determinate", maximum=100)
         self.progressbar.pack(fill=tk.X)
-        ttk.Label(container, textvariable=self.progress_text_var).pack(anchor=tk.W, pady=(4, 8))
+        ttk.Label(container, textvariable=self.progress_text_var).pack(
+            anchor=tk.W, pady=(4, 8)
+        )
 
         logs_frame = ttk.LabelFrame(container, text="Live Log")
         logs_frame.pack(fill=tk.BOTH, expand=True)
@@ -123,13 +131,21 @@ class CanaDataGUI:
         summary_frame = ttk.Frame(container, padding=(0, 8, 0, 0))
         summary_frame.pack(fill=tk.X)
         ttk.Label(summary_frame, text="Summary:").pack(side=tk.LEFT)
-        ttk.Label(summary_frame, textvariable=self.summary_var).pack(side=tk.LEFT, padx=8)
+        ttk.Label(summary_frame, textvariable=self.summary_var).pack(
+            side=tk.LEFT, padx=8
+        )
 
     def _build_run_source_section(self, parent: ttk.Frame) -> None:
         section = ttk.LabelFrame(parent, text="Source", padding=8)
         section.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 8))
-        for text, value in (("Weedmaps", "weedmaps"), ("Leafly", "leafly"), ("CannMenus", "cannmenus")):
-            ttk.Radiobutton(section, text=text, variable=self.source_var, value=value).pack(anchor=tk.W)
+        for text, value in (
+            ("Weedmaps", "weedmaps"),
+            ("Leafly", "leafly"),
+            ("CannMenus", "cannmenus"),
+        ):
+            ttk.Radiobutton(
+                section, text=text, variable=self.source_var, value=value
+            ).pack(anchor=tk.W)
 
     def _build_scope_section(self, parent: ttk.Frame) -> None:
         section = ttk.LabelFrame(parent, text="Scope", padding=8)
@@ -140,7 +156,9 @@ class CanaDataGUI:
             ("My List (mylist.txt)", "mylist"),
             ("Known Slugs (slugs.txt)", "slugs"),
         ):
-            ttk.Radiobutton(section, text=text, variable=self.slug_mode_var, value=value).pack(anchor=tk.W)
+            ttk.Radiobutton(
+                section, text=text, variable=self.slug_mode_var, value=value
+            ).pack(anchor=tk.W)
 
         row = ttk.Frame(section)
         row.pack(fill=tk.X, pady=(6, 0))
@@ -151,18 +169,34 @@ class CanaDataGUI:
     def _build_data_section(self, parent: ttk.Frame) -> None:
         section = ttk.LabelFrame(parent, text="Data Options", padding=8)
         section.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 8))
-        ttk.Checkbutton(section, text="Storefronts", variable=self.storefronts_var).pack(anchor=tk.W)
-        ttk.Checkbutton(section, text="Deliveries", variable=self.deliveries_var).pack(anchor=tk.W)
-        ttk.Checkbutton(section, text="Fetch Brands", variable=self.fetch_brands_var).pack(anchor=tk.W)
-        ttk.Checkbutton(section, text="Fetch Strains", variable=self.fetch_strains_var).pack(anchor=tk.W)
-        ttk.Checkbutton(section, text="Troubleshooting Logs", variable=self.test_mode_var).pack(anchor=tk.W)
+        ttk.Checkbutton(
+            section, text="Storefronts", variable=self.storefronts_var
+        ).pack(anchor=tk.W)
+        ttk.Checkbutton(section, text="Deliveries", variable=self.deliveries_var).pack(
+            anchor=tk.W
+        )
+        ttk.Checkbutton(
+            section, text="Fetch Brands", variable=self.fetch_brands_var
+        ).pack(anchor=tk.W)
+        ttk.Checkbutton(
+            section, text="Fetch Strains", variable=self.fetch_strains_var
+        ).pack(anchor=tk.W)
+        ttk.Checkbutton(
+            section, text="Troubleshooting Logs", variable=self.test_mode_var
+        ).pack(anchor=tk.W)
 
     def _build_perf_section(self, parent: ttk.Frame) -> None:
         section = ttk.LabelFrame(parent, text="Performance", padding=8)
         section.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        ttk.Checkbutton(section, text="Concurrent Menus", variable=self.concurrent_var).pack(anchor=tk.W)
-        ttk.Checkbutton(section, text="Enable Cache", variable=self.cache_var).pack(anchor=tk.W)
-        ttk.Checkbutton(section, text="Optimized Processing", variable=self.optimize_var).pack(anchor=tk.W)
+        ttk.Checkbutton(
+            section, text="Concurrent Menus", variable=self.concurrent_var
+        ).pack(anchor=tk.W)
+        ttk.Checkbutton(section, text="Enable Cache", variable=self.cache_var).pack(
+            anchor=tk.W
+        )
+        ttk.Checkbutton(
+            section, text="Optimized Processing", variable=self.optimize_var
+        ).pack(anchor=tk.W)
 
         self._labeled_entry(section, "Max workers", self.max_workers_var)
         self._labeled_entry(section, "Rate limit (sec)", self.rate_limit_var)
@@ -186,11 +220,19 @@ class CanaDataGUI:
         slug_mode = self.slug_mode_var.get()
         slug_value = self.slug_value_var.get().strip().lower()
         if slug_mode == "single" and not slug_value:
-            messagebox.showerror("Missing Slug", "Enter a city/state slug for single mode.")
+            messagebox.showerror(
+                "Missing Slug", "Enter a city/state slug for single mode."
+            )
             return None
 
-        if not self.storefronts_var.get() and not self.deliveries_var.get() and self.source_var.get() == "weedmaps":
-            messagebox.showerror("No Retailer Type", "Select at least one of Storefronts or Deliveries.")
+        if (
+            not self.storefronts_var.get()
+            and not self.deliveries_var.get()
+            and self.source_var.get() == "weedmaps"
+        ):
+            messagebox.showerror(
+                "No Retailer Type", "Select at least one of Storefronts or Deliveries."
+            )
             return None
 
         try:
@@ -200,7 +242,10 @@ class CanaDataGUI:
             if max_workers < 1 or page_size < 1 or rate_limit < 0:
                 raise ValueError
         except ValueError:
-            messagebox.showerror("Invalid Numbers", "Max workers/page size must be >= 1 and rate limit >= 0.")
+            messagebox.showerror(
+                "Invalid Numbers",
+                "Max workers/page size must be >= 1 and rate limit >= 0.",
+            )
             return None
 
         return RunConfig(
@@ -237,20 +282,26 @@ class CanaDataGUI:
         self.summary_var.set("Run in progress")
         self._append_log("Run started", "INFO")
 
-        self.run_thread = threading.Thread(target=self._run_pipeline, args=(config,), daemon=True)
+        self.run_thread = threading.Thread(
+            target=self._run_pipeline, args=(config,), daemon=True
+        )
         self.run_thread.start()
 
     def cancel_run(self) -> None:
         if not self.running:
             return
         self.cancel_requested.set()
-        self.progress_text_var.set("Cancellation requested. Waiting for current step to finish...")
+        self.progress_text_var.set(
+            "Cancellation requested. Waiting for current step to finish..."
+        )
         self._append_log("Cancellation requested", "WARNING")
 
     def _run_pipeline(self, config: RunConfig) -> None:
         logger_name = "CanaData"
         handler = QueueLogHandler(self.event_queue)
-        handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+        )
         logger = logging.getLogger(logger_name)
         logger.addHandler(handler)
 
@@ -305,7 +356,9 @@ class CanaDataGUI:
                         return
 
                     self.event_queue.put(("progress", int(((index - 1) / total) * 100)))
-                    self.event_queue.put(("progress_text", f"[{index}/{total}] Processing {slug}"))
+                    self.event_queue.put(
+                        ("progress_text", f"[{index}/{total}] Processing {slug}")
+                    )
 
                     cana.set_city_slug(slug)
                     if config.source == "leafly":
@@ -340,7 +393,9 @@ class CanaDataGUI:
 
     def _set_runtime_env(self, config: RunConfig) -> None:
         os.environ["PAGE_SIZE"] = str(config.page_size)
-        os.environ["USE_CONCURRENT_PROCESSING"] = "true" if config.concurrent else "false"
+        os.environ["USE_CONCURRENT_PROCESSING"] = (
+            "true" if config.concurrent else "false"
+        )
         os.environ["MAX_WORKERS"] = str(config.max_workers)
         os.environ["RATE_LIMIT"] = str(config.rate_limit)
 
@@ -358,7 +413,10 @@ class CanaDataGUI:
     def _read_slug_file(self, path: Path) -> List[str]:
         if not path.exists():
             raise FileNotFoundError(f"Missing slug file: {path.name}")
-        lines = [line.strip().lower().replace(" ", "-") for line in path.read_text(encoding="utf-8").splitlines()]
+        lines = [
+            line.strip().lower().replace(" ", "-")
+            for line in path.read_text(encoding="utf-8").splitlines()
+        ]
         slugs = [line for line in lines if line]
         if not slugs:
             raise ValueError(f"No slugs found in {path.name}")
@@ -420,7 +478,7 @@ class CanaDataGUI:
 
 def main() -> None:
     root = tk.Tk()
-    app = CanaDataGUI(root)
+    CanaDataGUI(root)
     root.mainloop()
 
 
