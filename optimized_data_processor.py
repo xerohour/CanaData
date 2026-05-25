@@ -139,7 +139,15 @@ class OptimizedDataProcessor:
         
         while stack:
             for k, v in stack[-1]:
-                key = '.'.join(keys + [k]) if keys else k
+                # ⚡ Bolt optimization: Use in-place list mutation (append/pop)
+                # instead of list concatenation (`keys + [k]`) to avoid massive
+                # memory allocation overhead during deeply nested traversal.
+                if keys:
+                    keys.append(k)
+                    key = '.'.join(keys)
+                    keys.pop()
+                else:
+                    key = k
                 
                 if isinstance(v, dict):
                     # Push nested dict to stack
