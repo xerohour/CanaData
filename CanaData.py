@@ -5,6 +5,8 @@ import csv
 import logging
 import os
 import subprocess
+import threading
+import queue
 from datetime import datetime
 from os import path as ospath
 from os import makedirs
@@ -118,7 +120,7 @@ class CanaData:
         # Concurrent processing configuration
         self.max_workers = max_workers
         self.rate_limit = rate_limit
-        self._menu_data_lock = threading.Lock()
+        self._results_queue = queue.Queue()
         self.default_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
             'Accept': 'application/json, text/plain, */*',
@@ -351,7 +353,7 @@ class CanaData:
         processor.process_locations(self.locations, process_location_menu)
 
         # Update instance variables with results
-        # The _fetch_and_process_menu method already updates self.allMenuItems
+        self._aggregate_results()
         logger.info("Finished gathering menus. Organizing for export...")
         self.organize_into_clean_list()
 
@@ -544,17 +546,14 @@ class CanaData:
         listing_copy = dict(listing)
         listing_copy['num_menu_items'] = str(menu_items_count)
 
-        with self._menu_data_lock:
-            self.allMenuItems[listing_id] = local_menu_items
-            if is_empty_menu:
-                self.emptyMenus[listing_id] = listing_copy
-
-            for slug, strain in local_extracted_strains.items():
-                if slug not in self.extractedStrains:
-                    self.extractedStrains[slug] = strain
-
-            self.menuItemsFound += menu_items_count
-            self.totalLocations.append(listing_copy)
+        self._results_queue.put({
+            'listing_id': listing_id,
+            'local_menu_items': local_menu_items,
+            'is_empty_menu': is_empty_menu,
+            'listing_copy': listing_copy,
+            'local_extracted_strains': local_extracted_strains,
+            'menu_items_count': menu_items_count
+        })
 
         logger.info(f"Processed {menu_items_count} items for {listing_slug}")
 
@@ -606,19 +605,34 @@ class CanaData:
             'num_menu_items': str(menu_items_count),
         }
 
-        with self._menu_data_lock:
-            self.allMenuItems[listing_id] = local_menu_items
-            if menu_items_count == 0:
-                self.emptyMenus[listing_id] = listing_copy
-
-            for slug, strain in local_extracted_strains.items():
-                if slug not in self.extractedStrains:
-                    self.extractedStrains[slug] = strain
-
-            self.menuItemsFound += menu_items_count
-            self.totalLocations.append(listing_copy)
+        self._results_queue.put({
+            'listing_id': listing_id,
+            'local_menu_items': local_menu_items,
+            'is_empty_menu': menu_items_count == 0,
+            'listing_copy': listing_copy,
+            'local_extracted_strains': local_extracted_strains,
+            'menu_items_count': menu_items_count
+        })
 
         logger.info(f"Processed {menu_items_count} items for {listing_slug} via discovery menu_items")
+
+    def _aggregate_results(self) -> None:
+        """Flushes the internal results queue and updates state variables safely."""
+        while not self._results_queue.empty():
+            try:
+                result = self._results_queue.get_nowait()
+                listing_id = result['listing_id']
+                self.allMenuItems[listing_id] = result['local_menu_items']
+                if result['is_empty_menu']:
+                    self.emptyMenus[listing_id] = result['listing_copy']
+                for slug, strain in result['local_extracted_strains'].items():
+                    if slug not in self.extractedStrains:
+                        self.extractedStrains[slug] = strain
+                self.menuItemsFound += result['menu_items_count']
+                self.totalLocations.append(result['listing_copy'])
+                self._results_queue.task_done()
+            except queue.Empty:
+                break
 
     def getLeaflyData(self):
         """
@@ -781,37 +795,38 @@ class CanaData:
         result = {}
         stack = [iter(d.items())] # Stack contains iterators of dictionary items
         keys = []                 # Tracks the current path in the dictionary (e.g., ['price', 'amount'])
+        join_keys = '.'.join
         while stack:
             for k, v in stack[-1]:
                 keys.append(k)
                 if isinstance(v, list):
                     # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
-                    if len(v) > 0:
+                    if v:
                         for item in v:
                             if item:
                                 if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
-                                        result['.'.join(keys)] = 'None'
+                                    if not item:
+                                        result[join_keys(keys)] = 'None'
                                     else:
                                         # Push the nested dict onto the stack
                                         stack.append(iter(item.items()))
                                 elif isinstance(item, list):
                                     # Fallback for nested lists (semi-unsupported)
-                                    result['.'.join(keys)] = '.'.join(item)
+                                    result[join_keys(keys)] = join_keys(item)
                                     keys.pop()
                                 else:
                                     # Primitives in a list are joined by dot notation
-                                    result['.'.join(keys)] = '.'.join(str(x) for x in v)
+                                    result[join_keys(keys)] = join_keys(str(x) for x in v)
                                     keys.pop()
                                     break
                         break
                     else:
-                        result['.'.join(keys)] = 'None'
+                        result[join_keys(keys)] = 'None'
                         keys.pop()
                 elif isinstance(v, dict):
                     # Handle nested dictionaries
-                    if len(v.keys()) < 1:
-                        result['.'.join(keys)] = 'None'
+                    if not v:
+                        result[join_keys(keys)] = 'None'
                         keys.pop()
                     else:
                         # Push the nested dict onto the stack
@@ -819,7 +834,7 @@ class CanaData:
                         break
                 else:
                     # Leaf node: Store the value as a string
-                    result['.'.join(keys)] = str(v)
+                    result[join_keys(keys)] = str(v)
                     keys.pop()
             else:
                 # Finished processing an iterator: pop the path segment and the iterator itself
