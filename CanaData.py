@@ -781,45 +781,50 @@ class CanaData:
         result = {}
         stack = [iter(d.items())] # Stack contains iterators of dictionary items
         keys = []                 # Tracks the current path in the dictionary (e.g., ['price', 'amount'])
+        # Optimization: Pre-cache function call to eliminate repeating global lookup inside the tight loop
+        join_keys = '.'.join
         while stack:
             for k, v in stack[-1]:
                 keys.append(k)
-                if isinstance(v, list):
-                    # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
-                    if len(v) > 0:
-                        for item in v:
-                            if item:
-                                if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
-                                        result['.'.join(keys)] = 'None'
-                                    else:
-                                        # Push the nested dict onto the stack
-                                        stack.append(iter(item.items()))
-                                elif isinstance(item, list):
-                                    # Fallback for nested lists (semi-unsupported)
-                                    result['.'.join(keys)] = '.'.join(item)
-                                    keys.pop()
-                                else:
-                                    # Primitives in a list are joined by dot notation
-                                    result['.'.join(keys)] = '.'.join(str(x) for x in v)
-                                    keys.pop()
-                                    break
-                        break
-                    else:
-                        result['.'.join(keys)] = 'None'
-                        keys.pop()
-                elif isinstance(v, dict):
+                # Optimization: dict structures are far more common in recursive nested data;
+                # reordering its check to first bypasses unnecessary list comparisons on the hot path
+                if isinstance(v, dict):
                     # Handle nested dictionaries
-                    if len(v.keys()) < 1:
-                        result['.'.join(keys)] = 'None'
+                    # Optimization: Implicit bool (not v) handles O(1) empty checks compared to O(N) len(v.keys())
+                    if not v:
+                        result[join_keys(keys)] = 'None'
                         keys.pop()
                     else:
                         # Push the nested dict onto the stack
                         stack.append(iter(v.items()))
                         break
+                elif isinstance(v, list):
+                    # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
+                    if v:
+                        for item in v:
+                            if item:
+                                if isinstance(item, dict):
+                                    if not item:
+                                        result[join_keys(keys)] = 'None'
+                                    else:
+                                        # Push the nested dict onto the stack
+                                        stack.append(iter(item.items()))
+                                elif isinstance(item, list):
+                                    # Fallback for nested lists (semi-unsupported)
+                                    result[join_keys(keys)] = join_keys(item)
+                                    keys.pop()
+                                else:
+                                    # Primitives in a list are joined by dot notation
+                                    result[join_keys(keys)] = join_keys(str(x) for x in v)
+                                    keys.pop()
+                                    break
+                        break
+                    else:
+                        result[join_keys(keys)] = 'None'
+                        keys.pop()
                 else:
                     # Leaf node: Store the value as a string
-                    result['.'.join(keys)] = str(v)
+                    result[join_keys(keys)] = str(v)
                     keys.pop()
             else:
                 # Finished processing an iterator: pop the path segment and the iterator itself
