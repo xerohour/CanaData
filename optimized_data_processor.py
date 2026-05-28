@@ -139,14 +139,24 @@ class OptimizedDataProcessor:
         
         while stack:
             for k, v in stack[-1]:
-                key = '.'.join(keys + [k]) if keys else k
+                # ⚡ Bolt Optimization: Avoid list concatenation memory allocation
+                keys.append(k)
+                key = '.'.join(keys)
+
+                # ⚡ Bolt Optimization: Type checking ordered by frequency (primitives first)
+                if not isinstance(v, (dict, list)):
+                    if v is None:
+                        result[key] = 'None'
+                    else:
+                        result[key] = str(v)
+                    keys.pop()
+                    continue
                 
                 if isinstance(v, dict):
                     # Push nested dict to stack
-                    keys.append(k)
                     stack.append(iter(v.items()))
                     break
-                elif isinstance(v, list):
+                else: # Must be list
                     if v and isinstance(v[0], dict):
                         # Handle list of dicts by taking first item or joining
                         if len(v) == 1:
@@ -159,13 +169,10 @@ class OptimizedDataProcessor:
                     else:
                         # Simple list, convert to string representation
                         result[key] = str(v) if v else 'None'
-                elif v is None:
-                    result[key] = 'None'
-                else:
-                    result[key] = str(v)
+                    keys.pop()
             else:
                 # Pop from stack when iterator is exhausted
-                if len(stack) > 1:
+                if keys:
                     keys.pop()
                 stack.pop()
         

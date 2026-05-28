@@ -1,0 +1,3 @@
+## 2024-05-28 - Optimizing Dictionary Flattening Memory Allocation
+**Learning:** In highly nested dictionary parsing algorithms, using standard Python list concatenation (`keys + [k]`) inside recursive or iterative tight loops creates significant memory allocation overhead because a brand new list object must be instantiated for every node traversed.
+**Action:** When building path structures iteratively across deep JSON trees, always prefer O(1) in-place list mutations (`keys.append(k)` and `keys.pop()`) over O(N) list concatenation. Additionally, reorder `isinstance()` checks to evaluate the most common data types (primitives) first to avoid unnecessary function calls on the hot path.
