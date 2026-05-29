@@ -43,3 +43,9 @@ The system is heavily state-dependent and relies on thread locking (`_menu_data_
 
 - **Before:** Global mutable array (`allMenuItems`) protected by thread locking forces synchronous write operations.
 - **After (Proposed Architecture):** Moving from global state arrays to asynchronous queues (e.g., RabbitMQ, Redis Pub/Sub) combined with stateless worker nodes. This will remove the `_menu_data_lock` bottleneck entirely, permitting infinite horizontal node deployment.
+
+**Implementation (Queue-based state aggregation):**
+- Replaced central thread locking (`_menu_data_lock`) with an internal thread-safe queue (`result_queue`) in `CanaData`.
+- State updates in multi-threaded menu processing logic are deferred to `result_queue`.
+- The `_aggregate_results()` method synchronously flushes the queue to apply state updates, eliminating thread contention over mutable arrays during the concurrent HTTP processing phase.
+- Stress tests (`test_stress_locking`) have been updated to test this message-passing architectural model, yielding improved worker throughput without data loss.
