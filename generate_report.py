@@ -1,4 +1,3 @@
-import json
 import os
 from datetime import datetime
 import html
@@ -187,6 +186,17 @@ def generate_html_report(data, region_name="Colorado"):
         text-align: right;
     }
 
+    .phone-link {
+        color: var(--primary);
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .phone-link:hover {
+        text-decoration: underline;
+        color: #00e692;
+    }
+
     .promo-section {
         margin-top: 1rem;
         padding: 1rem;
@@ -335,6 +345,11 @@ def generate_html_report(data, region_name="Colorado"):
         status_text = "Open Now" if is_open else "Closed"
         status_class = "badge-open" if is_open else "badge-closed"
 
+        phone = item.get('phone_number')
+        phone_html = "N/A"
+        if phone:
+            phone_html = f'<a href="tel:{html.escape(str(phone))}" class="phone-link" aria-label="Call {html.escape(str(phone))}">{html.escape(str(phone))}</a>'
+
         promo = item.get('promo_code')
         promo_html = ""
         if promo:
@@ -372,7 +387,7 @@ def generate_html_report(data, region_name="Colorado"):
                             </tr>
                             <tr>
                                 <td class="label">Phone</td>
-                                <td class="value">{html.escape(str(item.get('phone_number', 'N/A')))}</td>
+                                <td class="value">{phone_html}</td>
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
