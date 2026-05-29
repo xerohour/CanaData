@@ -137,16 +137,22 @@ class OptimizedDataProcessor:
         stack = [iter(d.items())]
         keys = []
         
+        # Pre-cache method for performance
+        join_keys = '.'.join
+
         while stack:
             for k, v in stack[-1]:
-                key = '.'.join(keys + [k]) if keys else k
+                keys.append(k)
                 
                 if isinstance(v, dict):
                     # Push nested dict to stack
-                    keys.append(k)
                     stack.append(iter(v.items()))
                     break
-                elif isinstance(v, list):
+
+                # Pre-compute current key path string since it's used repeatedly
+                key = join_keys(keys) if len(keys) > 1 else k
+
+                if isinstance(v, list):
                     if v and isinstance(v[0], dict):
                         # Handle list of dicts by taking first item or joining
                         if len(v) == 1:
@@ -163,6 +169,8 @@ class OptimizedDataProcessor:
                     result[key] = 'None'
                 else:
                     result[key] = str(v)
+
+                keys.pop()
             else:
                 # Pop from stack when iterator is exhausted
                 if len(stack) > 1:
