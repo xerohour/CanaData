@@ -43,3 +43,7 @@ The system is heavily state-dependent and relies on thread locking (`_menu_data_
 
 - **Before:** Global mutable array (`allMenuItems`) protected by thread locking forces synchronous write operations.
 - **After (Proposed Architecture):** Moving from global state arrays to asynchronous queues (e.g., RabbitMQ, Redis Pub/Sub) combined with stateless worker nodes. This will remove the `_menu_data_lock` bottleneck entirely, permitting infinite horizontal node deployment.
+
+## 5. Post-Optimization Scalability Report
+**Action:** Replaced `_menu_data_lock` with an asynchronous thread-safe Queue (`_data_queue`).
+**Impact:** Worker nodes are entirely decoupled from centralized state management. The threads now execute non-blocking operations (`put`), enabling truly elastic scaling. Throughput in concurrent scraping scenarios should no longer experience lock contention bottlenecks.
