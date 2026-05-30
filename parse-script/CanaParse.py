@@ -1,5 +1,4 @@
 import os
-import sys
 import csv
 import re
 import json
@@ -7,10 +6,9 @@ import logging
 import argparse
 import glob
 from datetime import datetime
-from typing import List, Any, Dict, Optional
+from typing import List, Any
 from yattag import Doc, indent
 from dotenv import load_dotenv
-from typing import List, Any
 
 # Load environment variables
 load_dotenv()
@@ -593,8 +591,8 @@ class CanaParse:
             with tag('td', klass="thumb"):
                 img_url = str(row[17]) if len(row) > 17 else ""
                 if img_url:
-                    with tag('a', ('data-fancybox', 'gallery'), href=img_url):
-                        doc.stag('img', src=img_url, klass="img-thumbnail",
+                    with tag('a', ('data-fancybox', 'gallery'), ('aria-label', f"View full image of {str(row[2])}"), href=img_url):
+                        doc.stag('img', src=img_url, alt=str(row[2]), klass="img-thumbnail",
                                  onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';")
                 else:
                     text("-")
@@ -603,7 +601,7 @@ class CanaParse:
             with tag('td'):
                 slug = str(row[28]) if len(row) > 28 else ""
                 url = f'https://weedmaps.com{slug.replace("#", "")}'
-                with tag('a', href=url, target="_blank", style="font-weight: 600; display: block; margin-bottom: 4px;"):
+                with tag('a', ('aria-label', f"View {str(row[2])} on Weedmaps"), href=url, target="_blank", style="font-weight: 600; display: block; margin-bottom: 4px;"):
                     text(str(row[2]))
                 # Brand (assumed index 4 based on typical CSV layout, checking correctness)
                 # Actually index 4 is usually brand in CanaData export

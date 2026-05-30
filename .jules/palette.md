@@ -1,0 +1,3 @@
+## 2026-05-30 - Added ARIA labels and alt text to dynamic yattag generation
+**Learning:** When using Python's `yattag` library to generate HTML dynamically, standard attributes with hyphens (like `aria-label`) must be passed as tuples (e.g., `('aria-label', 'value')`) to avoid Python syntax errors. It's crucial to explicitly add `alt` tags to `doc.stag('img', ...)` to prevent accessibility issues in the generated artifact.
+**Action:** Always ensure that `doc.stag('img', ...)` calls include `alt=...` and wrap interactive elements like `a` tags around images or links with explicit `aria-label` tuples when generating HTML.
