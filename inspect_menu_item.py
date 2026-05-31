@@ -1,6 +1,4 @@
 import requests
-import json
-import time
 
 def get_valid_slug():
     # Remove region filter to ensure we get *any* listing
