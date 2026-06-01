@@ -81,6 +81,7 @@ def test_process_menu_json_thread_safe_counts_and_collections():
         for future in concurrent.futures.as_completed(futures):
             future.result()
 
+    cana.flush_queue()
     assert len(cana.allMenuItems) == total_payloads
     assert len(cana.totalLocations) == total_payloads
     assert cana.menuItemsFound == total_payloads * items_per_payload
@@ -100,5 +101,6 @@ def test_process_menu_json_thread_safe_deduplicates_extracted_strains():
         for future in concurrent.futures.as_completed(futures):
             future.result()
 
+    cana.flush_queue()
     assert 'same-strain' in cana.extractedStrains
     assert len(cana.extractedStrains) == 1

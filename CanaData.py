@@ -13,11 +13,11 @@ from typing import Optional, List, Dict, Any
 from dotenv import load_dotenv
 from LeaflyScraper import scrape_leafly
 from CannMenusClient import CannMenusClient
-import threading
 from concurrent_processor import ConcurrentMenuProcessor
 from cache_manager import CacheManager
 from cached_api_client import CachedAPIClient
 from optimized_data_processor import OptimizedDataProcessor
+import queue
 
 # Load environment variables
 load_dotenv()
@@ -118,7 +118,7 @@ class CanaData:
         # Concurrent processing configuration
         self.max_workers = max_workers
         self.rate_limit = rate_limit
-        self._menu_data_lock = threading.Lock()
+        self.menu_update_queue = queue.Queue()
         self.default_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
             'Accept': 'application/json, text/plain, */*',
@@ -331,6 +331,7 @@ class CanaData:
             self._fetch_and_process_menu(location)
 
         logger.info("Finished gathering menus. Organizing for export...")
+        self.flush_queue()
         self.organize_into_clean_list()
 
     def _getMenusConcurrent(self):
@@ -353,6 +354,7 @@ class CanaData:
         # Update instance variables with results
         # The _fetch_and_process_menu method already updates self.allMenuItems
         logger.info("Finished gathering menus. Organizing for export...")
+        self.flush_queue()
         self.organize_into_clean_list()
 
         # Log any errors that occurred
@@ -491,6 +493,28 @@ class CanaData:
                 break
         logger.info(f"Retrieved {self.strainsFound} strains.")
 
+    def flush_queue(self) -> None:
+        """Process all deferred menu updates from the internal queue."""
+        while not self.menu_update_queue.empty():
+            try:
+                update = self.menu_update_queue.get_nowait()
+                listing_id = update['listing_id']
+
+                self.allMenuItems[listing_id] = update['local_menu_items']
+
+                if update['is_empty_menu']:
+                    self.emptyMenus[listing_id] = update['listing_copy']
+
+                for slug, strain in update['local_extracted_strains'].items():
+                    if slug not in self.extractedStrains:
+                        self.extractedStrains[slug] = strain
+
+                self.menuItemsFound += update['menu_items_count']
+                self.totalLocations.append(update['listing_copy'])
+                self.menu_update_queue.task_done()
+            except queue.Empty:
+                break
+
     def process_menu_json(self, menu_json: Dict[str, Any]) -> None:
         """
         Process the JSON response for a single location's menu.
@@ -544,17 +568,14 @@ class CanaData:
         listing_copy = dict(listing)
         listing_copy['num_menu_items'] = str(menu_items_count)
 
-        with self._menu_data_lock:
-            self.allMenuItems[listing_id] = local_menu_items
-            if is_empty_menu:
-                self.emptyMenus[listing_id] = listing_copy
-
-            for slug, strain in local_extracted_strains.items():
-                if slug not in self.extractedStrains:
-                    self.extractedStrains[slug] = strain
-
-            self.menuItemsFound += menu_items_count
-            self.totalLocations.append(listing_copy)
+        self.menu_update_queue.put({
+            'listing_id': listing_id,
+            'local_menu_items': local_menu_items,
+            'is_empty_menu': is_empty_menu,
+            'listing_copy': listing_copy,
+            'local_extracted_strains': local_extracted_strains,
+            'menu_items_count': menu_items_count
+        })
 
         logger.info(f"Processed {menu_items_count} items for {listing_slug}")
 
@@ -606,17 +627,14 @@ class CanaData:
             'num_menu_items': str(menu_items_count),
         }
 
-        with self._menu_data_lock:
-            self.allMenuItems[listing_id] = local_menu_items
-            if menu_items_count == 0:
-                self.emptyMenus[listing_id] = listing_copy
-
-            for slug, strain in local_extracted_strains.items():
-                if slug not in self.extractedStrains:
-                    self.extractedStrains[slug] = strain
-
-            self.menuItemsFound += menu_items_count
-            self.totalLocations.append(listing_copy)
+        self.menu_update_queue.put({
+            'listing_id': listing_id,
+            'local_menu_items': local_menu_items,
+            'is_empty_menu': menu_items_count == 0,
+            'listing_copy': listing_copy,
+            'local_extracted_strains': local_extracted_strains,
+            'menu_items_count': menu_items_count
+        })
 
         logger.info(f"Processed {menu_items_count} items for {listing_slug} via discovery menu_items")
 
