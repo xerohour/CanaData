@@ -13,7 +13,7 @@ from typing import Optional, List, Dict, Any
 from dotenv import load_dotenv
 from LeaflyScraper import scrape_leafly
 from CannMenusClient import CannMenusClient
-import threading
+import queue
 from concurrent_processor import ConcurrentMenuProcessor
 from cache_manager import CacheManager
 from cached_api_client import CachedAPIClient
@@ -118,7 +118,7 @@ class CanaData:
         # Concurrent processing configuration
         self.max_workers = max_workers
         self.rate_limit = rate_limit
-        self._menu_data_lock = threading.Lock()
+        self.results_queue = queue.Queue()
         self.default_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
             'Accept': 'application/json, text/plain, */*',
@@ -350,8 +350,23 @@ class CanaData:
         # Process all locations concurrently
         processor.process_locations(self.locations, process_location_menu)
 
+        # Process queue results sequentially to avoid locks
+        while not self.results_queue.empty():
+            res = self.results_queue.get()
+            listing_id = res['listing_id']
+            self.allMenuItems[listing_id] = res['local_menu_items']
+            if res['is_empty_menu']:
+                self.emptyMenus[listing_id] = res['listing_copy']
+
+            for slug, strain in res['local_extracted_strains'].items():
+                if slug not in self.extractedStrains:
+                    self.extractedStrains[slug] = strain
+
+            self.menuItemsFound += res['menu_items_count']
+            self.totalLocations.append(res['listing_copy'])
+
         # Update instance variables with results
-        # The _fetch_and_process_menu method already updates self.allMenuItems
+        # The _fetch_and_process_menu method already queues updates
         logger.info("Finished gathering menus. Organizing for export...")
         self.organize_into_clean_list()
 
@@ -544,17 +559,14 @@ class CanaData:
         listing_copy = dict(listing)
         listing_copy['num_menu_items'] = str(menu_items_count)
 
-        with self._menu_data_lock:
-            self.allMenuItems[listing_id] = local_menu_items
-            if is_empty_menu:
-                self.emptyMenus[listing_id] = listing_copy
-
-            for slug, strain in local_extracted_strains.items():
-                if slug not in self.extractedStrains:
-                    self.extractedStrains[slug] = strain
-
-            self.menuItemsFound += menu_items_count
-            self.totalLocations.append(listing_copy)
+        self.results_queue.put({
+            'listing_id': listing_id,
+            'local_menu_items': local_menu_items,
+            'is_empty_menu': is_empty_menu,
+            'listing_copy': listing_copy,
+            'local_extracted_strains': local_extracted_strains,
+            'menu_items_count': menu_items_count
+        })
 
         logger.info(f"Processed {menu_items_count} items for {listing_slug}")
 
@@ -606,17 +618,14 @@ class CanaData:
             'num_menu_items': str(menu_items_count),
         }
 
-        with self._menu_data_lock:
-            self.allMenuItems[listing_id] = local_menu_items
-            if menu_items_count == 0:
-                self.emptyMenus[listing_id] = listing_copy
-
-            for slug, strain in local_extracted_strains.items():
-                if slug not in self.extractedStrains:
-                    self.extractedStrains[slug] = strain
-
-            self.menuItemsFound += menu_items_count
-            self.totalLocations.append(listing_copy)
+        self.results_queue.put({
+            'listing_id': listing_id,
+            'local_menu_items': local_menu_items,
+            'is_empty_menu': menu_items_count == 0,
+            'listing_copy': listing_copy,
+            'local_extracted_strains': local_extracted_strains,
+            'menu_items_count': menu_items_count
+        })
 
         logger.info(f"Processed {menu_items_count} items for {listing_slug} via discovery menu_items")
 
@@ -784,34 +793,35 @@ class CanaData:
         while stack:
             for k, v in stack[-1]:
                 keys.append(k)
+                join_keys = '.'.join(keys)
                 if isinstance(v, list):
                     # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
-                    if len(v) > 0:
+                    if v:
                         for item in v:
                             if item:
                                 if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
-                                        result['.'.join(keys)] = 'None'
+                                    if not item:
+                                        result[join_keys] = 'None'
                                     else:
                                         # Push the nested dict onto the stack
                                         stack.append(iter(item.items()))
                                 elif isinstance(item, list):
                                     # Fallback for nested lists (semi-unsupported)
-                                    result['.'.join(keys)] = '.'.join(item)
+                                    result[join_keys] = '.'.join(str(x) for x in item)
                                     keys.pop()
                                 else:
                                     # Primitives in a list are joined by dot notation
-                                    result['.'.join(keys)] = '.'.join(str(x) for x in v)
+                                    result[join_keys] = '.'.join(str(x) for x in v)
                                     keys.pop()
                                     break
                         break
                     else:
-                        result['.'.join(keys)] = 'None'
+                        result[join_keys] = 'None'
                         keys.pop()
                 elif isinstance(v, dict):
                     # Handle nested dictionaries
-                    if len(v.keys()) < 1:
-                        result['.'.join(keys)] = 'None'
+                    if not v:
+                        result[join_keys] = 'None'
                         keys.pop()
                     else:
                         # Push the nested dict onto the stack
@@ -819,7 +829,7 @@ class CanaData:
                         break
                 else:
                     # Leaf node: Store the value as a string
-                    result['.'.join(keys)] = str(v)
+                    result[join_keys] = str(v)
                     keys.pop()
             else:
                 # Finished processing an iterator: pop the path segment and the iterator itself

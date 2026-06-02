@@ -98,5 +98,18 @@ def test_extract_strains_from_menu(cana):
     cana.process_menu_json(mock_menu_json)
     
     # Verify extraction
+
+    while not cana.results_queue.empty():
+        res = cana.results_queue.get()
+        for slug, strain in res['local_extracted_strains'].items():
+            if slug not in cana.extractedStrains:
+                cana.extractedStrains[slug] = strain
+
+
+    while not cana.results_queue.empty():
+        res = cana.results_queue.get()
+        for slug, strain in res['local_extracted_strains'].items():
+            if slug not in cana.extractedStrains:
+                cana.extractedStrains[slug] = strain
     assert "og-kush" in cana.extractedStrains
     assert cana.extractedStrains["og-kush"]["genetics"] == "hybrid"

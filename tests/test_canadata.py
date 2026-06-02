@@ -81,6 +81,35 @@ def test_process_menu_json_thread_safe_counts_and_collections():
         for future in concurrent.futures.as_completed(futures):
             future.result()
 
+
+    while not cana.results_queue.empty():
+        res = cana.results_queue.get()
+        listing_id = res['listing_id']
+        cana.allMenuItems[listing_id] = res['local_menu_items']
+        if res['is_empty_menu']:
+            cana.emptyMenus[listing_id] = res['listing_copy']
+
+        for slug, strain in res['local_extracted_strains'].items():
+            if slug not in cana.extractedStrains:
+                cana.extractedStrains[slug] = strain
+
+        cana.menuItemsFound += res['menu_items_count']
+        cana.totalLocations.append(res['listing_copy'])
+
+
+    while not cana.results_queue.empty():
+        res = cana.results_queue.get()
+        listing_id = res['listing_id']
+        cana.allMenuItems[listing_id] = res['local_menu_items']
+        if res['is_empty_menu']:
+            cana.emptyMenus[listing_id] = res['listing_copy']
+
+        for slug, strain in res['local_extracted_strains'].items():
+            if slug not in cana.extractedStrains:
+                cana.extractedStrains[slug] = strain
+
+        cana.menuItemsFound += res['menu_items_count']
+        cana.totalLocations.append(res['listing_copy'])
     assert len(cana.allMenuItems) == total_payloads
     assert len(cana.totalLocations) == total_payloads
     assert cana.menuItemsFound == total_payloads * items_per_payload
@@ -100,5 +129,18 @@ def test_process_menu_json_thread_safe_deduplicates_extracted_strains():
         for future in concurrent.futures.as_completed(futures):
             future.result()
 
+
+    while not cana.results_queue.empty():
+        res = cana.results_queue.get()
+        for slug, strain in res['local_extracted_strains'].items():
+            if slug not in cana.extractedStrains:
+                cana.extractedStrains[slug] = strain
+
+
+    while not cana.results_queue.empty():
+        res = cana.results_queue.get()
+        for slug, strain in res['local_extracted_strains'].items():
+            if slug not in cana.extractedStrains:
+                cana.extractedStrains[slug] = strain
     assert 'same-strain' in cana.extractedStrains
     assert len(cana.extractedStrains) == 1
