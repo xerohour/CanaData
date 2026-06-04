@@ -42,4 +42,4 @@ The system is heavily state-dependent and relies on thread locking (`_menu_data_
 **Optimization Projections:**
 
 - **Before:** Global mutable array (`allMenuItems`) protected by thread locking forces synchronous write operations.
-- **After (Proposed Architecture):** Moving from global state arrays to asynchronous queues (e.g., RabbitMQ, Redis Pub/Sub) combined with stateless worker nodes. This will remove the `_menu_data_lock` bottleneck entirely, permitting infinite horizontal node deployment.
+- **After (Implemented Architecture):** Moved away from thread locking by having workers return parsed payloads rather than mutating the shared state directly. The main thread aggregates the parsed dicts synchronously after execution, eliminating `_menu_data_lock` and the associated lock contention. This stateless parsing approach greatly enhances parallel efficiency for vertical scaling and lays the groundwork for eventual distributed horizontal scaling via queues.

@@ -95,7 +95,8 @@ def test_extract_strains_from_menu(cana):
     }
     
     # Process the mock menu
-    cana.process_menu_json(mock_menu_json)
+    res = cana.process_menu_json(mock_menu_json)
+    cana._aggregate_menu_result(res)
     
     # Verify extraction
     assert "og-kush" in cana.extractedStrains
