@@ -133,41 +133,38 @@ class OptimizedDataProcessor:
         # Pre-allocate result dict with estimated size
         result = {}
         
-        # Use iterative approach with explicit stack
-        stack = [iter(d.items())]
-        keys = []
+        # Use iterative approach with explicit stack to avoid list concatenation overhead
+        stack = [(d.items(), "")]
         
         while stack:
-            for k, v in stack[-1]:
-                key = '.'.join(keys + [k]) if keys else k
+            items, prefix = stack.pop()
+            for k, v in items:
+                key = f"{prefix}.{k}" if prefix else k
                 
-                if isinstance(v, dict):
-                    # Push nested dict to stack
-                    keys.append(k)
-                    stack.append(iter(v.items()))
-                    break
+                # Fast-path early returns for most common primitive types
+                if isinstance(v, (str, int, float, bool)):
+                    result[key] = str(v)
+                elif v is None:
+                    result[key] = 'None'
+                elif isinstance(v, dict):
+                    stack.append((v.items(), key))
                 elif isinstance(v, list):
-                    if v and isinstance(v[0], dict):
+                    if not v:
+                        result[key] = 'None'
+                    elif isinstance(v[0], dict):
                         # Handle list of dicts by taking first item or joining
                         if len(v) == 1:
-                            # Single item, flatten it
-                            nested_dict = {f"{k}.{sub_k}": sub_v for sub_k, sub_v in v[0].items()}
-                            result.update(nested_dict)
+                            # Single item, flatten it (matching legacy compatibility)
+                            for sub_k, sub_v in v[0].items():
+                                result[f"{k}.{sub_k}"] = sub_v
                         else:
                             # Multiple items, convert to JSON string
                             result[key] = json.dumps(v)
                     else:
                         # Simple list, convert to string representation
-                        result[key] = str(v) if v else 'None'
-                elif v is None:
-                    result[key] = 'None'
+                        result[key] = str(v)
                 else:
                     result[key] = str(v)
-            else:
-                # Pop from stack when iterator is exhausted
-                if len(stack) > 1:
-                    keys.pop()
-                stack.pop()
         
         return result
     
