@@ -779,53 +779,41 @@ class CanaData:
         """
         # Custom iterative implementation using a stack to handle recursion without recursion depth issues
         result = {}
-        stack = [iter(d.items())] # Stack contains iterators of dictionary items
-        keys = []                 # Tracks the current path in the dictionary (e.g., ['price', 'amount'])
+        stack = [(d.items(), "")]
+
+        pop = stack.pop
+        append = stack.append
+
         while stack:
-            for k, v in stack[-1]:
-                keys.append(k)
-                if isinstance(v, list):
-                    # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
-                    if len(v) > 0:
+            items_list, prefix = pop()
+
+            for k, v in items_list:
+                new_key = f"{prefix}.{k}" if prefix else k
+
+                if isinstance(v, dict):
+                    if not v:
+                        result[new_key] = 'None'
+                    else:
+                        append((v.items(), new_key))
+                elif isinstance(v, list):
+                    if not v:
+                        result[new_key] = 'None'
+                    else:
                         for item in v:
                             if item:
                                 if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
-                                        result['.'.join(keys)] = 'None'
+                                    if not item:
+                                        result[new_key] = 'None'
                                     else:
-                                        # Push the nested dict onto the stack
-                                        stack.append(iter(item.items()))
+                                        append((item.items(), new_key))
                                 elif isinstance(item, list):
-                                    # Fallback for nested lists (semi-unsupported)
-                                    result['.'.join(keys)] = '.'.join(item)
-                                    keys.pop()
+                                    result[new_key] = '.'.join(str(x) for x in item)
                                 else:
-                                    # Primitives in a list are joined by dot notation
-                                    result['.'.join(keys)] = '.'.join(str(x) for x in v)
-                                    keys.pop()
+                                    result[new_key] = '.'.join(str(x) for x in v)
                                     break
-                        break
-                    else:
-                        result['.'.join(keys)] = 'None'
-                        keys.pop()
-                elif isinstance(v, dict):
-                    # Handle nested dictionaries
-                    if len(v.keys()) < 1:
-                        result['.'.join(keys)] = 'None'
-                        keys.pop()
-                    else:
-                        # Push the nested dict onto the stack
-                        stack.append(iter(v.items()))
-                        break
                 else:
-                    # Leaf node: Store the value as a string
-                    result['.'.join(keys)] = str(v)
-                    keys.pop()
-            else:
-                # Finished processing an iterator: pop the path segment and the iterator itself
-                if keys:
-                    keys.pop()
-                stack.pop()
+                    result[new_key] = str(v)
+
         return result
 
     def _sanitize_filename(self, filename: str) -> str:
