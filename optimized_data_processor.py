@@ -73,10 +73,10 @@ class OptimizedDataProcessor:
         # Identify columns that still contain nested data
         nested_columns = []
         for col in df.columns:
-            # Check if any value in column is a dict or list
-            sample_values = df[col].dropna().head(10)
-            if len(sample_values) > 0:
-                if isinstance(sample_values.iloc[0], (dict, list)):
+            # Check if any value in column is a dict or list using dtype and first_valid_index for performance
+            if df[col].dtype == 'object':
+                first_valid = df[col].first_valid_index()
+                if first_valid is not None and isinstance(df[col].loc[first_valid], (dict, list)):
                     nested_columns.append(col)
         
         # Flatten nested columns
