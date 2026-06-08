@@ -593,8 +593,9 @@ class CanaParse:
             with tag('td', klass="thumb"):
                 img_url = str(row[17]) if len(row) > 17 else ""
                 if img_url:
-                    with tag('a', ('data-fancybox', 'gallery'), href=img_url):
-                        doc.stag('img', src=img_url, klass="img-thumbnail",
+                    strain_name = str(row[2]) if len(row) > 2 else "product"
+                    with tag('a', ('data-fancybox', 'gallery'), ('aria-label', f'View larger image of {strain_name}'), href=img_url):
+                        doc.stag('img', src=img_url, alt=strain_name, klass="img-thumbnail",
                                  onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';")
                 else:
                     text("-")
