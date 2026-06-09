@@ -499,6 +499,34 @@ class CanaParse:
             max-width: 300px;
         }
 
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--glass);
+            border-radius: 20px;
+            border: 1px dashed var(--glass-border);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h2 {
+            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
+        }
+
+        .empty-state p {
+            color: var(--text-muted);
+        }
+
+        .empty-state .helper-text {
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
         .footer {
             text-align: center;
             color: var(--text-muted);
@@ -557,8 +585,15 @@ class CanaParse:
                     text(str(len(results)))
 
             if not results:
-                with tag('p', style="color: var(--text-muted); padding: 1rem;"):
-                    text("No results found for this filter.")
+                with tag('div', klass="empty-state"):
+                    with tag('div', ('aria-hidden', 'true'), klass="empty-state-icon"):
+                        text("🏜️")
+                    with tag('h2'):
+                        text("No Listings Found")
+                    with tag('p'):
+                        text("We couldn't find any cannabis listings matching your criteria.")
+                    with tag('p', klass="helper-text"):
+                        text("Try adjusting your search filters.")
                 return
 
             with tag('div', klass='table-container'):
