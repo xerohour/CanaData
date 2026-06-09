@@ -74,9 +74,9 @@ class OptimizedDataProcessor:
         nested_columns = []
         for col in df.columns:
             # Check if any value in column is a dict or list
-            sample_values = df[col].dropna().head(10)
-            if len(sample_values) > 0:
-                if isinstance(sample_values.iloc[0], (dict, list)):
+            if df[col].dtype == 'object':
+                valid_idx = df[col].first_valid_index()
+                if valid_idx is not None and isinstance(df.at[valid_idx, col], (dict, list)):
                     nested_columns.append(col)
         
         # Flatten nested columns
@@ -136,10 +136,11 @@ class OptimizedDataProcessor:
         # Use iterative approach with explicit stack
         stack = [iter(d.items())]
         keys = []
+        join_keys = '.'.join
         
         while stack:
             for k, v in stack[-1]:
-                key = '.'.join(keys + [k]) if keys else k
+                key = join_keys(keys + [k]) if keys else k
                 
                 if isinstance(v, dict):
                     # Push nested dict to stack
