@@ -1,5 +1,5 @@
 import time
-import pickle
+import json
 import hashlib
 from typing import Any, Optional, Dict
 from pathlib import Path
@@ -113,8 +113,13 @@ class CacheManager:
     
     def _get_from_disk(self, cache_key: str) -> Optional[Any]:
         """Retrieve data from disk cache"""
-        cache_file = self.cache_dir / f"{cache_key}.cache"
+        cache_file = self.cache_dir / f"{cache_key}.json"
         
+        # Security mitigation: remove legacy .cache file if it exists to prevent insecure deserialization
+        legacy_cache_file = self.cache_dir / f"{cache_key}.cache"
+        if legacy_cache_file.exists():
+            legacy_cache_file.unlink()
+
         if not cache_file.exists():
             return None
         
@@ -125,22 +130,22 @@ class CacheManager:
                 cache_file.unlink()  # Remove expired cache
                 return None
             
-            # Load cached data
-            with open(cache_file, 'rb') as f:
-                return pickle.load(f)
+            # Load cached data securely
+            with open(cache_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
                 
-        except (pickle.PickleError, EOFError, FileNotFoundError) as e:
+        except (json.JSONDecodeError, FileNotFoundError) as e:
             logger.warning(f"Failed to load cache file {cache_file}: {e}")
             return None
     
     def _set_to_disk(self, cache_key: str, data: Any) -> None:
         """Store data in disk cache"""
-        cache_file = self.cache_dir / f"{cache_key}.cache"
+        cache_file = self.cache_dir / f"{cache_key}.json"
         
         try:
-            with open(cache_file, 'wb') as f:
-                pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
-        except pickle.PickleError as e:
+            with open(cache_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f)
+        except TypeError as e:
             logger.warning(f"Failed to save cache file {cache_file}: {e}")
     
     def invalidate(self, pattern: Optional[str] = None) -> None:
@@ -155,7 +160,10 @@ class CacheManager:
             for key in keys_to_remove:
                 self.memory_cache.pop(key, None)
             
-            # Remove matching files from disk cache
+            # Remove matching files from disk cache and legacy cache
+            for cache_file in self.cache_dir.glob("*.json"):
+                if pattern in cache_file.name:
+                    cache_file.unlink()
             for cache_file in self.cache_dir.glob("*.cache"):
                 if pattern in cache_file.name:
                     cache_file.unlink()
@@ -163,6 +171,8 @@ class CacheManager:
             # Clear all cache
             self.memory_cache.clear()
             if self.enable_disk_cache:
+                for cache_file in self.cache_dir.glob("*.json"):
+                    cache_file.unlink()
                 for cache_file in self.cache_dir.glob("*.cache"):
                     cache_file.unlink()
     
@@ -181,5 +191,5 @@ class CacheManager:
             **self.stats,
             'hit_rate_percent': hit_rate_float,
             'memory_cache_size': len(self.memory_cache),
-            'disk_cache_files': len(list(self.cache_dir.glob("*.cache"))) if self.enable_disk_cache else 0
+            'disk_cache_files': len(list(self.cache_dir.glob("*.json"))) if self.enable_disk_cache else 0
         }
