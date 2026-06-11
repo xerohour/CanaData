@@ -43,3 +43,8 @@ The system is heavily state-dependent and relies on thread locking (`_menu_data_
 
 - **Before:** Global mutable array (`allMenuItems`) protected by thread locking forces synchronous write operations.
 - **After (Proposed Architecture):** Moving from global state arrays to asynchronous queues (e.g., RabbitMQ, Redis Pub/Sub) combined with stateless worker nodes. This will remove the `_menu_data_lock` bottleneck entirely, permitting infinite horizontal node deployment.
+
+**Update (Optimization Completed):**
+The synchronous thread locking mechanism (`_menu_data_lock`) within the concurrent worker threads has been completely eliminated. Worker threads now parse JSON payloads into local dictionaries in a stateless manner.
+
+These dictionaries are returned to the main thread and aggregated synchronously using the new `_aggregate_menu_result` method. This architectural shift resolves the noisy neighbor condition, significantly increases concurrency throughput, and readies the application for scalable asynchronous queue architectures.
