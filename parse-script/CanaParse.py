@@ -493,6 +493,18 @@ class CanaParse:
             text-shadow: 0 0 8px rgba(0, 255, 163, 0.4);
         }
 
+        a:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+
+        /* Fancybox thumbnail focus style */
+        a[data-fancybox]:focus-visible .img-thumbnail {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 255, 163, 0.3);
+        }
+
         .info-cell {
             font-size: 0.9rem;
             color: var(--text-muted);
@@ -593,8 +605,9 @@ class CanaParse:
             with tag('td', klass="thumb"):
                 img_url = str(row[17]) if len(row) > 17 else ""
                 if img_url:
-                    with tag('a', ('data-fancybox', 'gallery'), href=img_url):
-                        doc.stag('img', src=img_url, klass="img-thumbnail",
+                    product_name = str(row[2]) if len(row) > 2 else "product"
+                    with tag('a', ('data-fancybox', 'gallery'), ('aria-label', f'View image of {product_name}'), href=img_url):
+                        doc.stag('img', src=img_url, alt=f'Image of {product_name}', klass="img-thumbnail",
                                  onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';")
                 else:
                     text("-")

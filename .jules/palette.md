@@ -1,0 +1,3 @@
+## 2026-06-13 - Missing Accessibility Attributes in Yattag HTML Generation
+**Learning:** Dynamically generated HTML from Python using `yattag` often lacks basic accessibility features like `alt` tags and `aria-label`s on interactive elements (e.g., Fancybox images) and misses explicit keyboard focus styles (`:focus-visible`), hindering keyboard navigation.
+**Action:** When building UI strings via backend libraries like `yattag`, pass required accessibility attributes as positional tuples before kwargs to avoid syntax errors, and explicitly add `:focus-visible` styles to the generated CSS payload.
