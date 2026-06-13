@@ -773,58 +773,44 @@ class CanaData:
             dict: Flattened dictionary with dot-notation keys and string values
 
         Algorithm:
-            Uses a stack to track nested levels and a keys list to build
-            dot-notation paths. Handles lists, dicts, and primitive values
-            with special logic for empty containers.
+            Uses a paired stack to track nested levels without constant array modification overhead.
         """
-        # Custom iterative implementation using a stack to handle recursion without recursion depth issues
         result = {}
-        stack = [iter(d.items())] # Stack contains iterators of dictionary items
-        keys = []                 # Tracks the current path in the dictionary (e.g., ['price', 'amount'])
+        stack = [(iter(d.items()), "")]
+
         while stack:
-            for k, v in stack[-1]:
-                keys.append(k)
-                if isinstance(v, list):
-                    # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
-                    if len(v) > 0:
+            items_iter, prefix = stack[-1]
+            for k, v in items_iter:
+                current_key = f"{prefix}.{k}" if prefix else k
+
+                v_type = type(v)
+                if v_type is dict:
+                    if not v:
+                        result[current_key] = 'None'
+                    else:
+                        stack.append((iter(v.items()), current_key))
+                        break
+                elif v_type is list:
+                    if not v:
+                        result[current_key] = 'None'
+                    else:
                         for item in v:
                             if item:
-                                if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
-                                        result['.'.join(keys)] = 'None'
+                                item_type = type(item)
+                                if item_type is dict:
+                                    if not item:
+                                        result[current_key] = 'None'
                                     else:
-                                        # Push the nested dict onto the stack
-                                        stack.append(iter(item.items()))
-                                elif isinstance(item, list):
-                                    # Fallback for nested lists (semi-unsupported)
-                                    result['.'.join(keys)] = '.'.join(item)
-                                    keys.pop()
+                                        stack.append((iter(item.items()), current_key))
+                                elif item_type is list:
+                                    result[current_key] = '.'.join(str(x) for x in item)
                                 else:
-                                    # Primitives in a list are joined by dot notation
-                                    result['.'.join(keys)] = '.'.join(str(x) for x in v)
-                                    keys.pop()
+                                    result[current_key] = '.'.join(str(x) for x in v)
                                     break
                         break
-                    else:
-                        result['.'.join(keys)] = 'None'
-                        keys.pop()
-                elif isinstance(v, dict):
-                    # Handle nested dictionaries
-                    if len(v.keys()) < 1:
-                        result['.'.join(keys)] = 'None'
-                        keys.pop()
-                    else:
-                        # Push the nested dict onto the stack
-                        stack.append(iter(v.items()))
-                        break
                 else:
-                    # Leaf node: Store the value as a string
-                    result['.'.join(keys)] = str(v)
-                    keys.pop()
+                    result[current_key] = str(v)
             else:
-                # Finished processing an iterator: pop the path segment and the iterator itself
-                if keys:
-                    keys.pop()
                 stack.pop()
         return result
 
