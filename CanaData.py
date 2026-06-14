@@ -777,55 +777,50 @@ class CanaData:
             dot-notation paths. Handles lists, dicts, and primitive values
             with special logic for empty containers.
         """
-        # Custom iterative implementation using a stack to handle recursion without recursion depth issues
+        # Optimized iterative implementation avoiding dynamic list building and slow isinstance checks
         result = {}
-        stack = [iter(d.items())] # Stack contains iterators of dictionary items
-        keys = []                 # Tracks the current path in the dictionary (e.g., ['price', 'amount'])
+        stack = [(d.items(), "")]
+
+        # Pre-cache methods and built-ins for performance in hot loop
+        type_fn = type
+        dict_type = dict
+        list_type = list
+        str_fn = str
+        join_dot = ".".join
+
         while stack:
-            for k, v in stack[-1]:
-                keys.append(k)
-                if isinstance(v, list):
-                    # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
-                    if len(v) > 0:
+            items, prefix = stack.pop()
+            for k, v in items:
+                current_key = f"{prefix}.{k}" if prefix else k
+                v_type = type_fn(v)
+
+                if v_type is dict_type:
+                    if not v:
+                        result[current_key] = 'None'
+                    else:
+                        stack.append((v.items(), current_key))
+                elif v_type is list_type:
+                    if not v:
+                        result[current_key] = 'None'
+                    else:
+                        is_primitive_list = False
                         for item in v:
                             if item:
-                                if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
-                                        result['.'.join(keys)] = 'None'
+                                item_type = type_fn(item)
+                                if item_type is dict_type:
+                                    if not item:
+                                        result[current_key] = 'None'
                                     else:
-                                        # Push the nested dict onto the stack
-                                        stack.append(iter(item.items()))
-                                elif isinstance(item, list):
-                                    # Fallback for nested lists (semi-unsupported)
-                                    result['.'.join(keys)] = '.'.join(item)
-                                    keys.pop()
+                                        stack.append((item.items(), current_key))
+                                elif item_type is list_type:
+                                    result[current_key] = join_dot(str_fn(x) for x in item)
                                 else:
-                                    # Primitives in a list are joined by dot notation
-                                    result['.'.join(keys)] = '.'.join(str(x) for x in v)
-                                    keys.pop()
+                                    is_primitive_list = True
                                     break
-                        break
-                    else:
-                        result['.'.join(keys)] = 'None'
-                        keys.pop()
-                elif isinstance(v, dict):
-                    # Handle nested dictionaries
-                    if len(v.keys()) < 1:
-                        result['.'.join(keys)] = 'None'
-                        keys.pop()
-                    else:
-                        # Push the nested dict onto the stack
-                        stack.append(iter(v.items()))
-                        break
+                        if is_primitive_list:
+                            result[current_key] = join_dot(str_fn(x) for x in v)
                 else:
-                    # Leaf node: Store the value as a string
-                    result['.'.join(keys)] = str(v)
-                    keys.pop()
-            else:
-                # Finished processing an iterator: pop the path segment and the iterator itself
-                if keys:
-                    keys.pop()
-                stack.pop()
+                    result[current_key] = str_fn(v)
         return result
 
     def _sanitize_filename(self, filename: str) -> str:
