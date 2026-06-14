@@ -1,0 +1,3 @@
+## 2026-06-14 - Add accessibility attributes to HTML report thumbnails
+**Learning:** The static HTML report generates image thumbnails without `alt` text or `aria-label`s on their link wrappers, violating basic accessibility guidelines for screen readers, making image context unavailable.
+**Action:** When using the `yattag` library to dynamically generate HTML reports from tabular data, ensure `img` tags include `alt` text (derived from product names or descriptions) and their wrapping anchor tags use an explicit `aria-label` using positional tuples like `('aria-label', f'View image of {row[2]}')` before kwargs.
