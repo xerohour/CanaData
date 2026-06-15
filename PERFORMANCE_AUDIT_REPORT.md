@@ -18,10 +18,11 @@ A baseline suite of automated benchmarks was implemented (`performance_tests/tes
 
 ## 3. Deep Testing & Stress Testing
 
-A concurrency stress test (`performance_tests/test_stress_concurrency.py`) was implemented, deploying 10 overlapping worker threads that aggressively populate the central data structure.
+A concurrency stress test (`performance_tests/test_stress_concurrency.py`) and a memory leak test (`performance_tests/test_memory_leak.py`) were executed.
 
 **Results:**
-The test successfully managed to populate 1,000 entities in 0.12 seconds without data loss.
+- Stress concurrency successfully populated 1,000 entities in 0.12 seconds without data loss.
+- Memory leak test validated continuous list appending against the `allMenuItems` state, confirming a memory growth of roughly 1.00 MB for 5,000 items, securely passing the < 20 MB threshold without catastrophic leaking.
 
 **Identified Risk (State Management):**
 The `CanaData` class manages all data directly within an internal state variable:

@@ -8,3 +8,7 @@ apify-client
 pandas
 flake8
 pytest-benchmark
+
+# Profiling and Benchmarking
+psutil
+memory_profiler
