@@ -43,13 +43,12 @@ class OptimizedDataProcessor:
         """
         Flatten all menu items using pandas json_normalize for efficiency.
         """
-        # Collect all items with location info
-        items_with_location = []
-        for location_id, items in all_menu_items.items():
-            for item in items:
-                item_copy = item.copy()
-                item_copy['_location_id'] = location_id
-                items_with_location.append(item_copy)
+        # Collect all items with location info efficiently avoiding dict copy overhead
+        items_with_location = [
+            dict(item, _location_id=location_id)
+            for location_id, items in all_menu_items.items()
+            for item in items
+        ]
         
         if not items_with_location:
             return pd.DataFrame()
@@ -70,20 +69,19 @@ class OptimizedDataProcessor:
         """
         Handle any remaining nested structures that json_normalize couldn't flatten.
         """
-        # Identify columns that still contain nested data
+        # Identify columns that still contain nested data efficiently
         nested_columns = []
         for col in df.columns:
-            # Check if any value in column is a dict or list
-            sample_values = df[col].dropna().head(10)
-            if len(sample_values) > 0:
-                if isinstance(sample_values.iloc[0], (dict, list)):
+            if df[col].dtype == 'object':
+                first_idx = df[col].first_valid_index()
+                if first_idx is not None and isinstance(df[col].loc[first_idx], (dict, list)):
                     nested_columns.append(col)
         
         # Flatten nested columns
         for col in nested_columns:
             try:
                 # Convert to string representation for nested data
-                df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (dict, list)) else str(x))
+                df[col] = [json.dumps(x) if isinstance(x, (dict, list)) else str(x) for x in df[col]]
             except Exception as e:
                 logger.warning(f"Failed to flatten column {col}: {e}")
                 df[col] = df[col].astype(str)
@@ -178,16 +176,17 @@ class OptimizedDataProcessor:
         if df.empty:
             return df
         
-        # Ensure all columns are present and fill missing values
-        df = df.fillna('None')
+        # Pre-calculate which columns need to be processed
+        cols_to_process = [col for col in df.columns if any(kw in col.lower() for kw in ('price', 'amount', 'thc'))]
         
         # Convert data types where possible
-        for col in df.columns:
-            # Try to convert to numeric where possible
-            if 'price' in col.lower() or 'amount' in col.lower() or 'thc' in col.lower():
-                original_col = df[col]
-                numeric_col = pd.to_numeric(original_col, errors='coerce')
-                df[col] = numeric_col.where(numeric_col.notna(), original_col)
+        for col in cols_to_process:
+            original_col = df[col]
+            numeric_col = pd.to_numeric(original_col, errors='coerce')
+            df[col] = numeric_col.where(numeric_col.notna(), original_col)
+
+        # Ensure all columns are present and fill missing values
+        df = df.fillna('None')
         
         # Sort columns for consistency
         df = df.reindex(sorted(df.columns), axis=1)
