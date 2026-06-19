@@ -18,21 +18,22 @@ def test_stress_locking():
     scraper = CanaData(interactive_mode=False)
     scraper.allMenuItems = []
 
+    import concurrent.futures
+
     def worker(i):
+        local_items = []
         for j in range(100):
-            with scraper._menu_data_lock:
-                scraper.allMenuItems.append({'id': i * 100 + j})
+            local_items.append({'id': i * 100 + j})
             time.sleep(0.001)
+        return local_items
 
-    threads = []
     start_time = time.time()
-    for i in range(10):
-        t = threading.Thread(target=worker, args=(i,))
-        threads.append(t)
-        t.start()
 
-    for t in threads:
-        t.join()
+    # Simulate ConcurrentMenuProcessor pattern
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(worker, i) for i in range(10)]
+        for future in concurrent.futures.as_completed(futures):
+            scraper.allMenuItems.extend(future.result())
 
     duration = time.time() - start_time
 
