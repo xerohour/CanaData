@@ -73,17 +73,19 @@ class OptimizedDataProcessor:
         # Identify columns that still contain nested data
         nested_columns = []
         for col in df.columns:
-            # Check if any value in column is a dict or list
-            sample_values = df[col].dropna().head(10)
-            if len(sample_values) > 0:
-                if isinstance(sample_values.iloc[0], (dict, list)):
-                    nested_columns.append(col)
+            # ⚡ Bolt: Check object dtype and use first_valid_index for O(1) checking
+            if df[col].dtype == 'object':
+                first_idx = df[col].first_valid_index()
+                if first_idx is not None:
+                    # Retrieve the value using loc, not iloc, to avoid subtle index boundary bugs
+                    if isinstance(df[col].loc[first_idx], (dict, list)):
+                        nested_columns.append(col)
         
         # Flatten nested columns
         for col in nested_columns:
             try:
-                # Convert to string representation for nested data
-                df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (dict, list)) else str(x))
+                # ⚡ Bolt: Apply list comprehension instead of .apply(lambda) for massive speedup
+                df[col] = [json.dumps(x) if isinstance(x, (dict, list)) else str(x) for x in df[col]]
             except Exception as e:
                 logger.warning(f"Failed to flatten column {col}: {e}")
                 df[col] = df[col].astype(str)
@@ -137,17 +139,26 @@ class OptimizedDataProcessor:
         stack = [iter(d.items())]
         keys = []
         
+        # ⚡ Bolt: Pre-cache repetitive built-in methods to avoid function-call overhead
+        keys_append = keys.append
+        keys_pop = keys.pop
+        join_keys = '.'.join
+        json_dumps = json.dumps
+
         while stack:
             for k, v in stack[-1]:
-                key = '.'.join(keys + [k]) if keys else k
-                
-                if isinstance(v, dict):
+                # ⚡ Bolt: Check exact object type first to avoid MRO traversal overhead of isinstance
+                if type(v) is dict:
                     # Push nested dict to stack
-                    keys.append(k)
+                    keys_append(k)
                     stack.append(iter(v.items()))
                     break
-                elif isinstance(v, list):
-                    if v and isinstance(v[0], dict):
+
+                # ⚡ Bolt: Delay computing the key until necessary
+                key = join_keys(keys + [k]) if keys else k
+
+                if type(v) is list:
+                    if v and type(v[0]) is dict:
                         # Handle list of dicts by taking first item or joining
                         if len(v) == 1:
                             # Single item, flatten it
@@ -155,7 +166,7 @@ class OptimizedDataProcessor:
                             result.update(nested_dict)
                         else:
                             # Multiple items, convert to JSON string
-                            result[key] = json.dumps(v)
+                            result[key] = json_dumps(v)
                     else:
                         # Simple list, convert to string representation
                         result[key] = str(v) if v else 'None'
@@ -166,7 +177,7 @@ class OptimizedDataProcessor:
             else:
                 # Pop from stack when iterator is exhausted
                 if len(stack) > 1:
-                    keys.pop()
+                    keys_pop()
                 stack.pop()
         
         return result

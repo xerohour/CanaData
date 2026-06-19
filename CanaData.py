@@ -781,50 +781,62 @@ class CanaData:
         result = {}
         stack = [iter(d.items())] # Stack contains iterators of dictionary items
         keys = []                 # Tracks the current path in the dictionary (e.g., ['price', 'amount'])
+
+        # ⚡ Bolt: Pre-cache repetitive built-in methods to avoid function-call overhead
+        join_keys = '.'.join
+        keys_append = keys.append
+        keys_pop = keys.pop
+
         while stack:
             for k, v in stack[-1]:
-                keys.append(k)
-                if isinstance(v, list):
-                    # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
-                    if len(v) > 0:
-                        for item in v:
-                            if item:
-                                if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
-                                        result['.'.join(keys)] = 'None'
-                                    else:
-                                        # Push the nested dict onto the stack
-                                        stack.append(iter(item.items()))
-                                elif isinstance(item, list):
-                                    # Fallback for nested lists (semi-unsupported)
-                                    result['.'.join(keys)] = '.'.join(item)
-                                    keys.pop()
-                                else:
-                                    # Primitives in a list are joined by dot notation
-                                    result['.'.join(keys)] = '.'.join(str(x) for x in v)
-                                    keys.pop()
-                                    break
-                        break
-                    else:
-                        result['.'.join(keys)] = 'None'
-                        keys.pop()
-                elif isinstance(v, dict):
-                    # Handle nested dictionaries
-                    if len(v.keys()) < 1:
-                        result['.'.join(keys)] = 'None'
-                        keys.pop()
+                keys_append(k)
+
+                # ⚡ Bolt: Check exact object type first to avoid MRO traversal overhead of isinstance
+                vt = type(v)
+
+                # ⚡ Bolt: Order conditional checks based on data likelihood (check dictionaries first)
+                if vt is dict:
+                    # ⚡ Bolt: Replace slower O(n) check len(v.keys()) < 1 with O(1) implicit boolean evaluation
+                    if not v:
+                        result[join_keys(keys)] = 'None'
+                        keys_pop()
                     else:
                         # Push the nested dict onto the stack
                         stack.append(iter(v.items()))
                         break
+                elif vt is list:
+                    # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
+                    if v:
+                        for item in v:
+                            if item:
+                                it = type(item)
+                                if it is dict:
+                                    if not item:
+                                        result[join_keys(keys)] = 'None'
+                                    else:
+                                        # Push the nested dict onto the stack
+                                        stack.append(iter(item.items()))
+                                elif it is list:
+                                    # Fallback for nested lists (semi-unsupported)
+                                    result[join_keys(keys)] = '.'.join(item)
+                                    keys_pop()
+                                else:
+                                    # Primitives in a list are joined by dot notation
+                                    result[join_keys(keys)] = '.'.join(str(x) for x in v)
+                                    keys_pop()
+                                    break
+                        break
+                    else:
+                        result[join_keys(keys)] = 'None'
+                        keys_pop()
                 else:
                     # Leaf node: Store the value as a string
-                    result['.'.join(keys)] = str(v)
-                    keys.pop()
+                    result[join_keys(keys)] = str(v)
+                    keys_pop()
             else:
                 # Finished processing an iterator: pop the path segment and the iterator itself
                 if keys:
-                    keys.pop()
+                    keys_pop()
                 stack.pop()
         return result
 
