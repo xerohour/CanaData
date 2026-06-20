@@ -1,4 +1,3 @@
-import pytest
 import concurrent.futures
 from CanaData import CanaData
 
@@ -76,10 +75,18 @@ def test_process_menu_json_thread_safe_counts_and_collections():
         for i in range(total_payloads)
     ]
 
+    # Tests are meant to ensure the aggregate method safely gathers from multiple sources.
+    # To keep thread-safety test semantics while testing the new decoupled architecture,
+    # we verify that we can execute multiple _parse requests asynchronously,
+    # and then synchronously _aggregate them safely.
+    parsed_results = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        futures = [executor.submit(cana.process_menu_json, payload) for payload in payloads]
+        futures = {executor.submit(cana._parse_menu_json, payload): payload for payload in payloads}
         for future in concurrent.futures.as_completed(futures):
-            future.result()
+            payload = futures[future]
+            parsed_results[payload["listing"]["id"]] = future.result()
+
+    cana._aggregate_menu_results(parsed_results)
 
     assert len(cana.allMenuItems) == total_payloads
     assert len(cana.totalLocations) == total_payloads
@@ -95,10 +102,18 @@ def test_process_menu_json_thread_safe_deduplicates_extracted_strains():
         for i in range(total_payloads)
     ]
 
+    # Tests are meant to ensure the aggregate method safely gathers from multiple sources.
+    # To keep thread-safety test semantics while testing the new decoupled architecture,
+    # we verify that we can execute multiple _parse requests asynchronously,
+    # and then synchronously _aggregate them safely.
+    parsed_results = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        futures = [executor.submit(cana.process_menu_json, payload) for payload in payloads]
+        futures = {executor.submit(cana._parse_menu_json, payload): payload for payload in payloads}
         for future in concurrent.futures.as_completed(futures):
-            future.result()
+            payload = futures[future]
+            parsed_results[payload["listing"]["id"]] = future.result()
+
+    cana._aggregate_menu_results(parsed_results)
 
     assert 'same-strain' in cana.extractedStrains
     assert len(cana.extractedStrains) == 1

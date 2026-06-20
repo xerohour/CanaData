@@ -348,10 +348,11 @@ class CanaData:
             return self._fetch_and_process_menu(location)
 
         # Process all locations concurrently
-        processor.process_locations(self.locations, process_location_menu)
+        results = processor.process_locations(self.locations, process_location_menu)
 
-        # Update instance variables with results
-        # The _fetch_and_process_menu method already updates self.allMenuItems
+        # Update instance variables with results synchronously to avoid lock contention
+        self._aggregate_menu_results(results)
+
         logger.info("Finished gathering menus. Organizing for export...")
         self.organize_into_clean_list()
 
@@ -361,8 +362,8 @@ class CanaData:
             for error in processor.errors[:5]:  # Log first 5 errors
                 logger.warning(f"Error for {error['location']['slug']}: {error['error']}")
 
-    def _fetch_and_process_menu(self, location: Dict[str, Any]) -> bool:
-        """Fetch and process menu for a single location"""
+    def _fetch_and_process_menu(self, location: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Fetch and process menu for a single location. Returns a dict of processed data instead of modifying state."""
         location_slug = location["slug"]
         location_type = location.get("type", "dispensary")
 
@@ -370,8 +371,7 @@ class CanaData:
             listing_path_type = self._to_listing_path_type(location_type)
             discovery_items = self._fetch_discovery_menu_items(location_slug, listing_path_type)
             if discovery_items is not None:
-                self.process_menu_items_json(discovery_items, location)
-                return True
+                return self._parse_menu_items_json(discovery_items, location)
 
             # Fallback to legacy endpoint if discovery menu items fail.
             legacy_url = f'https://weedmaps.com/api/web/v1/listings/{location_slug}/menu?type={location_type}'
@@ -380,15 +380,35 @@ class CanaData:
 
             resp = requests.get(legacy_url, headers=self.default_headers, timeout=30)
             if resp.status_code == 200:
-                self.process_menu_json(resp.json())
-                return True
+                return self._parse_menu_json(resp.json())
 
             logger.error(f"Failed to fetch menu for {location_slug}: {resp.status_code}")
-            return False
+            return None
 
         except Exception as e:
             logger.error(f"Error processing {location_slug}: {str(e)}")
-            return False
+            return None
+
+    def _aggregate_menu_results(self, results: Dict[str, Any]) -> None:
+        """Synchronously aggregates results from concurrent workers into shared state."""
+        for location_slug, result in results.items():
+            if not result:
+                continue
+
+            listing_id = result.get('listing_id')
+
+            # Avoid lock contention by doing this synchronously in the main thread
+            self.allMenuItems[listing_id] = result.get('local_menu_items', [])
+
+            if result.get('is_empty_menu'):
+                self.emptyMenus[listing_id] = result.get('listing_copy')
+
+            for slug, strain in result.get('local_extracted_strains', {}).items():
+                if slug not in self.extractedStrains:
+                    self.extractedStrains[slug] = strain
+
+            self.menuItemsFound += result.get('menu_items_count', 0)
+            self.totalLocations.append(result.get('listing_copy'))
 
     def _to_listing_path_type(self, location_type: str) -> str:
         """Map listing type to discovery path segment."""
@@ -491,16 +511,16 @@ class CanaData:
                 break
         logger.info(f"Retrieved {self.strainsFound} strains.")
 
-    def process_menu_json(self, menu_json: Dict[str, Any]) -> None:
+    def _parse_menu_json(self, menu_json: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
-        Process the JSON response for a single location's menu.
+        Process the JSON response for a single location's menu. Returns dict of parsed data.
         """
         listing = menu_json.get('listing', {})
         listing_id = listing.get('id')
         listing_slug = listing.get('slug')
         if listing_id is None:
             logger.warning(f"Skipping menu without listing id for {listing_slug}")
-            return
+            return None
 
         listing_type = 'deliveries' if listing.get('_type') == 'delivery' else 'dispensaries'
         listing_url = f'/{listing_type}/{listing_slug}'
@@ -544,22 +564,19 @@ class CanaData:
         listing_copy = dict(listing)
         listing_copy['num_menu_items'] = str(menu_items_count)
 
-        with self._menu_data_lock:
-            self.allMenuItems[listing_id] = local_menu_items
-            if is_empty_menu:
-                self.emptyMenus[listing_id] = listing_copy
-
-            for slug, strain in local_extracted_strains.items():
-                if slug not in self.extractedStrains:
-                    self.extractedStrains[slug] = strain
-
-            self.menuItemsFound += menu_items_count
-            self.totalLocations.append(listing_copy)
-
         logger.info(f"Processed {menu_items_count} items for {listing_slug}")
 
-    def process_menu_items_json(self, menu_json: Dict[str, Any], location: Dict[str, Any]) -> None:
-        """Process discovery/v1/listings/{type}/{slug}/menu_items payload."""
+        return {
+            'listing_id': listing_id,
+            'local_menu_items': local_menu_items,
+            'is_empty_menu': is_empty_menu,
+            'listing_copy': listing_copy,
+            'local_extracted_strains': local_extracted_strains,
+            'menu_items_count': menu_items_count
+        }
+
+    def _parse_menu_items_json(self, menu_json: Dict[str, Any], location: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Process discovery/v1/listings/{type}/{slug}/menu_items payload. Returns dict of parsed data."""
         listing_slug = location.get('slug')
         listing_type = self._to_listing_path_type(location.get('type', 'dispensary'))
         listing_url = f'/{listing_type}/{listing_slug}'
@@ -569,7 +586,7 @@ class CanaData:
         menu_items = menu_json.get('data', {}).get('menu_items', [])
         if not isinstance(menu_items, list):
             logger.warning(f"Unexpected menu_items payload for {listing_slug}")
-            return
+            return None
 
         menu_items_count = 0
         local_menu_items: List[Dict[str, Any]] = []
@@ -606,19 +623,16 @@ class CanaData:
             'num_menu_items': str(menu_items_count),
         }
 
-        with self._menu_data_lock:
-            self.allMenuItems[listing_id] = local_menu_items
-            if menu_items_count == 0:
-                self.emptyMenus[listing_id] = listing_copy
-
-            for slug, strain in local_extracted_strains.items():
-                if slug not in self.extractedStrains:
-                    self.extractedStrains[slug] = strain
-
-            self.menuItemsFound += menu_items_count
-            self.totalLocations.append(listing_copy)
-
         logger.info(f"Processed {menu_items_count} items for {listing_slug} via discovery menu_items")
+
+        return {
+            'listing_id': listing_id,
+            'local_menu_items': local_menu_items,
+            'is_empty_menu': menu_items_count == 0,
+            'listing_copy': listing_copy,
+            'local_extracted_strains': local_extracted_strains,
+            'menu_items_count': menu_items_count
+        }
 
     def getLeaflyData(self):
         """
