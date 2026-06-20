@@ -589,12 +589,15 @@ class CanaParse:
                 with tag('div', klass="price-tag"):
                     text(self.as_currency(row[price_col]))
 
+            # Extract product name for accessibility labels
+            product_name = str(row[2]) if len(row) > 2 else "Product"
+
             # Image
             with tag('td', klass="thumb"):
                 img_url = str(row[17]) if len(row) > 17 else ""
                 if img_url:
-                    with tag('a', ('data-fancybox', 'gallery'), href=img_url):
-                        doc.stag('img', src=img_url, klass="img-thumbnail",
+                    with tag('a', ('data-fancybox', 'gallery'), ('aria-label', f"View high-resolution image of {product_name}"), href=img_url):
+                        doc.stag('img', src=img_url, klass="img-thumbnail", alt=f"Thumbnail of {product_name}",
                                  onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';")
                 else:
                     text("-")
