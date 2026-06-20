@@ -781,16 +781,27 @@ class CanaData:
         result = {}
         stack = [iter(d.items())] # Stack contains iterators of dictionary items
         keys = []                 # Tracks the current path in the dictionary (e.g., ['price', 'amount'])
+
+        # Order conditionals by statistical likelihood (dicts first) and avoid len() calls
         while stack:
             for k, v in stack[-1]:
                 keys.append(k)
-                if isinstance(v, list):
+                if isinstance(v, dict):
+                    # Handle nested dictionaries
+                    if not v:
+                        result['.'.join(keys)] = 'None'
+                        keys.pop()
+                    else:
+                        # Push the nested dict onto the stack
+                        stack.append(iter(v.items()))
+                        break
+                elif isinstance(v, list):
                     # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
-                    if len(v) > 0:
+                    if v:
                         for item in v:
                             if item:
                                 if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
+                                    if not item:
                                         result['.'.join(keys)] = 'None'
                                     else:
                                         # Push the nested dict onto the stack
@@ -808,15 +819,6 @@ class CanaData:
                     else:
                         result['.'.join(keys)] = 'None'
                         keys.pop()
-                elif isinstance(v, dict):
-                    # Handle nested dictionaries
-                    if len(v.keys()) < 1:
-                        result['.'.join(keys)] = 'None'
-                        keys.pop()
-                    else:
-                        # Push the nested dict onto the stack
-                        stack.append(iter(v.items()))
-                        break
                 else:
                     # Leaf node: Store the value as a string
                     result['.'.join(keys)] = str(v)
