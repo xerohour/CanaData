@@ -1,5 +1,4 @@
 import os
-import sys
 import csv
 import re
 import json
@@ -7,10 +6,9 @@ import logging
 import argparse
 import glob
 from datetime import datetime
-from typing import List, Any, Dict, Optional
+from typing import List, Any
 from yattag import Doc, indent
 from dotenv import load_dotenv
-from typing import List, Any
 
 # Load environment variables
 load_dotenv()
@@ -593,8 +591,9 @@ class CanaParse:
             with tag('td', klass="thumb"):
                 img_url = str(row[17]) if len(row) > 17 else ""
                 if img_url:
-                    with tag('a', ('data-fancybox', 'gallery'), href=img_url):
-                        doc.stag('img', src=img_url, klass="img-thumbnail",
+                    product_name = str(row[2]) if len(row) > 2 else "Product image"
+                    with tag('a', ('data-fancybox', 'gallery'), ('aria-label', f'View {product_name} image'), href=img_url):
+                        doc.stag('img', src=img_url, alt=product_name, klass="img-thumbnail",
                                  onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';")
                 else:
                     text("-")
