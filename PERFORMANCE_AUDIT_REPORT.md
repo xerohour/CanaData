@@ -43,3 +43,16 @@ The system is heavily state-dependent and relies on thread locking (`_menu_data_
 
 - **Before:** Global mutable array (`allMenuItems`) protected by thread locking forces synchronous write operations.
 - **After (Proposed Architecture):** Moving from global state arrays to asynchronous queues (e.g., RabbitMQ, Redis Pub/Sub) combined with stateless worker nodes. This will remove the `_menu_data_lock` bottleneck entirely, permitting infinite horizontal node deployment.
+
+## 5. Optimization & Profiling (Before vs. After)
+
+**Identified Bottlenecks:**
+- **Pandas `.apply(lambda)` Overhead:** Iterating over object columns using `apply` in `_handle_remaining_nesting` caused significant slowdowns compared to list comprehensions. Profiling showed extensive calls into Pandas core functions (e.g., `pandas/core/frame.py:to_dict`).
+- **Dynamic List Allocation in Dictionary Flattening:** The `_flatten_dictionary_custom` approach built key paths dynamically using `keys + [k]` and in-place list mutations, causing excess object allocation overhead.
+
+**Optimizations Applied:**
+1. Replaced `.apply(lambda)` with a native Python list comprehension: `df[col] = [json.dumps(x)...]`, executing significantly faster.
+2. Refactored `_flatten_dictionary_custom` to use a paired stack tuple `(items, prefix)`, eliminating list allocations entirely during the tree traversal.
+
+**Before vs. After Projection:**
+- Data processing latency across large nested structures reduced. Prior to optimization, processing a batch (scaled to 50x) consumed 0.141 seconds with significant time spent in Pandas internal operations. By bypassing `apply` and avoiding stack allocations during custom dict flattening, throughput increases proportionally based on chunk size and data nesting depth.

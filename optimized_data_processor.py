@@ -83,7 +83,7 @@ class OptimizedDataProcessor:
         for col in nested_columns:
             try:
                 # Convert to string representation for nested data
-                df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (dict, list)) else str(x))
+                df[col] = [json.dumps(x) if isinstance(x, (dict, list)) else str(x) for x in df[col]]
             except Exception as e:
                 logger.warning(f"Failed to flatten column {col}: {e}")
                 df[col] = df[col].astype(str)
@@ -134,24 +134,23 @@ class OptimizedDataProcessor:
         result = {}
         
         # Use iterative approach with explicit stack
-        stack = [iter(d.items())]
-        keys = []
+        stack = [(iter(d.items()), "")]
         
         while stack:
-            for k, v in stack[-1]:
-                key = '.'.join(keys + [k]) if keys else k
+            items, prefix = stack[-1]
+            for k, v in items:
+                key = f"{prefix}.{k}" if prefix else k
                 
                 if isinstance(v, dict):
                     # Push nested dict to stack
-                    keys.append(k)
-                    stack.append(iter(v.items()))
+                    stack.append((iter(v.items()), key))
                     break
                 elif isinstance(v, list):
                     if v and isinstance(v[0], dict):
                         # Handle list of dicts by taking first item or joining
                         if len(v) == 1:
                             # Single item, flatten it
-                            nested_dict = {f"{k}.{sub_k}": sub_v for sub_k, sub_v in v[0].items()}
+                            nested_dict = {f"{key}.{sub_k}": sub_v for sub_k, sub_v in v[0].items()}
                             result.update(nested_dict)
                         else:
                             # Multiple items, convert to JSON string
@@ -165,8 +164,6 @@ class OptimizedDataProcessor:
                     result[key] = str(v)
             else:
                 # Pop from stack when iterator is exhausted
-                if len(stack) > 1:
-                    keys.pop()
                 stack.pop()
         
         return result
