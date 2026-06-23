@@ -1,5 +1,4 @@
 import os
-import sys
 import csv
 import re
 import json
@@ -7,10 +6,9 @@ import logging
 import argparse
 import glob
 from datetime import datetime
-from typing import List, Any, Dict, Optional
+from typing import List, Any
 from yattag import Doc, indent
 from dotenv import load_dotenv
-from typing import List, Any
 
 # Load environment variables
 load_dotenv()
@@ -318,6 +316,7 @@ class CanaParse:
         doc.asis('<meta charset="utf-8">')
         doc.asis(
             '<meta name="viewport" content="width=device-width, initial-scale=1">')
+        doc.asis('<title>CanaData Analytics Report</title>')
         doc.asis('<link rel="preconnect" href="https://fonts.googleapis.com">')
         doc.asis(
             '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>')
@@ -593,8 +592,9 @@ class CanaParse:
             with tag('td', klass="thumb"):
                 img_url = str(row[17]) if len(row) > 17 else ""
                 if img_url:
-                    with tag('a', ('data-fancybox', 'gallery'), href=img_url):
-                        doc.stag('img', src=img_url, klass="img-thumbnail",
+                    product_name = str(row[2]) if len(row) > 2 else "product"
+                    with tag('a', ('data-fancybox', 'gallery'), ('aria-label', f"View full image of {product_name}"), href=img_url):
+                        doc.stag('img', src=img_url, klass="img-thumbnail", alt=f"Thumbnail for {product_name}",
                                  onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';")
                 else:
                     text("-")
