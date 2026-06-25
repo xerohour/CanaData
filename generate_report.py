@@ -338,10 +338,12 @@ def generate_html_report(data, region_name="Colorado"):
         promo = item.get('promo_code')
         promo_html = ""
         if promo:
+            promo_code_safe = html.escape(str(promo.get('code', 'Special Offer')))
+            promo_title_safe = html.escape(str(promo.get('title', 'Check website for details')))
             promo_html = f"""
             <div class="promo-section">
-                <div class="promo-title">✨ PROMO: {promo.get('code', 'Special Offer')}</div>
-                <div class="promo-body">{promo.get('title', 'Check website for details')}</div>
+                <div class="promo-title">✨ PROMO: {promo_code_safe}</div>
+                <div class="promo-body">{promo_title_safe}</div>
             </div>
             """
 
