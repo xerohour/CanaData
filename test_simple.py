@@ -1,5 +1,4 @@
 import requests
-import json
 
 def check_simple(url):
     print(f"Testing URL: {url}")

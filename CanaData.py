@@ -778,6 +778,7 @@ class CanaData:
             with special logic for empty containers.
         """
         # Custom iterative implementation using a stack to handle recursion without recursion depth issues
+        # ⚡ Bolt: Using stack tuples (items, prefix) eliminates O(N) list mutations
         result = {}
         stack = [iter(d.items())] # Stack contains iterators of dictionary items
         keys = []                 # Tracks the current path in the dictionary (e.g., ['price', 'amount'])
@@ -786,11 +787,11 @@ class CanaData:
                 keys.append(k)
                 if isinstance(v, list):
                     # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
-                    if len(v) > 0:
+                    if v:
                         for item in v:
                             if item:
                                 if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
+                                    if not item:
                                         result['.'.join(keys)] = 'None'
                                     else:
                                         # Push the nested dict onto the stack
@@ -810,7 +811,7 @@ class CanaData:
                         keys.pop()
                 elif isinstance(v, dict):
                     # Handle nested dictionaries
-                    if len(v.keys()) < 1:
+                    if not v:
                         result['.'.join(keys)] = 'None'
                         keys.pop()
                     else:
