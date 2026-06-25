@@ -51,3 +51,49 @@ def test_processing_benchmark_legacy(benchmark):
 
     result = benchmark(process_data)
     assert len(result) > 0
+
+def test_scaled_processing_benchmark_optimized(benchmark):
+    sample_file = os.path.join(
+        os.path.dirname(__file__),
+        '..',
+        'sample_products.json')
+    with open(sample_file) as f:
+        data = json.load(f)
+
+    large_items = []
+    products = data.get('data', {}).get('products', [])
+    for i in range(100):
+        large_items.extend(products)
+
+    processor = OptimizedDataProcessor(max_workers=4)
+    menu_items = {'test_dispensary': large_items}
+
+    def process_data():
+        return processor.process_menu_data(menu_items)
+
+    result = benchmark(process_data)
+    assert len(result) > 0
+
+def test_scaled_processing_benchmark_legacy(benchmark):
+    sample_file = os.path.join(
+        os.path.dirname(__file__),
+        '..',
+        'sample_products.json')
+    with open(sample_file) as f:
+        data = json.load(f)
+
+    large_items = []
+    products = data.get('data', {}).get('products', [])
+    for i in range(100):
+        large_items.extend(products)
+
+    scraper = CanaData(optimize_processing=False, interactive_mode=False)
+
+    def process_data():
+        flattened = []
+        for item in large_items:
+            flattened.append(scraper.flatten_dictionary(item))
+        return flattened
+
+    result = benchmark(process_data)
+    assert len(result) > 0
