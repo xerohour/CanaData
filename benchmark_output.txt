@@ -1,0 +1,21 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+benchmark: 5.2.3 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: /app
+plugins: benchmark-5.2.3
+collected 2 items
+
+performance_tests/test_benchmark_processing.py ..                        [100%]
+
+
+-------------------------------------------------------------------------------------------------------- benchmark: 2 tests -------------------------------------------------------------------------------------------------------
+Name (time in us)                               Min                    Max                   Mean                 StdDev                 Median                   IQR            Outliers         OPS            Rounds  Iterations
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+test_processing_benchmark_legacy           234.8460 (1.0)       1,368.2620 (1.0)         324.0299 (1.0)         182.2879 (1.0)         246.7650 (1.0)         52.1465 (1.0)       246;367  3,086.1353 (1.0)        2412           1
+test_processing_benchmark_optimized     36,652.7330 (156.07)   89,616.3470 (65.50)    43,938.7563 (135.60)   12,919.2492 (70.87)    37,683.9840 (152.71)   6,456.5738 (123.82)        4;5     22.7590 (0.01)         23           1
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Legend:
+  Outliers: 1 Standard Deviation from Mean; 1.5 IQR (InterQuartile Range) from 1st Quartile and 3rd Quartile.
+  OPS: Operations Per Second, computed as 1 / Mean
+============================== 2 passed in 4.10s ===============================
