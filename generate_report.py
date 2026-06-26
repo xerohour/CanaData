@@ -1,4 +1,3 @@
-import json
 import os
 from datetime import datetime
 import html
@@ -352,8 +351,8 @@ def generate_html_report(data, region_name="Colorado"):
                         <div class="listing-info">
                             <h2>{html.escape(str(item.get('name') or ''))}</h2>
                             <span class="badge badge-type">{html.escape(str(item.get('type') or ''))}</span>
-                            <span class="badge badge-rating">★ {html.escape(str(rating))} ({html.escape(str(reviews))})</span>
-                            <span class="badge {status_class}">{status_text}</span>
+                            <span class="badge badge-rating" role="text" aria-label="Rating: {html.escape(str(rating))} stars, {html.escape(str(reviews))} reviews" title="Rating: {html.escape(str(rating))} stars, {html.escape(str(reviews))} reviews">★ {html.escape(str(rating))} ({html.escape(str(reviews))})</span>
+                            <span class="badge {status_class}" role="text" aria-label="Status: {status_text}" title="Status: {status_text}">{status_text}</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -383,7 +382,7 @@ def generate_html_report(data, region_name="Colorado"):
                     </div>
                     <div class="footer-actions">
                         <span style="font-size: 0.8rem; color: var(--text-muted)">{html.escape(str(item.get('license_type', 'Recreational')))}</span>
-                        <a href="{item.get('web_url') or '#'}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get('name', '')))} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                        <a href="{item.get('web_url') or '#'}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get('name', '')))} on Weedmaps (opens in a new tab)" class="btn btn-primary">View on Weedmaps</a>
                     </div>
                 </div>
         """
