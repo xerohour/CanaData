@@ -317,11 +317,12 @@ def generate_html_report(data, region_name="Colorado"):
     """
 
     if not listings:
+        # Security: Escape region_name to prevent XSS from unescaped user-provided strings.
         html_content += f"""
                 <div class="empty-state">
                     <div class="empty-state-icon" aria-hidden="true">🏜️</div>
                     <h2>No Listings Found</h2>
-                    <p>We couldn't find any cannabis listings matching your criteria in {region_name}.</p>
+                    <p>We couldn't find any cannabis listings matching your criteria in {html.escape(str(region_name))}.</p>
                     <p class="helper-text">Try adjusting your search filters or exploring a different region.</p>
                 </div>
         """
@@ -338,17 +339,19 @@ def generate_html_report(data, region_name="Colorado"):
         promo = item.get('promo_code')
         promo_html = ""
         if promo:
+            # Security: Escape promo code and title to prevent XSS from unescaped API data.
             promo_html = f"""
             <div class="promo-section">
-                <div class="promo-title">✨ PROMO: {promo.get('code', 'Special Offer')}</div>
-                <div class="promo-body">{promo.get('title', 'Check website for details')}</div>
+                <div class="promo-title">✨ PROMO: {html.escape(str(promo.get('code', 'Special Offer')))}</div>
+                <div class="promo-body">{html.escape(str(promo.get('title', 'Check website for details')))}</div>
             </div>
             """
 
+        # Security: Escape avatar URL to prevent XSS.
         html_content += f"""
                 <div class="card">
                     <div class="card-header">
-                        <img src="{avatar}" alt="{html.escape(str(item.get('name') or ''))}" class="avatar">
+                        <img src="{html.escape(str(avatar))}" alt="{html.escape(str(item.get('name') or ''))}" class="avatar">
                         <div class="listing-info">
                             <h2>{html.escape(str(item.get('name') or ''))}</h2>
                             <span class="badge badge-type">{html.escape(str(item.get('type') or ''))}</span>
