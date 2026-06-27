@@ -1,4 +1,3 @@
-import json
 import os
 from datetime import datetime
 import html
@@ -352,7 +351,7 @@ def generate_html_report(data, region_name="Colorado"):
                         <div class="listing-info">
                             <h2>{html.escape(str(item.get('name') or ''))}</h2>
                             <span class="badge badge-type">{html.escape(str(item.get('type') or ''))}</span>
-                            <span class="badge badge-rating">★ {html.escape(str(rating))} ({html.escape(str(reviews))})</span>
+                            <span class="badge badge-rating" aria-label="Rating: {html.escape(str(rating))} out of 5 stars from {html.escape(str(reviews))} reviews" role="text"><span aria-hidden="true">★</span> {html.escape(str(rating))} ({html.escape(str(reviews))})</span>
                             <span class="badge {status_class}">{status_text}</span>
                         </div>
                     </div>

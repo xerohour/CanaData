@@ -5,3 +5,7 @@
 ## 2026-04-15 - HTML Report Empty State
 **Learning:** Generating empty grids without feedback leaves users wondering if the report is broken.
 **Action:** Added an explicit, visually distinct `.empty-state` container with an icon (using `aria-hidden="true"`) and helpful guidance when zero listings are found.
+
+## 2026-06-27 - Screen Reader Friendly Ratings
+**Learning:** Screen readers announce symbols like "★" and raw numbers like "(100)" literally (e.g., "star four point five left parenthesis one hundred right parenthesis"). Adding an `aria-label` to a generic non-interactive element like a `<span>` is ignored by screen readers unless given an explicit semantic role like `role="text"`.
+**Action:** Added `aria-label` and `role="text"` to rating badges, and hid the decorative star icon with `aria-hidden="true"` to ensure a natural reading experience.
