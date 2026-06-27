@@ -74,16 +74,21 @@ class OptimizedDataProcessor:
         nested_columns = []
         for col in df.columns:
             # Check if any value in column is a dict or list
-            sample_values = df[col].dropna().head(10)
-            if len(sample_values) > 0:
-                if isinstance(sample_values.iloc[0], (dict, list)):
-                    nested_columns.append(col)
+            if df[col].dtype == 'object':
+                first_idx = df[col].first_valid_index()
+                if first_idx is not None:
+                    val = df[col].loc[first_idx]
+                    if isinstance(val, pd.Series):
+                        val = val.iloc[0]
+                    if isinstance(val, (dict, list)):
+                        nested_columns.append(col)
         
         # Flatten nested columns
         for col in nested_columns:
             try:
                 # Convert to string representation for nested data
-                df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (dict, list)) else str(x))
+                # Optimized: apply list comprehension instead of .apply(lambda)
+                df[col] = [json.dumps(x) if isinstance(x, (dict, list)) else str(x) for x in df[col]]
             except Exception as e:
                 logger.warning(f"Failed to flatten column {col}: {e}")
                 df[col] = df[col].astype(str)
@@ -134,18 +139,17 @@ class OptimizedDataProcessor:
         result = {}
         
         # Use iterative approach with explicit stack
-        stack = [iter(d.items())]
-        keys = []
+        stack = [(iter(d.items()), "")]
         
         while stack:
-            for k, v in stack[-1]:
-                key = '.'.join(keys + [k]) if keys else k
+            iterator, prefix = stack[-1]
+            try:
+                k, v = next(iterator)
+                key = f"{prefix}.{k}" if prefix else k
                 
                 if isinstance(v, dict):
                     # Push nested dict to stack
-                    keys.append(k)
-                    stack.append(iter(v.items()))
-                    break
+                    stack.append((iter(v.items()), key))
                 elif isinstance(v, list):
                     if v and isinstance(v[0], dict):
                         # Handle list of dicts by taking first item or joining
@@ -163,10 +167,8 @@ class OptimizedDataProcessor:
                     result[key] = 'None'
                 else:
                     result[key] = str(v)
-            else:
+            except StopIteration:
                 # Pop from stack when iterator is exhausted
-                if len(stack) > 1:
-                    keys.pop()
                 stack.pop()
         
         return result
