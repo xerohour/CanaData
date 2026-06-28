@@ -316,11 +316,12 @@ def generate_html_report(data, region_name="Colorado"):
     """
 
     if not listings:
+        # Security: Escape region_name to prevent XSS from unescaped user-provided strings.
         html_content += f"""
                 <div class="empty-state">
                     <div class="empty-state-icon" aria-hidden="true">🏜️</div>
                     <h2>No Listings Found</h2>
-                    <p>We couldn't find any cannabis listings matching your criteria in {region_name}.</p>
+                    <p>We couldn't find any cannabis listings matching your criteria in {html.escape(str(region_name))}.</p>
                     <p class="helper-text">Try adjusting your search filters or exploring a different region.</p>
                 </div>
         """
@@ -345,6 +346,7 @@ def generate_html_report(data, region_name="Colorado"):
             </div>
             """
 
+        # Security: Escape avatar URL to prevent XSS.
         html_content += f"""
                 <div class="card">
                     <div class="card-header">
