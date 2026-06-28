@@ -99,10 +99,14 @@ Join our Discord to discuss the project, request features, or report issues:
 For detailed usage guides, code examples, and advanced configuration, please see [DOCS.md](./DOCS.md).
 
 ### 🙏 Support the Project
-If you find this tool helpful, consider making a donation:
-[**Donate via Coinbase**](https://commerce.coinbase.com/checkout/820e33e8-b652-408f-8f33-713af2ff7732)
+Please consider donating if you enjoy!
+[https://commerce.coinbase.com/checkout/820e33e8-b652-408f-8f33-713af2ff7732](https://commerce.coinbase.com/checkout/820e33e8-b652-408f-8f33-713af2ff7732)
 
----
+
+## Security & Caching
+- **Safe Serialization**: Multi-tier cache uses JSON serialization (rather than insecure pickle) to prevent arbitrary code execution vulnerabilities.
+- **HTML Sanitization**: All reports are safely sanitized to protect against Cross-Site Scripting (XSS) from third-party API payloads.
+
 
 ## *Disclaimer*
 This project is solely for fun and personal use. It is not associated, affiliated, or in conjunction with Weedmaps in any way. Nor do they know it probably exists. Please contact Weedmaps directly before using this information or code for any public/for profit usage. I made this to help people, not make money! Don't sue me Weedmaps!
