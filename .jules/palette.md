@@ -1,0 +1,3 @@
+## 2026-06-28 - Add ARIA Labels and Alt Text in Dynamic yattag HTML
+**Learning:** When using the `yattag` library to generate HTML tables from CSV data (like in `CanaParse.py`), attributes like `aria-label` and `alt` are often omitted, leading to inaccessible images. Screen readers need these to describe content. Additionally, `yattag` requires hyphens in attributes to be passed positionally in tuples (e.g. `('aria-label', val)`).
+**Action:** Always check dynamically generated HTML for missing `alt` and `aria-label` attributes on images and their wrappers. Pass hyphenated attributes as positional tuples to `yattag`'s `tag` function.

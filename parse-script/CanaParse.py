@@ -1,5 +1,4 @@
 import os
-import sys
 import csv
 import re
 import json
@@ -7,10 +6,9 @@ import logging
 import argparse
 import glob
 from datetime import datetime
-from typing import List, Any, Dict, Optional
+from typing import List, Any
 from yattag import Doc, indent
 from dotenv import load_dotenv
-from typing import List, Any
 
 # Load environment variables
 load_dotenv()
@@ -305,7 +303,9 @@ class CanaParse:
             with tag('head'):
                 self._add_html_head(doc)
             with tag('body'):
-                with tag('div', klass="container-fluid main"):
+                with tag('a', href="#main-content", klass="skip-link"):
+                    text("Skip to main content")
+                with tag('div', klass="container-fluid main", id="main-content"):
                     self._generate_navbar(doc, tag, text)
                     for i, f in enumerate(self.filters):
                         self._generate_filter_section(doc, tag, text, i, f)
@@ -507,6 +507,30 @@ class CanaParse:
             border-top: 1px solid var(--glass-border);
         }
 
+        /* Accessibility Improvements */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary);
+            color: var(--bg);
+            padding: 8px;
+            z-index: 100;
+            transition: top 0.3s;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 0 0 8px 0;
+        }
+
+        .skip-link:focus {
+            top: 0;
+        }
+
+        *:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 4px;
+        }
+
         /* Scrollbar */
         ::-webkit-scrollbar { width: 10px; height: 10px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
@@ -592,9 +616,10 @@ class CanaParse:
             # Image
             with tag('td', klass="thumb"):
                 img_url = str(row[17]) if len(row) > 17 else ""
+                strain_name = str(row[2]) if len(row) > 2 else "Cannabis product"
                 if img_url:
-                    with tag('a', ('data-fancybox', 'gallery'), href=img_url):
-                        doc.stag('img', src=img_url, klass="img-thumbnail",
+                    with tag('a', ('data-fancybox', 'gallery'), ('aria-label', f"View image for {strain_name}"), href=img_url):
+                        doc.stag('img', src=img_url, klass="img-thumbnail", alt=strain_name,
                                  onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';")
                 else:
                     text("-")
