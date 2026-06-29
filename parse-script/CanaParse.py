@@ -91,8 +91,30 @@ class CanaParse:
         self.filters = []
         self.raw_data: List[List[Any]] = []
         self.filtered_tables: List[List[List[Any]]] = []
+        self.header_map = {}
+        self.listings_map = {}
 
         self.load_filters()
+        self.load_listings_map()
+
+    def load_listings_map(self):
+        """Build mapping of location IDs to store names."""
+        self.listings_map = {}
+        listings_file = self.csv_file.replace('_results.csv', '_total_listings.csv')
+        listings_path = os.path.join(self.csv_folder, listings_file)
+        if os.path.exists(listings_path):
+            try:
+                with open(listings_path, encoding='utf8') as f:
+                    reader = csv.reader(f)
+                    header = next(reader)
+                    id_idx = header.index('id')
+                    name_idx = header.index('name')
+                    for row in reader:
+                        if len(row) > max(id_idx, name_idx):
+                            self.listings_map[row[id_idx].strip()] = row[name_idx].strip()
+                logger.info(f"Loaded {len(self.listings_map)} store names from {listings_path}")
+            except Exception as e:
+                logger.warning(f"Failed to load listings map: {e}")
 
     def load_filters(self):
         """Load filters from flower-filters.json or create a default one."""
@@ -139,15 +161,37 @@ class CanaParse:
         try:
             with open(file_path, encoding="utf8") as f:
                 reader = csv.reader(f)
-                # Skip rows that don't have at least one numeric price column (indices 9-15)
-                self.raw_data = [
-                    row for row in reader
-                    if len(row) > 15 and any(
-                        str(row[i]).replace(
-                            '.', '', 1).isdigit() and float(row[i]) > 0
-                        for i in range(9, 16)
-                    )
-                ]
+                header = next(reader)
+                self.header_map = {name.strip(): i for i, name in enumerate(header)}
+                
+                # Check for price fields dynamically
+                price_price_idx = self.header_map.get('price.price', -1)
+                prices_gram_idx = self.header_map.get('prices.gram', -1)
+                prices_ounce_idx = self.header_map.get('prices.ounce', -1)
+                
+                self.raw_data = []
+                for row in reader:
+                    if not row or len(row) <= max(price_price_idx, prices_gram_idx, prices_ounce_idx):
+                        continue
+                    
+                    # Row is valid if it has some non-zero numeric price or nested price JSON list
+                    has_price = False
+                    if price_price_idx >= 0:
+                        val = row[price_price_idx]
+                        if val and val != 'nan' and val.replace('.', '', 1).replace('-', '', 1).isdigit() and float(val) > 0:
+                            has_price = True
+                    if not has_price and prices_gram_idx >= 0:
+                        val = row[prices_gram_idx]
+                        if val and val != 'nan' and val != 'None' and '[' in val:
+                            has_price = True
+                    if not has_price and prices_ounce_idx >= 0:
+                        val = row[prices_ounce_idx]
+                        if val and val != 'nan' and val != 'None' and '[' in val:
+                            has_price = True
+                            
+                    if has_price:
+                        self.raw_data.append(row)
+                        
             logger.info(f"Loaded {len(self.raw_data)} rows with pricing data.")
             return True
         except Exception as e:
@@ -166,8 +210,8 @@ class CanaParse:
         for f in self.filters:
             logger.info(f"Filtering for: {f.name}")
 
-            # Identify the column index for the price key (gram, eighth, etc.)
-            price_col = self.get_col_by_key(f.key)
+            # Identify the column key for the price (gram, eighth, etc.)
+            price_col = f.key
 
             # Apply filters
             filtered: List[Any] = [
@@ -178,25 +222,107 @@ class CanaParse:
 
             # Handle result limits and sorting
             if f.limit_results_amt > -1 and len(filtered) > f.limit_results_amt:
-                filtered = sorted(filtered, key=lambda x: float(str(x[price_col])) if str(
-                    x[price_col]).replace('.', '', 1).isdigit() else 999999)
+                filtered = sorted(filtered, key=lambda x: self.get_price_by_key(x, price_col) or 999999)
                 filtered = filtered[:f.limit_results_amt]
 
             self.filtered_tables.append(filtered)
             logger.info(f"Filter '{f.name}' yielded {len(filtered)} results.")
 
     def get_col_by_key(self, key):
-        """Map price keys to CSV column indices."""
-        mapping = {
-            'prices.gram': 9,
-            'prices.two_grams': 10,
-            'prices.eighth': 11,
-            'prices.quarter': 12,
-            'prices.half_ounce': 13,
-            'prices.ounce': 14,
-            'prices.half_gram': 15
+        """Legacy helper, returns key itself for dynamic routing."""
+        return key
+
+    def get_price_by_key(self, row, key):
+        """
+        Dynamically extract price for a key (e.g. 'prices.gram', 'prices.eighth') from the row.
+        """
+        # If the key is directly in header and contains a simple numeric value
+        idx = self.header_map.get(key, -1)
+        if idx >= 0 and idx < len(row):
+            val = str(row[idx])
+            if val and val != 'nan' and val.replace('.', '', 1).isdigit():
+                return float(val)
+
+        # Otherwise, parse the JSON fields ('prices.ounce', 'prices.gram')
+        # Map filter key to the label we are searching for in the JSON price list
+        label_mapping = {
+            'prices.half_gram': ['half_gram', 'half gram', '1/2 g', '0.5 g', '0.5g', '1/2g'],
+            'prices.gram': ['gram', '1 g', '1g', '1.0g', '1.0 g'],
+            'prices.two_grams': ['two_grams', '2 g', '2g', '2.0g', '2.0 g'],
+            'prices.eighth': ['eighth', '1/8', '3.5 g', '3.5g'],
+            'prices.quarter': ['quarter', '1/4', '7 g', '7g', '7.0g'],
+            'prices.half_ounce': ['half_ounce', 'half ounce', '1/2', '14 g', '14g'],
+            'prices.ounce': ['ounce', '1 oz', '1oz', '28 g', '28g']
         }
-        return mapping.get(key, 9)
+
+        search_labels = label_mapping.get(key, [])
+        
+        # Check prices.ounce first (usually contains eighth, quarter, half, ounce)
+        ounce_idx = self.header_map.get('prices.ounce', -1)
+        if ounce_idx >= 0 and ounce_idx < len(row):
+            ounce_val = row[ounce_idx]
+            if ounce_val and ounce_val != 'nan' and ounce_val.startswith('['):
+                try:
+                    price_list = json.loads(ounce_val)
+                    for item in price_list:
+                        label = str(item.get('label', '')).lower()
+                        units = str(item.get('units', '')).lower()
+                        # If label matches any search label
+                        if any(l in label or l in units for l in search_labels):
+                            p = item.get('price')
+                            if p is not None:
+                                return float(p)
+                except Exception:
+                    pass
+
+        # Check prices.gram next
+        gram_idx = self.header_map.get('prices.gram', -1)
+        if gram_idx >= 0 and gram_idx < len(row):
+            gram_val = row[gram_idx]
+            if gram_val and gram_val != 'nan' and gram_val.startswith('['):
+                try:
+                    price_list = json.loads(gram_val)
+                    for item in price_list:
+                        label = str(item.get('label', '')).lower()
+                        units = str(item.get('units', '')).lower()
+                        if any(l in label or l in units for l in search_labels):
+                            p = item.get('price')
+                            if p is not None:
+                                return float(p)
+                except Exception:
+                    pass
+
+        # Fallback: check price.price and price.unit
+        price_price_idx = self.header_map.get('price.price', -1)
+        price_unit_idx = self.header_map.get('price.unit', -1)
+        price_quantity_idx = self.header_map.get('price.quantity', -1)
+        if price_price_idx >= 0 and price_price_idx < len(row) and price_unit_idx >= 0 and price_unit_idx < len(row):
+            unit_val = str(row[price_unit_idx]).lower()
+            qty_val = str(row[price_quantity_idx]).lower() if price_quantity_idx >= 0 and price_quantity_idx < len(row) else ''
+            
+            # Map key to unit & quantity
+            key_unit_qty = {
+                'prices.half_gram': ('gram', '1/2'),
+                'prices.gram': ('gram', '1'),
+                'prices.eighth': ('ounce', '1/8'),
+                'prices.quarter': ('ounce', '1/4'),
+                'prices.half_ounce': ('ounce', '1/2'),
+                'prices.ounce': ('ounce', '1')
+            }
+            if key in key_unit_qty:
+                target_unit, target_qty = key_unit_qty[key]
+                if target_unit in unit_val and (not target_qty or target_qty in qty_val or target_qty in unit_val):
+                    p_val = row[price_price_idx]
+                    if p_val and p_val != 'nan' and p_val.replace('.', '', 1).isdigit():
+                        return float(p_val)
+                        
+            # If key is prices.gram and unit is unit (vapes/concentrates sold as a single unit)
+            if key == 'prices.gram' and 'unit' in unit_val:
+                p_val = row[price_price_idx]
+                if p_val and p_val != 'nan' and p_val.replace('.', '', 1).isdigit():
+                    return float(p_val)
+
+        return None
 
     def is_match(self, row, f, price_col):
         """
@@ -204,15 +330,15 @@ class CanaParse:
         """
         # 1. Price Comparison
         if f.price:
-            row_price_raw = str(row[price_col])
-            row_price = float(row_price_raw) if row_price_raw.replace(
-                '.', '', 1).isdigit() else 0
-            if not getComparisonVal(f.compare, row_price, f.price):
+            row_price = self.get_price_by_key(row, price_col)
+            if row_price is None or not getComparisonVal(f.compare, row_price, f.price):
                 return False
 
-        # 2. Categories (Index 20)
+        # 2. Categories
         if f.categories:
-            if str(row[20]).lower() not in [c.lower() for c in f.categories]:
+            cat_idx = self.header_map.get('category.name', -1)
+            cat_val = str(row[cat_idx]).lower() if cat_idx >= 0 and cat_idx < len(row) else ""
+            if cat_val not in [c.lower() for c in f.categories]:
                 return False
 
         # 3. Join row for word-based searches
@@ -228,9 +354,11 @@ class CanaParse:
             if not any(strain.lower() in row_str for strain in f.strains):
                 return False
 
-        # 6. Stores (Index 29)
+        # 6. Stores
         if f.stores:
-            if not any(store.lower() in str(row[29]).lower() for store in f.stores):
+            loc_id = str(row[0]) if len(row) > 0 else ""
+            dispensary_name = self.listings_map.get(loc_id, "").lower()
+            if not any(store.lower() in dispensary_name for store in f.stores):
                 return False
 
         # 7. Bad Words (Exclusion)
@@ -245,34 +373,42 @@ class CanaParse:
 
         # 9. THC Floor
         if f.thc_floor > 0:
-            thc_val = self.extract_cannabinoid(row_str, 'thc')
+            thc_val = self.extract_thc(row)
             if thc_val < f.thc_floor:
                 if f.thc_floor_strict:
                     return False
-            else:
-                row.append(f"thc+{thc_val}")
 
         # 10. CBD Floor
         if f.cbd_floor > 0.001:
-            cbd_val = self.extract_cannabinoid(row_str, 'cbd')
+            cbd_val = self.extract_cbd(row)
             if cbd_val < f.cbd_floor:
                 if f.cbd_floor_strict:
                     return False
-            else:
-                row.append(f"cbd+{cbd_val}")
 
         return True
 
-    def extract_cannabinoid(self, text, type_name):
-        """Extract numeric value for THC or CBD from text."""
-        pattern = rf"{type_name}[:\s-]*(\d+\.?\d*)"
-        match = re.search(pattern, text)
-        if match:
-            try:
-                return float(match.group(1))
-            except Exception:
-                pass
-        return 0
+    def extract_thc(self, row):
+        """Extract numeric value for THC from text or dedicated column."""
+        thc_idx = self.header_map.get('metrics.aggregates.thc', -1)
+        if thc_idx >= 0 and thc_idx < len(row):
+            val = str(row[thc_idx])
+            if val and val != 'nan' and val.replace('.', '', 1).isdigit():
+                return float(val)
+        return 0.0
+
+    def extract_cbd(self, row):
+        """Extract numeric value for CBD from text or dedicated column."""
+        cbd_idx = self.header_map.get('metrics.aggregates.cbd', -1)
+        if cbd_idx >= 0 and cbd_idx < len(row):
+            val = str(row[cbd_idx])
+            if val and val != 'nan' and val.replace('.', '', 1).isdigit():
+                return float(val)
+        return 0.0
+
+    def clean_html(self, raw_html):
+        """Remove HTML tags from a string."""
+        cleanr = re.compile('<.*?>')
+        return re.sub(cleanr, '', str(raw_html))
 
     def as_currency(self, amount):
         """Format number as USD currency."""
@@ -290,11 +426,6 @@ class CanaParse:
         except Exception:
             pass
         return ""
-
-    def clean_html(self, raw_html):
-        """Remove HTML tags from a string."""
-        cleanr = re.compile('<.*?>')
-        return re.sub(cleanr, '', str(raw_html))
 
     def generate_html(self):
         """Build the full HTML dashboard."""
@@ -582,17 +713,34 @@ class CanaParse:
 
     def _generate_row(self, doc, tag, text, row, f):
         """Generate a single table row."""
-        price_col = self.get_col_by_key(f.key)
+        price_col = f.key
+        
+        # Get dynamic indices
+        img_idx = self.header_map.get('avatar_image.original_url', -1)
+        name_idx = self.header_map.get('name', -1)
+        brand_idx = self.header_map.get('brand_endorsement.brand_name', -1)
+        slug_idx = self.header_map.get('slug', -1)
+        cat_idx = self.header_map.get('category.name', -1)
+        
+        # Resolve values
+        img_url = str(row[img_idx]) if img_idx >= 0 and img_idx < len(row) else ""
+        prod_name = str(row[name_idx]) if name_idx >= 0 and name_idx < len(row) else "N/A"
+        brand_name = str(row[brand_idx]) if brand_idx >= 0 and brand_idx < len(row) else ""
+        if brand_name == "None":
+            brand_name = ""
+        slug_val = str(row[slug_idx]) if slug_idx >= 0 and slug_idx < len(row) else ""
+        category_name = str(row[cat_idx]) if cat_idx >= 0 and cat_idx < len(row) else ""
+        
         with tag('tr'):
             # Price
             with tag('td'):
                 with tag('div', klass="price-tag"):
-                    text(self.as_currency(row[price_col]))
+                    p_val = self.get_price_by_key(row, price_col)
+                    text(self.as_currency(p_val) if p_val is not None else "-")
 
             # Image
             with tag('td', klass="thumb"):
-                img_url = str(row[17]) if len(row) > 17 else ""
-                if img_url:
+                if img_url and img_url != "None" and img_url != "nan":
                     with tag('a', ('data-fancybox', 'gallery'), href=img_url):
                         doc.stag('img', src=img_url, klass="img-thumbnail",
                                  onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';")
@@ -601,42 +749,48 @@ class CanaParse:
 
             # Strain Name + Link
             with tag('td'):
-                slug = str(row[28]) if len(row) > 28 else ""
-                url = f'https://weedmaps.com{slug.replace("#", "")}'
+                url = f'https://weedmaps.com/listings/{slug_val.replace("#", "")}' if slug_val else '#'
                 with tag('a', href=url, target="_blank", style="font-weight: 600; display: block; margin-bottom: 4px;"):
-                    text(str(row[2]))
-                # Brand (assumed index 4 based on typical CSV layout, checking correctness)
-                # Actually index 4 is usually brand in CanaData export
-                brand = str(row[4]) if len(row) > 4 else ""
-                if brand:
+                    text(prod_name)
+                if brand_name:
                     with tag('span', style="font-size: 0.8rem; color: var(--text-muted);"):
-                        text(brand)
+                        text(brand_name)
 
             # Category
             with tag('td'):
                 with tag('span', style="background: rgba(0, 212, 255, 0.1); color: var(--secondary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;"):
-                    text(str(row[20]))
+                    text(category_name)
 
             # THC
-            thc_val = next(
-                (str(s).split("+")[1] for s in row if str(s).startswith("thc+")), "0")
+            thc_val = self.extract_thc(row)
             with tag('td'):
-                text(self.as_percentage(thc_val))
+                text(self.as_percentage(thc_val) if thc_val else "-")
 
             # CBD
             if f.cbd_floor > 0:
-                cbd_val = next(
-                    (str(s).split("+")[1] for s in row if str(s).startswith("cbd+")), "0")
+                cbd_val = self.extract_cbd(row)
                 with tag('td'):
-                    text(self.as_percentage(cbd_val))
+                    text(self.as_percentage(cbd_val) if cbd_val else "-")
 
             # Dispensary
             with tag('td'):
-                text(str(row[29]))
+                loc_id = str(row[0]) if len(row) > 0 else ""
+                dispensary_name = self.listings_map.get(loc_id, "")
+                if not dispensary_name:
+                    loc_idx = self.header_map.get('locations_found_at', -1)
+                    if loc_idx >= 0 and len(row) > loc_idx:
+                        loc_val = row[loc_idx]
+                        if '/' in loc_val:
+                            dispensary_name = loc_val.split('/')[-1].replace('"', '').replace(']', '').replace('-', ' ').title()
+                text(dispensary_name or "N/A")
 
             # Info (Cleaned)
             with tag('td', klass="info-cell"):
-                desc = self.clean_html(row[1])
+                # Use catalog_slug as info fallback if desc is empty
+                desc_idx = self.header_map.get('catalog_slug', -1)
+                desc = self.clean_html(row[desc_idx]) if desc_idx >= 0 and desc_idx < len(row) else ""
+                if desc == "None" or desc == "nan":
+                    desc = ""
                 # Truncate if too long
                 if len(desc) > 100:
                     desc = desc[:100] + "..."
