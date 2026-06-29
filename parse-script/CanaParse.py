@@ -1,5 +1,4 @@
 import os
-import sys
 import csv
 import re
 import json
@@ -7,10 +6,9 @@ import logging
 import argparse
 import glob
 from datetime import datetime
-from typing import List, Any, Dict, Optional
+from typing import List, Any
 from yattag import Doc, indent
 from dotenv import load_dotenv
-from typing import List, Any
 
 # Load environment variables
 load_dotenv()
@@ -1139,7 +1137,9 @@ class CanaParse:
                 })
 
             with tag('script', id=f"data-{section_id}", type="application/json"):
-                doc.asis(json.dumps(serialized_rows))
+                # Prevent XSS by escaping characters that can break out of the script tag
+                safe_json = json.dumps(serialized_rows).replace('<', '\\u003c').replace('>', '\\u003e').replace('&', '\\u0026')
+                doc.asis(safe_json)
 
             with tag('div', klass='table-container'):
                 with tag('table'):
