@@ -98,7 +98,7 @@ class CanaParse:
         self.load_listings_map()
 
     def load_listings_map(self):
-        """Build mapping of location IDs to store names."""
+        """Build mapping of location IDs to store names and cities."""
         self.listings_map = {}
         listings_file = self.csv_file.replace('_results.csv', '_total_listings.csv')
         listings_path = os.path.join(self.csv_folder, listings_file)
@@ -109,10 +109,17 @@ class CanaParse:
                     header = next(reader)
                     id_idx = header.index('id')
                     name_idx = header.index('name')
+                    city_idx = header.index('city') if 'city' in header else -1
                     for row in reader:
                         if len(row) > max(id_idx, name_idx):
-                            self.listings_map[row[id_idx].strip()] = row[name_idx].strip()
-                logger.info(f"Loaded {len(self.listings_map)} store names from {listings_path}")
+                            store_id = row[id_idx].strip()
+                            store_name = row[name_idx].strip()
+                            store_city = row[city_idx].strip() if city_idx >= 0 and len(row) > city_idx else ""
+                            self.listings_map[store_id] = {
+                                'name': store_name,
+                                'city': store_city
+                            }
+                logger.info(f"Loaded {len(self.listings_map)} store names and cities from {listings_path}")
             except Exception as e:
                 logger.warning(f"Failed to load listings map: {e}")
 
@@ -833,7 +840,7 @@ class CanaParse:
                                        'Product', 'Category', 'THC']
                             if f.cbd_floor > 0:
                                 headers.append('CBD')
-                            headers.extend(['Dispensary', 'Details'])
+                            headers.extend(['Dispensary', 'City', 'Details'])
 
                             for label in headers:
                                 with tag('th'):
@@ -927,7 +934,8 @@ class CanaParse:
             # Dispensary
             with tag('td'):
                 loc_id = str(row[0]) if len(row) > 0 else ""
-                dispensary_name = self.listings_map.get(loc_id, "")
+                store_info = self.listings_map.get(loc_id, {})
+                dispensary_name = store_info.get('name', "") if isinstance(store_info, dict) else store_info
                 if not dispensary_name:
                     loc_idx = self.header_map.get('locations_found_at', -1)
                     if loc_idx >= 0 and len(row) > loc_idx:
@@ -935,6 +943,13 @@ class CanaParse:
                         if '/' in loc_val:
                             dispensary_name = loc_val.split('/')[-1].replace('"', '').replace(']', '').replace('-', ' ').title()
                 text(dispensary_name or "N/A")
+
+            # City
+            with tag('td'):
+                loc_id = str(row[0]) if len(row) > 0 else ""
+                store_info = self.listings_map.get(loc_id, {})
+                store_city = store_info.get('city', "") if isinstance(store_info, dict) else ""
+                text(store_city or "N/A")
 
             # Info (Cleaned)
             with tag('td', klass="info-cell"):
