@@ -447,7 +447,7 @@ class CanaParse:
                     self._generate_navbar(doc, tag, text)
                     # Global Search Bar
                     with tag('div', klass="search-container"):
-                        doc.stag('input', type="text", id="global-search", 
+                        doc.stag('input', ('aria-label', 'Search products, brands, categories, or dispensaries...'), type="text", id="global-search",
                                  placeholder="🔍 Search products, brands, categories, or dispensaries...", 
                                  klass="search-input")
                     for i, f in enumerate(self.filters):
