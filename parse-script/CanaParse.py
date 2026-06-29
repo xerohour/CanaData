@@ -863,6 +863,27 @@ class CanaParse:
         slug_val = str(row[slug_idx]) if slug_idx >= 0 and slug_idx < len(row) else ""
         category_name = str(row[cat_idx]) if cat_idx >= 0 and cat_idx < len(row) else ""
         
+        # Resolve Weedmaps product page URL from locations_found_at
+        loc_idx = self.header_map.get('locations_found_at', -1)
+        loc_val = ""
+        if loc_idx >= 0 and loc_idx < len(row):
+            loc_raw = str(row[loc_idx])
+            if '[' in loc_raw:
+                try:
+                    loc_list = json.loads(loc_raw)
+                    if loc_list:
+                        loc_val = str(loc_list[0])
+                except Exception:
+                    loc_val = loc_raw.replace('[', '').replace(']', '').replace('"', '').replace("'", "").strip()
+            else:
+                loc_val = loc_raw.strip()
+
+        if loc_val and slug_val:
+            loc_val_clean = loc_val.rstrip('/')
+            url = f"https://weedmaps.com{loc_val_clean}/menu/{slug_val}"
+        else:
+            url = "#"
+            
         with tag('tr'):
             # Price
             with tag('td'):
@@ -881,7 +902,6 @@ class CanaParse:
 
             # Strain Name + Link
             with tag('td'):
-                url = f'https://weedmaps.com/listings/{slug_val.replace("#", "")}' if slug_val else '#'
                 with tag('a', href=url, target="_blank", style="font-weight: 600; display: block; margin-bottom: 4px;"):
                     text(prod_name)
                 if brand_name:
