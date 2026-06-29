@@ -438,6 +438,11 @@ class CanaParse:
             with tag('body'):
                 with tag('div', klass="container-fluid main"):
                     self._generate_navbar(doc, tag, text)
+                    # Global Search Bar
+                    with tag('div', klass="search-container"):
+                        doc.stag('input', type="text", id="global-search", 
+                                 placeholder="🔍 Search products, brands, categories, or dispensaries...", 
+                                 klass="search-input")
                     for i, f in enumerate(self.filters):
                         self._generate_filter_section(doc, tag, text, i, f)
                     self._generate_footer(doc, tag, text)
@@ -643,6 +648,37 @@ class CanaParse:
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: var(--card-bg); border-radius: 5px; border: 1px solid var(--glass-border); }
         ::-webkit-scrollbar-thumb:hover { background: var(--glass-border); }
+
+        /* Modern Search Input styling */
+        .search-container {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .search-input {
+            width: 100%;
+            max-width: 600px;
+            padding: 1rem 1.5rem;
+            border-radius: 100px;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 255, 163, 0.3);
+            transform: scale(1.02);
+        }
         """
 
         with doc.tag('style'):
@@ -653,8 +689,104 @@ class CanaParse:
             '<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>')
         doc.asis(
             '<script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>')
-        # Note: Sorting script removed for now as it relied on old jquery tablesorter.
-        # Could re-add a modern vanilla JS sorter later.
+
+        js_code = """
+        $(document).ready(function() {
+            // Setup sorting indicators on headers
+            $('th').each(function() {
+                var text = $(this).text().trim();
+                if (text && text !== 'IMAGE' && text !== 'DETAILS') {
+                    $(this).css('cursor', 'pointer').append(' <span class="sort-icon" style="color: var(--text-muted); font-size: 0.8rem; margin-left: 4px;">↕</span>');
+                }
+            });
+
+            // Handle sorting on click
+            $('th').on('click', function() {
+                var text = $(this).text().trim();
+                if (text === 'IMAGE' || text === 'DETAILS') return;
+                
+                var table = $(this).closest('table');
+                var tbody = table.find('tbody');
+                var rows = tbody.find('tr').toArray();
+                var index = $(this).index();
+                var isAscending = $(this).data('order') === 'asc';
+                
+                isAscending = !isAscending;
+                $(this).data('order', isAscending ? 'asc' : 'desc');
+                
+                // Reset other icons in the same table
+                table.find('th .sort-icon').html('↕').css('color', 'var(--text-muted)');
+                $(this).find('.sort-icon').html(isAscending ? '▲' : '▼').css('color', 'var(--primary)');
+                
+                var getCellValue = function(row, index) {
+                    var cell = $(row).children('td').eq(index);
+                    var text = cell.text().trim();
+                    if (cell.find('.price-tag').length || text.startsWith('$')) {
+                        return parseFloat(text.replace(/[^0-9.]/g, '')) || 0;
+                    }
+                    if (text.endsWith('%')) {
+                        return parseFloat(text.replace(/[^0-9.]/g, '')) || 0;
+                    }
+                    return text.toLowerCase();
+                };
+                
+                rows.sort(function(a, b) {
+                    var valA = getCellValue(a, index);
+                    var valB = getCellValue(b, index);
+                    if (typeof valA === 'number' && typeof valB === 'number') {
+                        return isAscending ? valA - valB : valB - valA;
+                    }
+                    return isAscending ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
+                });
+                
+                $.each(rows, function(idx, row) {
+                    tbody.append(row);
+                });
+            });
+
+            // Global search filtering
+            $('#global-search').on('keyup', function() {
+                var value = $(this).val().toLowerCase();
+                
+                // Filter rows across all tables
+                $('table tbody tr').each(function() {
+                    var match = $(this).text().toLowerCase().indexOf(value) > -1;
+                    $(this).toggle(match);
+                });
+                
+                // Hide or show table containers and headers based on visibility of rows
+                $('.table-container').each(function() {
+                    var hasVisibleRows = $(this).find('tbody tr:visible').length > 0;
+                    var section = $(this).closest('div[id]');
+                    var badge = section.find('h3 .badge');
+                    
+                    if (badge.length) {
+                        badge.text($(this).find('tbody tr:visible').length);
+                    }
+                    
+                    if (hasVisibleRows) {
+                        $(this).show();
+                        section.find('h3').show();
+                        section.find('.no-match-msg').hide();
+                    } else {
+                        $(this).hide();
+                        section.find('h3').hide();
+                        if (value !== '') {
+                            // If no matching rows, show empty state message for this section
+                            if (section.find('.no-match-msg').length === 0) {
+                                section.append('<p class="no-match-msg" style="color: var(--text-muted); padding: 1rem;">No matching items found in this section.</p>');
+                            } else {
+                                section.find('.no-match-msg').show();
+                            }
+                        } else {
+                            section.find('.no-match-msg').hide();
+                        }
+                    }
+                });
+            });
+        });
+        """
+        doc.asis(f'<script>{js_code}</script>')
 
     def _generate_navbar(self, doc, tag, text):
         """Generate common navigation bar."""
