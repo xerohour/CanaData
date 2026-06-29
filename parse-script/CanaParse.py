@@ -454,7 +454,13 @@ class CanaParse:
                         self._generate_filter_section(doc, tag, text, i, f)
                     self._generate_footer(doc, tag, text)
 
-        return indent(doc.getvalue())
+        raw_html = doc.getvalue()
+        if len(raw_html) < 5 * 1024 * 1024:
+            try:
+                return indent(raw_html)
+            except Exception:
+                pass
+        return raw_html
 
     def _add_html_head(self, doc):
         """Append metadata and script links to head."""
@@ -642,6 +648,76 @@ class CanaParse:
             max-width: 300px;
         }
 
+        /* Responsive Table */
+        @media (max-width: 768px) {
+            body { padding: 1rem; }
+            .navbar {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1.5rem;
+                text-align: center;
+            }
+            .navbar-nav {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            h3 { font-size: 1.5rem; }
+            
+            .table-container {
+                padding: 0.5rem;
+                border: none;
+                background: transparent;
+                box-shadow: none;
+            }
+            
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+            
+            thead {
+                display: none;
+            }
+            
+            tr {
+                background: var(--card-bg);
+                backdrop-filter: blur(12px);
+                border: 1px solid var(--glass-border);
+                border-radius: 16px;
+                margin-bottom: 1.5rem;
+                padding: 1rem;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+            
+            td {
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                padding: 0.75rem 0.5rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                text-align: right;
+            }
+            
+            td:last-child {
+                border-bottom: none;
+            }
+            
+            td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--primary);
+                text-transform: uppercase;
+                font-size: 0.8rem;
+                letter-spacing: 0.05em;
+                margin-right: 1rem;
+                text-align: left;
+            }
+            
+            .info-cell {
+                max-width: 100%;
+                text-align: right;
+            }
+        }
+
         .footer {
             text-align: center;
             color: var(--text-muted);
@@ -699,7 +775,214 @@ class CanaParse:
 
         js_code = """
         $(document).ready(function() {
-            // Setup sorting indicators on headers
+            var sections = {};
+            var activeFilters = {};
+            var activeSort = {};
+            var pageSize = 50;
+            var currentPages = {};
+
+            // Parse data from script tags
+            $('script[id^="data-"]').each(function() {
+                var id = $(this).attr('id').replace('data-', '');
+                try {
+                    sections[id] = JSON.parse($(this).html());
+                    currentPages[id] = 1;
+                    activeFilters[id] = "";
+                    activeSort[id] = { index: null, order: 'asc' };
+                } catch(e) {
+                    console.error("Failed to parse data for section " + id, e);
+                }
+            });
+
+            // Currency formatter
+            function asCurrency(val) {
+                if (val === null || val === undefined || isNaN(val)) return "-";
+                return "$" + parseFloat(val).toFixed(2);
+            }
+
+            // Percentage formatter
+            function asPercentage(val) {
+                if (!val) return "-";
+                return parseFloat(val).toFixed(2) + "%";
+            }
+
+            // Render a single row
+            function buildRow(item) {
+                var tr = $('<tr></tr>');
+                
+                // Price
+                var priceTag = $('<div class="price-tag"></div>').text(asCurrency(item.price));
+                tr.append($('<td data-label="Price"></td>').append(priceTag));
+                
+                // Image
+                var imgTd = $('<td class="thumb" data-label="Image"></td>');
+                if (item.img_url && item.img_url !== "None" && item.img_url !== "nan") {
+                    var a = $('<a data-fancybox="gallery"></a>').attr('href', item.img_url);
+                    var img = $('<img class="img-thumbnail">')
+                        .attr('src', item.img_url)
+                        .on('error', function() { this.src = "https://images.weedmaps.com/static/avatar/dispensary.png"; });
+                    imgTd.append(a.append(img));
+                } else {
+                    imgTd.text("-");
+                }
+                tr.append(imgTd);
+                
+                // Product Name & Brand
+                var prodTd = $('<td data-label="Product"></td>');
+                var prodLink = $('<a target="_blank" style="font-weight: 600; display: block; margin-bottom: 4px;"></a>')
+                    .attr('href', item.url || '#').text(item.name || 'N/A');
+                prodTd.append(prodLink);
+                if (item.brand) {
+                    var brandSpan = $('<span style="font-size: 0.8rem; color: var(--text-muted);"></span>').text(item.brand);
+                    prodTd.append(brandSpan);
+                }
+                tr.append(prodTd);
+                
+                // Category
+                var catSpan = $('<span style="background: rgba(0, 212, 255, 0.1); color: var(--secondary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;"></span>').text(item.category);
+                tr.append($('<td data-label="Category"></td>').append(catSpan));
+                
+                // THC
+                tr.append($('<td data-label="THC"></td>').text(asPercentage(item.thc)));
+                
+                // CBD
+                if (item.cbd !== undefined && item.cbd !== null) {
+                    tr.append($('<td data-label="CBD"></td>').text(asPercentage(item.cbd)));
+                }
+                
+                // Dispensary
+                tr.append($('<td data-label="Dispensary"></td>').text(item.dispensary || "N/A"));
+                
+                // City
+                tr.append($('<td data-label="City"></td>').text(item.city || "N/A"));
+                
+                // Details
+                var desc = item.desc || "";
+                if (desc.length > 100) desc = desc.substring(0, 100) + "...";
+                tr.append($('<td class="info-cell" data-label="Details"></td>').text(desc));
+                
+                return tr;
+            }
+
+            // Filter and Sort helper
+            function getProcessedData(sectionId) {
+                var data = sections[sectionId] || [];
+                
+                // Apply filter
+                var query = activeFilters[sectionId].toLowerCase();
+                if (query) {
+                    data = data.filter(function(item) {
+                        return (item.name && item.name.toLowerCase().indexOf(query) > -1) ||
+                               (item.brand && item.brand.toLowerCase().indexOf(query) > -1) ||
+                               (item.category && item.category.toLowerCase().indexOf(query) > -1) ||
+                               (item.dispensary && item.dispensary.toLowerCase().indexOf(query) > -1) ||
+                               (item.city && item.city.toLowerCase().indexOf(query) > -1) ||
+                               (item.desc && item.desc.toLowerCase().indexOf(query) > -1);
+                    });
+                }
+                
+                // Apply sort
+                var sort = activeSort[sectionId];
+                if (sort && sort.index !== null) {
+                    data.sort(function(a, b) {
+                        var valA = getSortValue(a, sort.index);
+                        var valB = getSortValue(b, sort.index);
+                        if (typeof valA === 'number' && typeof valB === 'number') {
+                            return sort.order === 'asc' ? valA - valB : valB - valA;
+                        }
+                        return sort.order === 'asc' ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
+                    });
+                }
+                
+                return data;
+            }
+
+            function getSortValue(item, headerIndex) {
+                var hasCbd = item.cbd !== undefined && item.cbd !== null;
+                var mapping = [];
+                if (hasCbd) {
+                    mapping = ['price', null, 'name', 'category', 'thc', 'cbd', 'dispensary', 'city', 'desc'];
+                } else {
+                    mapping = ['price', null, 'name', 'category', 'thc', 'dispensary', 'city', 'desc'];
+                }
+                var prop = mapping[headerIndex];
+                if (!prop) return "";
+                var val = item[prop];
+                if (prop === 'price' || prop === 'thc' || prop === 'cbd') {
+                    return parseFloat(val) || 0;
+                }
+                return val ? val.toLowerCase() : "";
+            }
+
+            // Render table content for a section
+            function renderSection(id) {
+                var container = $(document.getElementById(id));
+                var tbody = container.find('tbody');
+                tbody.empty();
+                
+                var data = getProcessedData(id);
+                
+                // Update badge
+                container.find('h3 .badge').text(data.length);
+                
+                var totalRows = data.length;
+                
+                // Handle empty state
+                if (totalRows === 0) {
+                    container.find('.table-container').hide();
+                    if (container.find('.no-match-msg').length === 0) {
+                        container.append('<p class="no-match-msg" style="color: var(--text-muted); padding: 1rem;">No matching items found in this section.</p>');
+                    } else {
+                        container.find('.no-match-msg').show();
+                    }
+                    container.find('.pagination-controls').remove();
+                    return;
+                }
+                
+                container.find('.table-container').show();
+                container.find('.no-match-msg').hide();
+                
+                // Paginate
+                var page = currentPages[id] || 1;
+                var totalPages = Math.ceil(totalRows / pageSize);
+                if (page > totalPages) page = totalPages || 1;
+                currentPages[id] = page;
+                
+                var start = (page - 1) * pageSize;
+                var end = start + pageSize;
+                var pageData = data.slice(start, end);
+                
+                // Render rows
+                $.each(pageData, function(idx, item) {
+                    tbody.append(buildRow(item));
+                });
+                
+                // Render pagination controls
+                container.find('.pagination-controls').remove();
+                if (totalRows > pageSize) {
+                    var controls = $('<div class="pagination-controls" style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border);"></div>');
+                    var prevBtn = $('<button class="btn btn-secondary" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Previous</button>');
+                    var nextBtn = $('<button class="btn btn-secondary" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Next</button>');
+                    var info = $('<span style="color: var(--text-muted); font-size: 0.9rem;">Showing ' + (start + 1) + '-' + Math.min(end, totalRows) + ' of ' + totalRows + '</span>');
+                    
+                    if (page === 1) prevBtn.prop('disabled', true).css('opacity', 0.5);
+                    if (page === totalPages) nextBtn.prop('disabled', true).css('opacity', 0.5);
+                    
+                    prevBtn.on('click', function() {
+                        currentPages[id]--;
+                        renderSection(id);
+                    });
+                    nextBtn.on('click', function() {
+                        currentPages[id]++;
+                        renderSection(id);
+                    });
+                    
+                    controls.append(prevBtn).append(info).append(nextBtn);
+                    container.find('.table-container').after(controls);
+                }
+            }
+
+            // Setup sorting indicators and events
             $('th').each(function() {
                 var text = $(this).text().trim();
                 if (text && text !== 'IMAGE' && text !== 'DETAILS') {
@@ -707,89 +990,44 @@ class CanaParse:
                 }
             });
 
-            // Handle sorting on click
             $('th').on('click', function() {
                 var text = $(this).text().trim();
                 if (text === 'IMAGE' || text === 'DETAILS') return;
                 
                 var table = $(this).closest('table');
-                var tbody = table.find('tbody');
-                var rows = tbody.find('tr').toArray();
+                var sectionId = $(this).closest('div[id]').attr('id');
                 var index = $(this).index();
-                var isAscending = $(this).data('order') === 'asc';
                 
-                isAscending = !isAscending;
-                $(this).data('order', isAscending ? 'asc' : 'desc');
+                var sort = activeSort[sectionId];
+                var order = 'asc';
+                if (sort.index === index) {
+                    order = sort.order === 'asc' ? 'desc' : 'asc';
+                }
                 
-                // Reset other icons in the same table
+                activeSort[sectionId] = { index: index, order: order };
+                
+                // Update icons in table headers
                 table.find('th .sort-icon').html('↕').css('color', 'var(--text-muted)');
-                $(this).find('.sort-icon').html(isAscending ? '▲' : '▼').css('color', 'var(--primary)');
+                $(this).find('.sort-icon').html(order === 'asc' ? '▲' : '▼').css('color', 'var(--primary)');
                 
-                var getCellValue = function(row, index) {
-                    var cell = $(row).children('td').eq(index);
-                    var text = cell.text().trim();
-                    if (cell.find('.price-tag').length || text.startsWith('$')) {
-                        return parseFloat(text.replace(/[^0-9.]/g, '')) || 0;
-                    }
-                    if (text.endsWith('%')) {
-                        return parseFloat(text.replace(/[^0-9.]/g, '')) || 0;
-                    }
-                    return text.toLowerCase();
-                };
-                
-                rows.sort(function(a, b) {
-                    var valA = getCellValue(a, index);
-                    var valB = getCellValue(b, index);
-                    if (typeof valA === 'number' && typeof valB === 'number') {
-                        return isAscending ? valA - valB : valB - valA;
-                    }
-                    return isAscending ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
-                });
-                
-                $.each(rows, function(idx, row) {
-                    tbody.append(row);
+                // Reset page to 1 on sort change
+                currentPages[sectionId] = 1;
+                renderSection(sectionId);
+            });
+
+            // Global search
+            $('#global-search').on('keyup', function() {
+                var val = $(this).val();
+                $.each(sections, function(id, data) {
+                    activeFilters[id] = val;
+                    currentPages[id] = 1; // Reset to page 1
+                    renderSection(id);
                 });
             });
 
-            // Global search filtering
-            $('#global-search').on('keyup', function() {
-                var value = $(this).val().toLowerCase();
-                
-                // Filter rows across all tables
-                $('table tbody tr').each(function() {
-                    var match = $(this).text().toLowerCase().indexOf(value) > -1;
-                    $(this).toggle(match);
-                });
-                
-                // Hide or show table containers and headers based on visibility of rows
-                $('.table-container').each(function() {
-                    var hasVisibleRows = $(this).find('tbody tr:visible').length > 0;
-                    var section = $(this).closest('div[id]');
-                    var badge = section.find('h3 .badge');
-                    
-                    if (badge.length) {
-                        badge.text($(this).find('tbody tr:visible').length);
-                    }
-                    
-                    if (hasVisibleRows) {
-                        $(this).show();
-                        section.find('h3').show();
-                        section.find('.no-match-msg').hide();
-                    } else {
-                        $(this).hide();
-                        section.find('h3').hide();
-                        if (value !== '') {
-                            // If no matching rows, show empty state message for this section
-                            if (section.find('.no-match-msg').length === 0) {
-                                section.append('<p class="no-match-msg" style="color: var(--text-muted); padding: 1rem;">No matching items found in this section.</p>');
-                            } else {
-                                section.find('.no-match-msg').show();
-                            }
-                        } else {
-                            section.find('.no-match-msg').hide();
-                        }
-                    }
-                });
+            // Initial render of all sections
+            $.each(sections, function(id, data) {
+                renderSection(id);
             });
         });
         """
@@ -831,6 +1069,78 @@ class CanaParse:
                     text("No results found for this filter.")
                 return
 
+            # Write data to a script block for performant client-side rendering
+            img_idx = self.header_map.get('avatar_image.original_url', -1)
+            name_idx = self.header_map.get('name', -1)
+            brand_idx = self.header_map.get('brand_endorsement.brand_name', -1)
+            slug_idx = self.header_map.get('slug', -1)
+            cat_idx = self.header_map.get('category.name', -1)
+            loc_idx = self.header_map.get('locations_found_at', -1)
+            desc_idx = self.header_map.get('catalog_slug', -1)
+            price_col = f.key
+
+            serialized_rows = []
+            for row in results:
+                img_url = str(row[img_idx]) if img_idx >= 0 and img_idx < len(row) else ""
+                prod_name = str(row[name_idx]) if name_idx >= 0 and name_idx < len(row) else "N/A"
+                brand_name = str(row[brand_idx]) if brand_idx >= 0 and brand_idx < len(row) else ""
+                slug_val = str(row[slug_idx]) if slug_idx >= 0 and slug_idx < len(row) else ""
+                category_name = str(row[cat_idx]) if cat_idx >= 0 and cat_idx < len(row) else ""
+                p_val = self.get_price_by_key(row, price_col)
+                thc_val = self.extract_thc(row)
+                cbd_val = self.extract_cbd(row) if f.cbd_floor > 0 else None
+                
+                loc_id = str(row[0]) if len(row) > 0 else ""
+                store_info = self.listings_map.get(loc_id, {})
+                dispensary_name = store_info.get('name', "") if isinstance(store_info, dict) else store_info
+                if not dispensary_name:
+                    if loc_idx >= 0 and len(row) > loc_idx:
+                        loc_val = row[loc_idx]
+                        if '/' in loc_val:
+                            dispensary_name = loc_val.split('/')[-1].replace('"', '').replace(']', '').replace('-', ' ').title()
+                
+                store_city = store_info.get('city', "") if isinstance(store_info, dict) else ""
+                
+                desc = self.clean_html(row[desc_idx]) if desc_idx >= 0 and desc_idx < len(row) else ""
+                if desc == "None" or desc == "nan":
+                    desc = ""
+                
+                loc_val = ""
+                if loc_idx >= 0 and loc_idx < len(row):
+                    loc_raw = str(row[loc_idx])
+                    if '[' in loc_raw:
+                        try:
+                            loc_list = json.loads(loc_raw)
+                            if loc_list:
+                                loc_val = str(loc_list[0])
+                        except Exception:
+                            loc_val = loc_raw.replace('[', '').replace(']', '').replace('"', '').replace("'", "").strip()
+                    else:
+                        loc_val = loc_raw.strip()
+
+                if loc_val and slug_val:
+                    loc_val_clean = loc_val.rstrip('/')
+                    url = f"https://weedmaps.com{loc_val_clean}/menu/{slug_val}"
+                else:
+                    url = "#"
+
+                serialized_rows.append({
+                    'price': p_val,
+                    'img_url': img_url,
+                    'name': prod_name,
+                    'brand': brand_name,
+                    'category': category_name,
+                    'thc': thc_val,
+                    'cbd': cbd_val,
+                    'dispensary': dispensary_name,
+                    'city': store_city,
+                    'desc': desc,
+                    'url': url
+                })
+
+            with tag('script', id=f"data-{section_id}", type="application/json"):
+                doc.asis(json.dumps(serialized_rows))
+
             with tag('div', klass='table-container'):
                 with tag('table'):
                     with tag('thead'):
@@ -847,8 +1157,7 @@ class CanaParse:
                                     text(label)
 
                     with tag('tbody'):
-                        for row in results:
-                            self._generate_row(doc, tag, text, row, f)
+                        pass
 
     def _generate_row(self, doc, tag, text, row, f):
         """Generate a single table row."""

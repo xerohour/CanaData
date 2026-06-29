@@ -170,20 +170,28 @@ def generate_html_report(data, region_name="Colorado"):
 
     .data-table tr {
         border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        display: flex; /* ponytail: flex display for rows to allow wrap */
+        justify-content: space-between;
+        padding: 0.75rem 0;
     }
 
     .data-table td {
-        padding: 0.75rem 0;
+        padding: 0;
     }
 
     .label {
         color: var(--text-muted);
-        width: 140px;
+        flex-shrink: 0;
+        margin-right: 1rem;
+        text-align: left;
     }
 
     .value {
         font-weight: 500;
         text-align: right;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        flex: 1; /* ponytail: allow value to take remaining space and wrap */
     }
 
     .promo-section {
