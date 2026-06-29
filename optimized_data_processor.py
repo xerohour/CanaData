@@ -44,12 +44,12 @@ class OptimizedDataProcessor:
         Flatten all menu items using pandas json_normalize for efficiency.
         """
         # Collect all items with location info
-        items_with_location = []
-        for location_id, items in all_menu_items.items():
-            for item in items:
-                item_copy = item.copy()
-                item_copy['_location_id'] = location_id
-                items_with_location.append(item_copy)
+        # OPTIMIZATION: List comprehension is significantly faster than nested loops with .append() and .copy()
+        items_with_location = [
+            {**item, '_location_id': location_id}
+            for location_id, items in all_menu_items.items()
+            for item in items
+        ]
         
         if not items_with_location:
             return pd.DataFrame()
@@ -74,16 +74,22 @@ class OptimizedDataProcessor:
         nested_columns = []
         for col in df.columns:
             # Check if any value in column is a dict or list
-            sample_values = df[col].dropna().head(10)
-            if len(sample_values) > 0:
-                if isinstance(sample_values.iloc[0], (dict, list)):
-                    nested_columns.append(col)
+            # OPTIMIZATION: Avoid O(N) dropna(). Check dtype and use first_valid_index for O(1) check
+            if df[col].dtype == 'object':
+                first_idx = df[col].first_valid_index()
+                if first_idx is not None:
+                    val = df[col].loc[first_idx]
+                    if isinstance(val, pd.Series):
+                        val = val.dropna().iloc[0]
+                    if isinstance(val, (dict, list)):
+                        nested_columns.append(col)
         
         # Flatten nested columns
         for col in nested_columns:
             try:
                 # Convert to string representation for nested data
-                df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (dict, list)) else str(x))
+                # OPTIMIZATION: List comprehension executes significantly faster than .apply(lambda) for object columns
+                df[col] = [json.dumps(x) if isinstance(x, (dict, list)) else str(x) for x in df[col]]
             except Exception as e:
                 logger.warning(f"Failed to flatten column {col}: {e}")
                 df[col] = df[col].astype(str)
