@@ -108,10 +108,6 @@ For detailed usage guides, code examples, and advanced configuration, please see
   - [Colorado All Report (June 28, 2026) (Large File)](./CanaData_06-28-2026/colorado_report_all.html)
   - [Latest Generated Report Dashboard](./output/index.html)
 
-### 🙏 Support the Project
-Please consider donating if you enjoy!
-[https://commerce.coinbase.com/checkout/820e33e8-b652-408f-8f33-713af2ff7732](https://commerce.coinbase.com/checkout/820e33e8-b652-408f-8f33-713af2ff7732)
-
 
 ## Security & Caching
 - **Safe Serialization**: Multi-tier cache uses JSON serialization (rather than insecure pickle) to prevent arbitrary code execution vulnerabilities.
