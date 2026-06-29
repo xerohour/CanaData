@@ -1,0 +1,2 @@
+CanaData_06-28-2026/colorado_report_all.html filter=lfs diff=lfs merge=lfs -text
+CanaData_06-28-2026/colorado_results.csv filter=lfs diff=lfs merge=lfs -text
