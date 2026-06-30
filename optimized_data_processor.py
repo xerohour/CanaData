@@ -74,16 +74,20 @@ class OptimizedDataProcessor:
         nested_columns = []
         for col in df.columns:
             # Check if any value in column is a dict or list
-            sample_values = df[col].dropna().head(10)
-            if len(sample_values) > 0:
-                if isinstance(sample_values.iloc[0], (dict, list)):
-                    nested_columns.append(col)
+            if df[col].dtype == 'object':
+                first_idx = df[col].first_valid_index()
+                if first_idx is not None:
+                    val = df[col].loc[first_idx]
+                    if isinstance(val, pd.Series):
+                        val = val.dropna().iloc[0]
+                    if isinstance(val, (dict, list)):
+                        nested_columns.append(col)
         
         # Flatten nested columns
         for col in nested_columns:
             try:
                 # Convert to string representation for nested data
-                df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (dict, list)) else str(x))
+                df[col] = [json.dumps(x) if isinstance(x, (dict, list)) else str(x) for x in df[col]]
             except Exception as e:
                 logger.warning(f"Failed to flatten column {col}: {e}")
                 df[col] = df[col].astype(str)
