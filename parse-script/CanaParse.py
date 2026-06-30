@@ -447,7 +447,7 @@ class CanaParse:
                     self._generate_navbar(doc, tag, text)
                     # Global Search Bar
                     with tag('div', klass="search-container"):
-                        doc.stag('input', type="text", id="global-search", 
+                        doc.stag('input', ('aria-label', 'Search products, brands, categories, or dispensaries'), type="text", id="global-search",
                                  placeholder="🔍 Search products, brands, categories, or dispensaries...", 
                                  klass="search-input")
                     for i, f in enumerate(self.filters):
@@ -817,9 +817,10 @@ class CanaParse:
                 // Image
                 var imgTd = $('<td class="thumb" data-label="Image"></td>');
                 if (item.img_url && item.img_url !== "None" && item.img_url !== "nan") {
-                    var a = $('<a data-fancybox="gallery"></a>').attr('href', item.img_url);
+                    var a = $('<a data-fancybox="gallery"></a>').attr('href', item.img_url).attr('aria-label', "View full image of " + (item.name || 'product'));
                     var img = $('<img class="img-thumbnail">')
                         .attr('src', item.img_url)
+                        .attr('alt', item.name || 'product')
                         .on('error', function() { this.src = "https://images.weedmaps.com/static/avatar/dispensary.png"; });
                     imgTd.append(a.append(img));
                 } else {
@@ -1210,8 +1211,8 @@ class CanaParse:
             # Image
             with tag('td', klass="thumb"):
                 if img_url and img_url != "None" and img_url != "nan":
-                    with tag('a', ('data-fancybox', 'gallery'), href=img_url):
-                        doc.stag('img', src=img_url, klass="img-thumbnail",
+                    with tag('a', ('data-fancybox', 'gallery'), ('aria-label', f"View full image of {prod_name}"), href=img_url):
+                        doc.stag('img', src=img_url, alt=prod_name, klass="img-thumbnail",
                                  onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';")
                 else:
                     text("-")
