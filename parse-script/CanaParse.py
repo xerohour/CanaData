@@ -591,6 +591,13 @@ class CanaParse:
             letter-spacing: 0.05em;
             font-size: 0.85rem;
             white-space: nowrap;
+            transition: outline 0.2s;
+        }
+
+        th[role="button"]:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: -2px;
+            border-radius: 4px;
         }
         
         td {
@@ -960,12 +967,12 @@ class CanaParse:
                 container.find('.pagination-controls').remove();
                 if (totalRows > pageSize) {
                     var controls = $('<div class="pagination-controls" style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border);"></div>');
-                    var prevBtn = $('<button class="btn btn-secondary" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Previous</button>');
-                    var nextBtn = $('<button class="btn btn-secondary" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Next</button>');
+                    var prevBtn = $('<button aria-label="Previous Page" class="btn btn-secondary" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Previous</button>');
+                    var nextBtn = $('<button aria-label="Next Page" class="btn btn-secondary" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Next</button>');
                     var info = $('<span style="color: var(--text-muted); font-size: 0.9rem;">Showing ' + (start + 1) + '-' + Math.min(end, totalRows) + ' of ' + totalRows + '</span>');
                     
-                    if (page === 1) prevBtn.prop('disabled', true).css('opacity', 0.5);
-                    if (page === totalPages) nextBtn.prop('disabled', true).css('opacity', 0.5);
+                    if (page === 1) prevBtn.prop('disabled', true).attr('aria-disabled', 'true').css('opacity', 0.5);
+                    if (page === totalPages) nextBtn.prop('disabled', true).attr('aria-disabled', 'true').css('opacity', 0.5);
                     
                     prevBtn.on('click', function() {
                         currentPages[id]--;
@@ -985,11 +992,17 @@ class CanaParse:
             $('th').each(function() {
                 var text = $(this).text().trim();
                 if (text && text !== 'IMAGE' && text !== 'DETAILS') {
-                    $(this).css('cursor', 'pointer').append(' <span class="sort-icon" style="color: var(--text-muted); font-size: 0.8rem; margin-left: 4px;">↕</span>');
+                    $(this).css('cursor', 'pointer')
+                           .attr('tabindex', '0')
+                           .attr('role', 'button')
+                           .attr('aria-label', 'Sort by ' + text)
+                           .append(' <span class="sort-icon" style="color: var(--text-muted); font-size: 0.8rem; margin-left: 4px;">↕</span>');
                 }
             });
 
-            $('th').on('click', function() {
+            $('th').on('click keydown', function(e) {
+                if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+                if (e.type === 'keydown') e.preventDefault();
                 var text = $(this).text().trim();
                 if (text === 'IMAGE' || text === 'DETAILS') return;
                 

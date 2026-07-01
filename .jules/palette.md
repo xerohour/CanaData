@@ -1,0 +1,3 @@
+## 2026-07-01 - Keyboard Accessibility in Interactive Data Tables
+**Learning:** The custom-built sortable data tables in CanaParse heavily relied on JavaScript `click` listeners on `<th>` elements and visual pointer cursors, completely omitting `tabindex`, `role="button"`, and keyboard support (`keydown`). Screen readers could not identify the headers as interactive sort controls.
+**Action:** When implementing custom sortable tables with jQuery/JS, explicitly add `tabindex="0"`, `role="button"`, `aria-label`, and `keydown` event listeners mapped to 'Enter' and 'Space' to ensure full keyboard and screen reader accessibility. Added explicit `:focus-visible` styles to provide visual feedback for keyboard navigation.
