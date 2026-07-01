@@ -273,7 +273,7 @@ class CanaParse:
                         label = str(item.get('label', '')).lower()
                         units = str(item.get('units', '')).lower()
                         # If label matches any search label
-                        if any(l in label or l in units for l in search_labels):
+                        if any(search_lbl in label or search_lbl in units for search_lbl in search_labels):
                             p = item.get('price')
                             if p is not None:
                                 return float(p)
@@ -290,7 +290,7 @@ class CanaParse:
                     for item in price_list:
                         label = str(item.get('label', '')).lower()
                         units = str(item.get('units', '')).lower()
-                        if any(l in label or l in units for l in search_labels):
+                        if any(search_lbl in label or search_lbl in units for search_lbl in search_labels):
                             p = item.get('price')
                             if p is not None:
                                 return float(p)
