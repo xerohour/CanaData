@@ -191,6 +191,11 @@
             margin-top: auto;
         }
 
+        *:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 4px;
+        }
+
         @media (max-width: 768px) {
             h1 { font-size: 2.5rem; }
             .card-grid { grid-template-columns: 1fr; }
@@ -207,7 +212,7 @@
         <div class="card-grid">
             <!-- Card 1: Dashboard -->
             <div class="portal-card">
-                <div class="icon">📊</div>
+                <div class="icon" aria-hidden="true">📊</div>
                 <h2>Interactive Dashboard</h2>
                 <p class="card-desc">Modern glassmorphism interface featuring search, pagination, and multi-filter navigation for Colorado cannabis products.</p>
                 <a href="./output/index.html" class="btn btn-primary">Open Dashboard</a>
@@ -215,7 +220,7 @@
 
             <!-- Card 2: Filtered Report -->
             <div class="portal-card">
-                <div class="icon">🔍</div>
+                <div class="icon" aria-hidden="true">🔍</div>
                 <h2>Filtered Report</h2>
                 <p class="card-desc">June 28, 2026 snapshot containing custom-filtered high THC, vape pens, ounces, and select strain menu listings.</p>
                 <a href="./CanaData_06-28-2026/colorado_report_filtered.html" class="btn btn-secondary">View Filtered Report</a>
@@ -223,7 +228,7 @@
 
             <!-- Card 3: All Report -->
             <div class="portal-card">
-                <div class="icon">🗄️</div>
+                <div class="icon" aria-hidden="true">🗄️</div>
                 <h2>All Report</h2>
                 <p class="card-desc">Full June 28, 2026 dump containing all scraped listings and products for the Colorado region.</p>
                 <a href="./CanaData_06-28-2026/colorado_report_all.html" class="btn btn-secondary">View All Report</a>
