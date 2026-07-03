@@ -27,14 +27,26 @@ class OptimizedDataProcessor:
         """
         logger.info("Starting optimized data processing...")
         
-        # Convert to DataFrame for batch processing
-        flat_items = self._flatten_all_items(all_menu_items)
+        items_with_location = [
+            {**item, '_location_id': location_id}
+            for location_id, items in all_menu_items.items()
+            for item in items
+        ]
         
-        # Normalize and clean data
-        normalized_data = self._normalize_data(flat_items)
+        if not items_with_location:
+            return []
+
+        flat_items = [self._flatten_dictionary_custom(item) for item in items_with_location]
+
+        all_keys = set()
+        for item in flat_items:
+            all_keys.update(item.keys())
+
+        template = dict.fromkeys(sorted(all_keys), None)
         
-        # Convert back to list of dictionaries
-        result = normalized_data.to_dict('records')
+        result = [{**template, **item} for item in flat_items]
+
+        result = self._normalize_data(result)
         
         logger.info(f"Processed {len(result)} menu items")
         return result
@@ -177,25 +189,27 @@ class OptimizedDataProcessor:
         
         return result
     
-    def _normalize_data(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _normalize_data(self, result: List[Dict]) -> List[Dict]:
         """
-        Normalize and clean the flattened data.
+        Normalize and clean the flattened data purely in python.
         """
-        if df.empty:
-            return df
+        if not result:
+            return result
         
-        # Ensure all columns are present and fill missing values
-        df = df.fillna('None')
+        keys = list(result[0].keys())
+        numeric_cols = [k for k in keys if 'price' in k.lower() or 'amount' in k.lower() or 'thc' in k.lower()]
         
-        # Convert data types where possible
-        for col in df.columns:
-            # Try to convert to numeric where possible
-            if 'price' in col.lower() or 'amount' in col.lower() or 'thc' in col.lower():
-                original_col = df[col]
-                numeric_col = pd.to_numeric(original_col, errors='coerce')
-                df[col] = numeric_col.where(numeric_col.notna(), original_col)
-        
-        # Sort columns for consistency
-        df = df.reindex(sorted(df.columns), axis=1)
-        
-        return df
+        for item in result:
+            for k in keys:
+                if item.get(k) is None:
+                    item[k] = 'None'
+
+            for col in numeric_cols:
+                val = item.get(col)
+                if val != 'None' and val is not None:
+                    try:
+                        item[col] = float(val) if '.' in str(val) else int(val)
+                    except ValueError:
+                        pass
+
+        return result

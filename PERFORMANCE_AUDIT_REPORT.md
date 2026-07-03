@@ -51,3 +51,12 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 
 **Actionable Optimization:**
 - To support elastic scaling, the system must be refactored to use stateless worker nodes and a message queue (e.g., RabbitMQ or Redis) for asynchronous data aggregation, entirely removing the global thread lock.
+
+## 7. DataFrame to Pure Python Refactoring
+**Findings:**
+- The `OptimizedDataProcessor` previously used Pandas `json_normalize` and `DataFrame` operations which caused heavy initialization overhead.
+- Benchmarking demonstrated that pure Python list comprehensions and dictionary unpacking outperformed Pandas operations for this specific use case by roughly 4x.
+
+**Optimizations:**
+- Removed Pandas dependency from the core flattening path.
+- Used `_flatten_dictionary_custom` with pure Python list comprehensions to build the flat datasets and used dictionary unpacking `{**template, **item}` to normalize keys efficiently.
