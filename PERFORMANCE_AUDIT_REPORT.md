@@ -51,3 +51,13 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 
 **Actionable Optimization:**
 - To support elastic scaling, the system must be refactored to use stateless worker nodes and a message queue (e.g., RabbitMQ or Redis) for asynchronous data aggregation, entirely removing the global thread lock.
+
+## 7. Deep Testing & System Stress Testing
+
+**Findings:**
+- A new stress test (`performance_tests/test_system_stress.py`) was implemented to test high-concurrency rate limiting using `ConcurrentMenuProcessor`.
+- The test demonstrates that while `ConcurrentMenuProcessor` effectively manages API rate limits locally via `self.request_lock`, this lock introduces significant local contention when worker count scales up.
+- In a horizontally distributed environment, local rate limiting is insufficient as multiple nodes will independently hit the API, potentially exceeding global rate limits.
+
+**Actionable Optimization:**
+- Migrate rate limiting from a local thread lock to a distributed locking mechanism (e.g., Redis rate limiting) to ensure API limits are respected globally across all worker nodes.
