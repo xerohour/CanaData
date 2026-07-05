@@ -7,3 +7,6 @@
 ## 2026-06-30 - Optimized pandas column evaluation
 **Learning:** Using `df[col].dropna()` in pandas has O(N) memory overhead and is slow for large DataFrames.
 **Action:** Use `df[col].first_valid_index()` along with checking for duplicate indices to securely extract the first scalar value without allocating a full Series copy. Use list comprehensions over `.apply` for complex row operations.
+## 2026-06-30 - Pure Python Normalization Replaces Pandas
+**Learning:** `pandas.json_normalize()` and DataFrame operations are significantly slower than pure Python list comprehensions and dictionary unpacking for flatting/normalizing our data.
+**Action:** Use native python structures over Pandas for pure normalization workflows.

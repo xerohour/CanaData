@@ -12,11 +12,12 @@ def test_large_nesting_performance(benchmark):
         data = json.load(f)
 
     processor = OptimizedDataProcessor()
-    df = pd.json_normalize(data.get('data', {}).get('products', []))
-    df = pd.concat([df] * 50, ignore_index=True)
+    items = data.get('data', {}).get('products', [])
+    items_large = items * 50
+    mock_all_menu_items = {'test_loc': items_large}
 
     def process_data():
-        return processor._handle_remaining_nesting(df.copy())
+        return processor.process_menu_data(mock_all_menu_items)
 
     result = benchmark(process_data)
     assert len(result) > 0
