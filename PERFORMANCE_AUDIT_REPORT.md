@@ -51,3 +51,9 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 
 **Actionable Optimization:**
 - To support elastic scaling, the system must be refactored to use stateless worker nodes and a message queue (e.g., RabbitMQ or Redis) for asynchronous data aggregation, entirely removing the global thread lock.
+
+## 7. Advanced Concurrency and Failure Resilience Audits
+Building on previous benchmarking efforts, a new test suite (`performance_tests/test_audit_scalability.py`) was introduced to simulate extreme localized load (50 threads processing 200 iterations each, totaling 10,000 operations).
+- **Global Lock Contention Latency**: When pushed to 50 concurrent threads, average latency due to `_menu_data_lock` blocking increased substantially to ~1.7 seconds, confirming the severe bottleneck and inability to utilize multiple cores.
+- **Concurrent Processor Contention**: Benchmarking `ConcurrentMenuProcessor` with mock HTTP latency confirmed `self.request_lock` creates artificial synchronous stalling, limiting true asynchronous network I/O.
+- **Failure Resilience**: New failure injection tests validated that network crashes inside concurrent threads are effectively captured and segregated into `self.errors` without halting the orchestration loop, indicating robust localized failure domains.
