@@ -317,7 +317,7 @@ def generate_html_report(data, region_name="Colorado"):
         <div class="container" id="main-content">
             <header>
                 <h1>{html.escape(str(region_name))} Discovery</h1>
-                <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
+                <p class="meta-summary">Found {html.escape(str(total_listings))} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
             </header>
 
             <div class="listing-grid">
