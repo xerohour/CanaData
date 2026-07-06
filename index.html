@@ -191,6 +191,30 @@
             margin-top: auto;
         }
 
+        /* Accessibility Improvements */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary);
+            color: var(--bg);
+            padding: 8px;
+            z-index: 100;
+            transition: top 0.3s;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 0 0 8px 0;
+        }
+
+        .skip-link:focus {
+            top: 0;
+        }
+
+        *:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 4px;
+        }
+
         @media (max-width: 768px) {
             h1 { font-size: 2.5rem; }
             .card-grid { grid-template-columns: 1fr; }
@@ -198,7 +222,8 @@
     </style>
 </head>
 <body>
-    <div class="portal-container">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <div class="portal-container" id="main-content">
         <header>
             <h1>CanaData Portal</h1>
             <p class="subtitle">Access responsive analytics and scraped reports for Weedmaps listings and menus.</p>
