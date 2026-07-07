@@ -959,9 +959,9 @@ class CanaParse:
                 // Render pagination controls
                 container.find('.pagination-controls').remove();
                 if (totalRows > pageSize) {
-                    var controls = $('<div class="pagination-controls" style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border);"></div>');
-                    var prevBtn = $('<button class="btn btn-secondary" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Previous</button>');
-                    var nextBtn = $('<button class="btn btn-secondary" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Next</button>');
+                    var controls = $('<div class="pagination-controls" aria-live="polite" style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border);"></div>');
+                    var prevBtn = $('<button aria-label="Previous page" class="btn btn-secondary" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Previous</button>');
+                    var nextBtn = $('<button aria-label="Next page" class="btn btn-secondary" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Next</button>');
                     var info = $('<span style="color: var(--text-muted); font-size: 0.9rem;">Showing ' + (start + 1) + '-' + Math.min(end, totalRows) + ' of ' + totalRows + '</span>');
                     
                     if (page === 1) prevBtn.prop('disabled', true).css('opacity', 0.5);
