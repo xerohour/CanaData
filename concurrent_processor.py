@@ -82,12 +82,16 @@ class ConcurrentMenuProcessor:
     
     def _wait_for_rate_limit(self):
         """Implement rate limiting between requests"""
+        sleep_time = 0
         with self.request_lock:
             current_time = time.time()
             time_since_last = current_time - self.last_request_time
             
             if time_since_last < self.rate_limit:
                 sleep_time = self.rate_limit - time_since_last
-                time.sleep(sleep_time)
-            
-            self.last_request_time = time.time()
+                self.last_request_time = current_time + sleep_time
+            else:
+                self.last_request_time = current_time
+
+        if sleep_time > 0:
+            time.sleep(sleep_time)
