@@ -51,3 +51,17 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 
 **Actionable Optimization:**
 - To support elastic scaling, the system must be refactored to use stateless worker nodes and a message queue (e.g., RabbitMQ or Redis) for asynchronous data aggregation, entirely removing the global thread lock.
+
+## 7. Deep Testing & Edge Cases
+**Findings:**
+- A new deep test (`performance_tests/test_system_failure_modes.py`) was introduced to monitor distributed system failure modes and concurrency edge cases, specifically utilizing `process_menu_items_json` to simulate real payload errors.
+- Deep testing correctly isolated partial failures within worker threads, guaranteeing state recovery without globally corrupting the `allMenuItems` hash map. The `_menu_data_lock` prevents structural hash map corruption, but blocks subsequent threads during recovery processing.
+
+## 8. Final Architecture Scalability & Profiling Analysis
+**Findings:**
+- `performance_tests/test_advanced_scalability.py` profiled actual processing load to benchmark scalability constraints without arbitrary delays.
+- True logic execution profiling via `cProfile` verified that high-throughput `process_menu_items_json` workloads strictly bottleneck at `with self._menu_data_lock:`.
+
+**Optimized Projection (Before vs After):**
+- **Before:** Scaling up workers beyond a single machine's core limits results in diminished returns and massive thread contention inside `CanaData._menu_data_lock`, halting throughput progression. The shared in-memory dictionary is inherently stateful and limits the architecture to vertical node scaling only.
+- **After:** Migrating `self.allMenuItems` from an internal dictionary to a distributed key-value store (e.g. Redis) or message-passing queues will eradicate the `_menu_data_lock` bottleneck entirely. This refactor projects an elastic architecture where nodes operate 100% statelessly, easily doubling or tripling throughput.

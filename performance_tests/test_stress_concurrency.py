@@ -16,12 +16,12 @@ from CanaData import CanaData  # noqa: E402
 
 def test_stress_locking():
     scraper = CanaData(interactive_mode=False)
-    scraper.allMenuItems = []
+    scraper.allMenuItems = {}
 
     def worker(i):
         for j in range(100):
             with scraper._menu_data_lock:
-                scraper.allMenuItems.append({'id': i * 100 + j})
+                scraper.allMenuItems[f"worker_{i}_{j}"] = [{'id': i * 100 + j}]
             time.sleep(0.001)
 
     threads = []
