@@ -51,3 +51,12 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 
 **Actionable Optimization:**
 - To support elastic scaling, the system must be refactored to use stateless worker nodes and a message queue (e.g., RabbitMQ or Redis) for asynchronous data aggregation, entirely removing the global thread lock.
+
+## 7. Rate Limiting Concurrency Fix (July 2026)
+
+**Findings:**
+- `ConcurrentMenuProcessor` held the `request_lock` during `time.sleep()` for rate limiting, forcing threads to block one another sequentially and neutralizing parallelization.
+- The stress benchmarks were updated to replace artificial `time.sleep()` calls with real invocations to `process_menu_items_json` to genuinely test lock contention.
+
+**Optimizations:**
+- Moved the `time.sleep()` operation outside the `request_lock` block while keeping the required logic for scheduling `last_request_time`. This perfectly staggers threads, allowing concurrent sleeping and executing rate limiting efficiently.

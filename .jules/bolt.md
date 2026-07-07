@@ -7,3 +7,6 @@
 ## 2026-06-30 - Optimized pandas column evaluation
 **Learning:** Using `df[col].dropna()` in pandas has O(N) memory overhead and is slow for large DataFrames.
 **Action:** Use `df[col].first_valid_index()` along with checking for duplicate indices to securely extract the first scalar value without allocating a full Series copy. Use list comprehensions over `.apply` for complex row operations.
+## 2026-07-07 - Artificial Delays and Rate Limit Sleep Blocking
+**Learning:** Benchmarks used `time.sleep()` which failed to provide genuine profiling of application logic. Furthermore, rate-limiting was executed synchronously inside a global lock, blocking concurrency during `time.sleep()`.
+**Action:** Always replace mock delays with genuine logic, and ensure `time.sleep()` operations are executed outside thread locks for effective parallelization.
