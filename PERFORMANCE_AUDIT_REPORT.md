@@ -51,3 +51,13 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 
 **Actionable Optimization:**
 - To support elastic scaling, the system must be refactored to use stateless worker nodes and a message queue (e.g., RabbitMQ or Redis) for asynchronous data aggregation, entirely removing the global thread lock.
+
+## 7. Genuine Logic Stress Testing
+
+**Findings:**
+- The stress tests were refactored to remove artificial delays (`time.sleep`) and use the actual application logic (`process_menu_json`).
+- Benchmarking reveals that the `_menu_data_lock` inside `process_menu_json` remains a massive bottleneck, severely restricting concurrency and causing thread contention.
+
+**Optimization Projections:**
+- **Before:** Global lock forces synchronous writing under high concurrency.
+- **After (Proposed Architecture):** Refactor to use a message queue and stateless worker nodes to eliminate the lock and enable elastic horizontal scaling.

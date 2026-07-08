@@ -8,13 +8,24 @@ from CanaData import CanaData
 
 def test_stress_locking():
     scraper = CanaData(interactive_mode=False)
-    scraper.allMenuItems = []
+    scraper.allMenuItems = {}
 
     def worker(i):
         for j in range(100):
-            with scraper._menu_data_lock:
-                scraper.allMenuItems.append({'id': i * 100 + j})
-            time.sleep(0.001)
+            mock_json = {
+                'listing': {
+                    'id': f'test_{i}_{j}',
+                    'slug': f'slug_{i}_{j}',
+                    '_type': 'dispensary',
+                    'wmid': 123
+                },
+                'categories': [
+                    {
+                        'items': [{'id': f'item_{i}_{j}'}]
+                    }
+                ]
+            }
+            scraper.process_menu_json(mock_json)
 
     threads = []
     start_time = time.time()
