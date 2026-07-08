@@ -27,14 +27,17 @@ class OptimizedDataProcessor:
         """
         logger.info("Starting optimized data processing...")
         
-        # Convert to DataFrame for batch processing
-        flat_items = self._flatten_all_items(all_menu_items)
+        flat_items = [self._flatten_dictionary_custom({**item, '_location_id': loc_id})
+                      for loc_id, items in all_menu_items.items()
+                      for item in items]
         
-        # Normalize and clean data
-        normalized_data = self._normalize_data(flat_items)
+        if not flat_items:
+            return []
+
+        all_keys = set().union(*(d.keys() for d in flat_items))
+        template_dict = dict.fromkeys(all_keys, None)
         
-        # Convert back to list of dictionaries
-        result = normalized_data.to_dict('records')
+        result = [{**template_dict, **item} for item in flat_items]
         
         logger.info(f"Processed {len(result)} menu items")
         return result
