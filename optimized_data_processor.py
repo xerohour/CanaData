@@ -25,17 +25,60 @@ class OptimizedDataProcessor:
         Returns:
             List of flattened dictionaries ready for CSV export
         """
-        logger.info("Starting optimized data processing...")
+        logger.info("Starting optimized data processing with pure python...")
         
-        # Convert to DataFrame for batch processing
-        flat_items = self._flatten_all_items(all_menu_items)
+        # Collect all items with location info using list comprehension
+        items_with_location = [
+            {**item, '_location_id': location_id}
+            for location_id, items in all_menu_items.items()
+            for item in items
+        ]
         
-        # Normalize and clean data
-        normalized_data = self._normalize_data(flat_items)
+        if not items_with_location:
+            return []
+
+        # Flatten items using custom dict flatten function
+        flattened_items = [self._flatten_dictionary_custom(item) for item in items_with_location]
+
+        # Custom pure python normalize
+        all_keys = set()
+        for item in flattened_items:
+            all_keys.update(item.keys())
+
+        sorted_keys = sorted(list(all_keys))
         
-        # Convert back to list of dictionaries
-        result = normalized_data.to_dict('records')
+        template = dict.fromkeys(sorted_keys, None)
         
+        result = []
+        for item in flattened_items:
+            new_item = {**template, **item}
+
+            # Replicate pandas fillna('None')
+            for k in sorted_keys:
+                if new_item[k] is None:
+                    new_item[k] = 'None'
+
+            # Replicate pandas numeric coercion more generically across matching columns
+            for k in sorted_keys:
+                if 'price' in k.lower() or 'amount' in k.lower() or 'thc' in k.lower():
+                    val = new_item[k]
+                    if val != 'None':
+                        try:
+                            # Try simple conversions first
+                            if isinstance(val, (int, float)):
+                                pass
+                            else:
+                                val_str = str(val).strip()
+                                # Handle negative numbers and decimals
+                                is_neg = val_str.startswith('-')
+                                check_str = val_str[1:] if is_neg else val_str
+                                if check_str.replace('.', '', 1).isdigit():
+                                    new_item[k] = float(val_str) if '.' in val_str else int(val_str)
+                        except (ValueError, TypeError):
+                            pass
+
+            result.append(new_item)
+
         logger.info(f"Processed {len(result)} menu items")
         return result
     
