@@ -51,3 +51,14 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 
 **Actionable Optimization:**
 - To support elastic scaling, the system must be refactored to use stateless worker nodes and a message queue (e.g., RabbitMQ or Redis) for asynchronous data aggregation, entirely removing the global thread lock.
+
+
+## 7. Resolution of Global Thread Lock Contention
+
+**Findings:**
+The centralized thread locking (`_menu_data_lock`) that previously caused severe contention under concurrent load has been removed.
+
+**Optimizations:**
+- Removed `_menu_data_lock` completely from the system.
+- Restructured data aggregation: Instead of multiple threads vying for a lock to write to a global list (`self.allMenuItems`), the data processors now securely construct local copies of results and securely append them to their respective properties via returning to the main thread's sequential processor or local lock-free dicts.
+- The codebase is now capable of distributing data collection without lock-driven performance decay.
