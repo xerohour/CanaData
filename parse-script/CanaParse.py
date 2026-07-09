@@ -441,7 +441,8 @@ class CanaParse:
             with tag('head'):
                 self._add_html_head(doc)
             with tag('body'):
-                with tag('div', klass="container-fluid main"):
+                doc.asis('<a href="#main-content" class="skip-link">Skip to main content</a>')
+                with tag('div', klass="container-fluid main", id="main-content", tabindex="-1"):
                     self._generate_navbar(doc, tag, text)
                     # Global Search Bar
                     with tag('div', klass="search-container"):
@@ -496,6 +497,30 @@ class CanaParse:
             color: var(--text);
             line-height: 1.6;
             padding: 2rem;
+        }
+
+        /* Accessibility Improvements */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary);
+            color: var(--bg);
+            padding: 8px;
+            z-index: 100;
+            transition: top 0.3s;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 0 0 8px 0;
+        }
+
+        .skip-link:focus {
+            top: 0;
+        }
+
+        *:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 4px;
         }
 
         /* Navbar / Header */
