@@ -42,12 +42,11 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 - **Latency:** Execution time dropped significantly (over 50% improvement in `first_valid_index` evaluation and ~6% in serialization).
 - **Throughput & Scalability:** Throughput scaled efficiently by avoiding O(N) memory allocation and copy overhead on wide DataFrames, improving large batch ingestion metrics.
 
-## 6. High-Concurrency Stress Testing (Distributed System Scalability)
+## 7. Deep Testing & Edge Cases (Concurrency & State Management)
 
 **Findings:**
-- A new stress test (`performance_tests/test_advanced_stress.py`) was implemented to test high-concurrency scenarios (25 threads, 3750 operations).
-- The `pytest-benchmark` results reveal severe lock contention on `CanaData._menu_data_lock`. The lock forces sequential processing, completely negating any benefits of multithreading when workers attempt to write to the global state.
-- This confirms the architectural limitation: the current system is restricted to vertical scaling and cannot effectively utilize horizontal, distributed workers due to the centralized mutable state array.
+- A comprehensive stress test (`performance_tests/test_audit_stress.py`) was designed and implemented utilizing the actual data processing logic (`process_menu_json`) to test high-concurrency scenarios, global lock contention (`_menu_data_lock`), and failure modes in a distributed system setting.
+- The `pytest-benchmark` results confirm that there is extreme lock contention on `CanaData._menu_data_lock`. Specifically, the global thread locking restricts the system from achieving horizontal scaling benefits when processing concurrent incoming JSON requests.
 
 **Actionable Optimization:**
-- To support elastic scaling, the system must be refactored to use stateless worker nodes and a message queue (e.g., RabbitMQ or Redis) for asynchronous data aggregation, entirely removing the global thread lock.
+- To mitigate stateful "noisy neighbor" issues and allow for true elastic scaling, the `CanaData` architecture should migrate from synchronous global locks (`self._menu_data_lock`) to an asynchronous aggregation model, potentially utilizing message queues (e.g., Redis Pub/Sub or RabbitMQ).
