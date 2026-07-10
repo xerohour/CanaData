@@ -11,61 +11,97 @@ class OptimizedDataProcessor:
     Optimized data processing pipeline using pandas for efficient flattening
     and normalization of nested data structures.
     """
-    
+
     def __init__(self, max_workers: int = 4):
         self.max_workers = max_workers
-    
+
     def process_menu_data(self, all_menu_items: Dict[str, List[Dict]]) -> List[Dict[str, Any]]:
         """
-        Process all menu items with optimized flattening.
-        
+        Process all menu items with optimized flattening using pure Python comprehensions.
+
         Args:
             all_menu_items: Dictionary mapping location IDs to lists of menu items
-            
+
         Returns:
             List of flattened dictionaries ready for CSV export
         """
-        logger.info("Starting optimized data processing...")
-        
-        # Convert to DataFrame for batch processing
-        flat_items = self._flatten_all_items(all_menu_items)
-        
-        # Normalize and clean data
-        normalized_data = self._normalize_data(flat_items)
-        
-        # Convert back to list of dictionaries
-        result = normalized_data.to_dict('records')
-        
-        logger.info(f"Processed {len(result)} menu items")
-        return result
-    
-    def _flatten_all_items(self, all_menu_items: Dict[str, List[Dict]]) -> pd.DataFrame:
-        """
-        Flatten all menu items using pandas json_normalize for efficiency.
-        """
+        logger.info("Starting optimized data processing using pure Python dictionaries...")
+
         # Collect all items with location info
-        # Using list comprehension for initialization performance
         items_with_location = [
             {**item, '_location_id': location_id}
             for location_id, items in all_menu_items.items()
             for item in items
         ]
-        
+
+        if not items_with_location:
+            return []
+
+        # Process in parallel batches
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            futures = []
+            batch_size = max(1, len(items_with_location) // self.max_workers)
+            for i in range(0, len(items_with_location), batch_size):
+                batch = items_with_location[i:i + batch_size]
+                futures.append(executor.submit(self._flatten_batch, batch))
+            flattened_batches = [future.result() for future in futures]
+
+        flattened_items = []
+        for batch in flattened_batches:
+            flattened_items.extend(batch)
+
+        # Extract all keys
+        all_keys = set()
+        for item in flattened_items:
+            all_keys.update(item.keys())
+
+        # Fill in None and convert numeric strings
+        for item in flattened_items:
+            for key in all_keys:
+                if key not in item:
+                    item[key] = 'None'
+                else:
+                    val = item[key]
+                    if val == 'None' or val is None:
+                        item[key] = 'None'
+                        continue
+                    k_lower = key.lower()
+                    if 'price' in k_lower or 'amount' in k_lower or 'thc' in k_lower:
+                        try:
+                            f_val = float(val)
+                            if f_val.is_integer():
+                                item[key] = int(f_val)
+                            else:
+                                item[key] = f_val
+                        except (ValueError, TypeError):
+                            pass
+
+        # Ensure consistent key ordering
+        sorted_keys = sorted(list(all_keys))
+        result = [{k: item[k] for k in sorted_keys} for item in flattened_items]
+
+        logger.info(f"Processed {len(result)} menu items")
+        return result
+
+    def _flatten_all_items(self, all_menu_items: Dict[str, List[Dict]]) -> pd.DataFrame:
+        """
+        Flatten all menu items using pure python dictionaries for efficiency,
+        bypassing pandas json_normalize and its massive overhead.
+        """
+        # Collect all items with location info
+        items_with_location = [
+            {**item, '_location_id': location_id}
+            for location_id, items in all_menu_items.items()
+            for item in items
+        ]
+
         if not items_with_location:
             return pd.DataFrame()
-        
-        # Use pandas json_normalize for efficient flattening
-        try:
-            df = pd.json_normalize(items_with_location, sep='.')
-            
-            # Handle any remaining nested structures
-            df = self._handle_remaining_nesting(df)
-            
-            return df
-        except Exception as e:
-            logger.warning(f"Pandas normalization failed, falling back to custom method: {e}")
-            return self._fallback_flattening(items_with_location)
-    
+
+        # Process in parallel batches using custom pure python algorithm
+        logger.info("Using pure Python dictionary unpacking for massive performance gain")
+        return self._fallback_flattening(items_with_location)
+
     def _handle_remaining_nesting(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Handle any remaining nested structures that json_normalize couldn't flatten.
@@ -83,7 +119,7 @@ class OptimizedDataProcessor:
                         val = val.dropna().iloc[0]
                     if isinstance(val, (dict, list)):
                         nested_columns.append(col)
-        
+
         # Flatten nested columns
         for col in nested_columns:
             try:
@@ -93,35 +129,35 @@ class OptimizedDataProcessor:
             except Exception as e:
                 logger.warning(f"Failed to flatten column {col}: {e}")
                 df[col] = df[col].astype(str)
-        
+
         return df
-    
+
     def _fallback_flattening(self, items: List[Dict]) -> pd.DataFrame:
         """
         Fallback to custom flattening if pandas fails.
         """
         logger.info("Using fallback flattening method")
-        
+
         # Process in parallel batches
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = []
             batch_size = max(1, len(items) // self.max_workers)
-            
+
             for i in range(0, len(items), batch_size):
                 batch = items[i:i + batch_size]
                 future = executor.submit(self._flatten_batch, batch)
                 futures.append(future)
-            
+
             # Collect results
             flattened_batches = [future.result() for future in futures]
-        
+
         # Combine all batches
         all_flattened = []
         for batch in flattened_batches:
             all_flattened.extend(batch)
-        
+
         return pd.DataFrame(all_flattened)
-    
+
     def _flatten_batch(self, batch: List[Dict]) -> List[Dict]:
         """
         Flatten a batch of items using the existing custom algorithm.
@@ -131,22 +167,22 @@ class OptimizedDataProcessor:
             flattened = self._flatten_dictionary_custom(item)
             flattened_items.append(flattened)
         return flattened_items
-    
+
     def _flatten_dictionary_custom(self, d: Dict) -> Dict:
         """
         Optimized version of the existing custom flattening algorithm.
         """
         # Pre-allocate result dict with estimated size
         result = {}
-        
+
         # Use iterative approach with explicit stack
         stack = [iter(d.items())]
         keys = []
-        
+
         while stack:
             for k, v in stack[-1]:
                 key = '.'.join(keys + [k]) if keys else k
-                
+
                 if isinstance(v, dict):
                     # Push nested dict to stack
                     keys.append(k)
@@ -174,28 +210,37 @@ class OptimizedDataProcessor:
                 if len(stack) > 1:
                     keys.pop()
                 stack.pop()
-        
+
         return result
-    
+
     def _normalize_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Normalize and clean the flattened data.
         """
         if df.empty:
             return df
-        
+
         # Ensure all columns are present and fill missing values
         df = df.fillna('None')
-        
-        # Convert data types where possible
+
+        # Convert data types where possible using fast list comprehensions over slow pd.to_numeric Series operations
         for col in df.columns:
-            # Try to convert to numeric where possible
             if 'price' in col.lower() or 'amount' in col.lower() or 'thc' in col.lower():
-                original_col = df[col]
-                numeric_col = pd.to_numeric(original_col, errors='coerce')
-                df[col] = numeric_col.where(numeric_col.notna(), original_col)
-        
+                # Extract values and convert
+                vals = df[col].values
+                new_vals = []
+                for v in vals:
+                    if v == 'None' or v is None:
+                        new_vals.append(v)
+                        continue
+                    try:
+                        f = float(v)
+                        new_vals.append(int(f) if f.is_integer() else f)
+                    except (ValueError, TypeError):
+                        new_vals.append(v)
+                df[col] = new_vals
+
         # Sort columns for consistency
         df = df.reindex(sorted(df.columns), axis=1)
-        
+
         return df
