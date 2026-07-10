@@ -12,6 +12,15 @@ to present cannabis listing data in a visually appealing way.
 """
 
 
+def _safe_url(url: str) -> str:
+    """Validates URL protocol to prevent javascript: URI XSS."""
+    if not url or not isinstance(url, str):
+        return "#"
+    url = url.strip()
+    if url.lower().startswith(('http://', 'https://')):
+        return url
+    return "#"
+
 def generate_html_report(data, region_name="Colorado"):
     """
     Generates a premium HTML report from Weedmaps listing data.
@@ -306,6 +315,7 @@ def generate_html_report(data, region_name="Colorado"):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: http:; script-src 'none';">
         <title>Weedmaps Discovery Report - {html.escape(str(region_name))}</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -393,7 +403,7 @@ def generate_html_report(data, region_name="Colorado"):
                     </div>
                     <div class="footer-actions">
                         <span style="font-size: 0.8rem; color: var(--text-muted)">{html.escape(str(item.get('license_type', 'Recreational')))}</span>
-                        <a href="{html.escape(str(item.get('web_url') or '#'))}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get('name', '')))} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                        <a href="{html.escape(_safe_url(item.get('web_url')))}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get('name', '')))} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
                     </div>
                 </div>
         """
