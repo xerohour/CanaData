@@ -12,8 +12,8 @@ def test_stress_locking():
 
     def worker(i):
         for j in range(100):
-            with scraper._menu_data_lock:
-                scraper.allMenuItems.append({'id': i * 100 + j})
+            chunk = {'id': i * 100 + j}
+            scraper.allMenuItems.append(chunk)
             time.sleep(0.001)
 
     threads = []

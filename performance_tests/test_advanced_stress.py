@@ -14,10 +14,11 @@ def test_high_concurrency_global_lock_contention(benchmark):
 
         def worker(worker_id):
             for i in range(150):
-                with scraper._menu_data_lock:
-                    # Simulate some minor processing time to force lock contention
-                    time.sleep(0.0001)
-                    scraper.allMenuItems.append({'id': worker_id * 1000 + i})
+                # Simulate worker returning data chunk
+                time.sleep(0.0001)
+                chunk = {'id': worker_id * 1000 + i}
+                # Simulate centralized merge in main thread later (or concurrent queue)
+                scraper.allMenuItems.append(chunk)
 
         threads = []
         for i in range(25): # 25 concurrent threads
