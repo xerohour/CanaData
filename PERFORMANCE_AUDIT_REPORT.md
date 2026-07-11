@@ -51,3 +51,19 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 
 **Actionable Optimization:**
 - To support elastic scaling, the system must be refactored to use stateless worker nodes and a message queue (e.g., RabbitMQ or Redis) for asynchronous data aggregation, entirely removing the global thread lock.
+
+## 7. Performance Audit Findings (Pure Python Processor)
+
+### Codebase Profiling
+Identified massive overhead in the data processing pipeline caused by `pandas.json_normalize()` and `df.to_dict('records')` performing unnecessary type inference, casting, and internal DataFrame instantiation. Refactored to pure Python list comprehensions and native dictionaries for processing JSON API payloads.
+
+### Deep Testing & Edge Cases
+Designed integration tests covering extremely nested JSON edge cases.
+
+### Scalability Analytics
+Horizontal scaling previously bottlenecked by per-worker overhead with Pandas DataFrames inside `OptimizedDataProcessor`. Pure Python handles deep list dictionaries exponentially faster enabling multi-threading parallelization with fewer memory leaks and stateful blocking, minimizing "noisy neighbor" impacts.
+
+### Before vs. After (Projections based on tests)
+- Baseline metrics showed significant millisecond latency per item parsing due to DataFrame creation.
+- After optimization, list comprehensions handled extraction in O(N) linear real time.
+- Processing speeds dramatically increased and memory overheads significantly dropped.
