@@ -41,10 +41,8 @@ class OptimizedDataProcessor:
     
     def _flatten_all_items(self, all_menu_items: Dict[str, List[Dict]]) -> pd.DataFrame:
         """
-        Flatten all menu items using pandas json_normalize for efficiency.
+        Flatten all menu items using pure Python list comprehensions for efficiency.
         """
-        # Collect all items with location info
-        # Using list comprehension for initialization performance
         items_with_location = [
             {**item, '_location_id': location_id}
             for location_id, items in all_menu_items.items()
@@ -53,17 +51,12 @@ class OptimizedDataProcessor:
         
         if not items_with_location:
             return pd.DataFrame()
-        
-        # Use pandas json_normalize for efficient flattening
+            
         try:
-            df = pd.json_normalize(items_with_location, sep='.')
-            
-            # Handle any remaining nested structures
-            df = self._handle_remaining_nesting(df)
-            
-            return df
+            flattened_items = [self._flatten_dictionary_custom(item) for item in items_with_location]
+            return pd.DataFrame(flattened_items)
         except Exception as e:
-            logger.warning(f"Pandas normalization failed, falling back to custom method: {e}")
+            logger.warning(f"Normalization failed, falling back to custom parallel method: {e}")
             return self._fallback_flattening(items_with_location)
     
     def _handle_remaining_nesting(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -184,16 +177,16 @@ class OptimizedDataProcessor:
         if df.empty:
             return df
         
-        # Ensure all columns are present and fill missing values
-        df = df.fillna('None')
+        # Ensure all columns are present and fill missing values using Python None object
+        df = df.where(pd.notnull(df), None)
         
-        # Convert data types where possible
+        # Robust type coercion avoiding hardcoded key names
         for col in df.columns:
-            # Try to convert to numeric where possible
-            if 'price' in col.lower() or 'amount' in col.lower() or 'thc' in col.lower():
-                original_col = df[col]
-                numeric_col = pd.to_numeric(original_col, errors='coerce')
-                df[col] = numeric_col.where(numeric_col.notna(), original_col)
+            try:
+                numeric_col = pd.to_numeric(df[col], errors='coerce')
+                df[col] = numeric_col.where(numeric_col.notna(), df[col])
+            except Exception:
+                pass
         
         # Sort columns for consistency
         df = df.reindex(sorted(df.columns), axis=1)

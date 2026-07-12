@@ -51,3 +51,11 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 
 **Actionable Optimization:**
 - To support elastic scaling, the system must be refactored to use stateless worker nodes and a message queue (e.g., RabbitMQ or Redis) for asynchronous data aggregation, entirely removing the global thread lock.
+## 7. Resolution of Artificial Lock Contention
+**Findings:**
+- Previous stress tests implemented artificial `time.sleep()` delays inside the global `_menu_data_lock` block, fabricating a severe concurrency bottleneck that does not exist in production.
+- In actual operation (e.g., within `scraper.process_menu_json()`), the `_menu_data_lock` only protects extremely fast O(1) in-memory dictionary assignments while slow network I/O operations occur outside the lock.
+**Actions Taken:**
+- Removed artificial sleep delays and mocked `allMenuItems` as a dictionary instead of a list.
+- Replaced manual array appends with actual `scraper.process_menu_json()` calls in stress tests.
+- Replaced inefficient `pandas.json_normalize()` with pure Python dictionary processing using list comprehensions and unpacking in `OptimizedDataProcessor`.

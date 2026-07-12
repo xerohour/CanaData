@@ -1,5 +1,4 @@
 import threading
-import time
 import os
 import sys
 
@@ -10,14 +9,20 @@ def test_high_concurrency_global_lock_contention(benchmark):
     # This tests the high concurrency and race conditions in distributed systems scaling as requested.
     def run_stress():
         scraper = CanaData(interactive_mode=False)
-        scraper.allMenuItems = []
+        scraper.allMenuItems = {}
 
         def worker(worker_id):
             for i in range(150):
-                with scraper._menu_data_lock:
-                    # Simulate some minor processing time to force lock contention
-                    time.sleep(0.0001)
-                    scraper.allMenuItems.append({'id': worker_id * 1000 + i})
+                menu_json = {
+                    "listing": {
+                        "id": f"listing_{worker_id}_{i}",
+                        "slug": f"slug_{worker_id}_{i}",
+                        "wmid": f"wmid_{worker_id}_{i}",
+                        "_type": "dispensary"
+                    },
+                    "categories": [{"items": [{"id": f"item_{worker_id}_{i}"}]}]
+                }
+                scraper.process_menu_json(menu_json)
 
         threads = []
         for i in range(25): # 25 concurrent threads
@@ -28,8 +33,8 @@ def test_high_concurrency_global_lock_contention(benchmark):
         for t in threads:
             t.join()
 
-        assert len(scraper.allMenuItems) == 3750
-        return len(scraper.allMenuItems)
+        assert sum(len(items) for items in scraper.allMenuItems.values()) == 3750
+        return sum(len(items) for items in scraper.allMenuItems.values())
 
     result = benchmark(run_stress)
     assert result == 3750
