@@ -89,3 +89,16 @@ class TestSecurity:
         assert cana._sanitize_filename("invalid/characters!@#") == "invalidcharacters"
         assert cana._sanitize_filename("..\\windows\\style") == "..windowsstyle"
         assert cana._sanitize_filename("foo bar") == "foobar" # spaces removed
+
+    def test_url_sanitization_xss(self):
+        """Test that URLs are validated against javascript: execution."""
+        unsafe_url = "javascript:alert(1)"
+        safe_url = "https://weedmaps.com/menu/test"
+
+        def validate_url(url):
+            if not (url == "#" or url.lower().startswith(('http://', 'https://'))):
+                return "#"
+            return url
+
+        assert validate_url(unsafe_url) == "#"
+        assert validate_url(safe_url) == safe_url

@@ -1123,6 +1123,11 @@ class CanaParse:
                 else:
                     url = "#"
 
+                if not (url == "#" or url.lower().startswith(('http://', 'https://'))):
+                    url = "#"
+                if not img_url.lower().startswith(('http://', 'https://')):
+                    img_url = ""
+
                 serialized_rows.append({
                     'price': p_val,
                     'img_url': img_url,
@@ -1200,6 +1205,11 @@ class CanaParse:
             url = f"https://weedmaps.com{loc_val_clean}/menu/{slug_val}"
         else:
             url = "#"
+
+        if not (url == "#" or url.lower().startswith(('http://', 'https://'))):
+            url = "#"
+        if not img_url.lower().startswith(('http://', 'https://')):
+            img_url = ""
             
         with tag('tr'):
             # Price
