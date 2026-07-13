@@ -17,7 +17,6 @@ def test_stress_locking():
             time.sleep(0.001)
 
     threads = []
-    start_time = time.time()
     for i in range(10):
         t = threading.Thread(target=worker, args=(i,))
         threads.append(t)
@@ -26,5 +25,4 @@ def test_stress_locking():
     for t in threads:
         t.join()
 
-    duration = time.time() - start_time
     assert len(scraper.allMenuItems) == 1000
