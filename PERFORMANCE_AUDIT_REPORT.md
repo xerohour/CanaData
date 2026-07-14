@@ -51,3 +51,12 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 
 **Actionable Optimization:**
 - To support elastic scaling, the system must be refactored to use stateless worker nodes and a message queue (e.g., RabbitMQ or Redis) for asynchronous data aggregation, entirely removing the global thread lock.
+
+## 7. Real-World Execution Profiling and Lock Contention Analytics
+
+**Findings:**
+- Profiling using `cProfile` and real payloads demonstrated that the `_menu_data_lock` in `process_menu_items_json` and `process_menu_json` acts to synchronize extremely fast, O(1) in-memory dictionary assignments.
+- The previously recorded lock contention in `test_advanced_stress.py` was artificially induced by injecting a mock `time.sleep(0.0001)` inside the locked critical section, failing to benchmark the actual code logic overhead.
+
+**Optimization Projections:**
+- Removing `_menu_data_lock` is not a performance bottleneck. The lock protects fast dictionary operations while slow network I/O is appropriately handled outside the lock. Removing it to implement lockless queues would introduce unnecessary object-creation overhead without measurable scalability benefits.
