@@ -51,3 +51,13 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 
 **Actionable Optimization:**
 - To support elastic scaling, the system must be refactored to use stateless worker nodes and a message queue (e.g., RabbitMQ or Redis) for asynchronous data aggregation, entirely removing the global thread lock.
+
+## 7. Concurrency Re-evaluation (Global Lock Analysis)
+
+**Findings:**
+- The previous stress test (`test_advanced_stress.py`) incorrectly utilized `time.sleep()` within the `_menu_data_lock` critical section, artificially inflating lock contention metrics.
+- A revised stress test simulating the actual O(1) in-memory operations performed by `CanaData` (dictionary assignments and list appends) was implemented.
+- Benchmark results demonstrate that the `_menu_data_lock` is strictly bound to ultra-fast memory writes and resolves in microseconds, proving it is **not** a concurrency bottleneck under realistic workloads.
+
+**Actionable Optimization:**
+- Horizontal scaling efforts should focus on parallelizing the network I/O and data parsing (which already happens outside the lock) rather than unnecessarily refactoring the shared state architecture to remove the lock, as doing so would introduce unneeded complexity without measurable throughput gains.
