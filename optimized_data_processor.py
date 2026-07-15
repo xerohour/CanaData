@@ -27,18 +27,55 @@ class OptimizedDataProcessor:
         """
         logger.info("Starting optimized data processing...")
         
-        # Convert to DataFrame for batch processing
-        flat_items = self._flatten_all_items(all_menu_items)
+        # We replace the pandas logic with pure python dictionary unpacking and list comprehension
+        # as it avoids huge type inference and instantiation overheads of pandas DataFrames.
+        # This resolves the bottleneck identified during profiling of data normalization.
         
-        # Normalize and clean data
-        normalized_data = self._normalize_data(flat_items)
+        all_flattened = []
+        for location_id, items in all_menu_items.items():
+            for item in items:
+                item_with_loc = dict(item)
+                item_with_loc['_location_id'] = location_id
+                all_flattened.append(self._flatten_dictionary_custom(item_with_loc))
+
+        # Get all keys
+        all_keys = set()
+        for item in all_flattened:
+            all_keys.update(item.keys())
+
+        all_keys_list = sorted(list(all_keys))
         
-        # Convert back to list of dictionaries
-        result = normalized_data.to_dict('records')
+        # We use a template for filling out missing keys with 'None' to match previous pandas fillna behavior
+        template = {key: 'None' for key in all_keys_list}
         
+        # Identify numeric columns for type coercion based on original pandas logic
+        numeric_cols = [col for col in all_keys_list if 'price' in col.lower() or 'amount' in col.lower() or 'thc' in col.lower()]
+
+        result = []
+        for item in all_flattened:
+            # First, make sure all item keys with real None map to 'None' string to match pandas
+            item_no_nulls = {k: ('None' if v is None else v) for k, v in item.items()}
+
+            # Fast dictionary unpacking, filling missings with 'None' string
+            normalized_item = {**template, **item_no_nulls}
+
+            # Convert all numeric strings to numeric dynamically just as pd.to_numeric(errors='coerce') does
+            for col in numeric_cols:
+                val = normalized_item[col]
+                if val != 'None':
+                    try:
+                        # Try converting to float to mimic pd.to_numeric
+                        normalized_item[col] = float(val)
+                        # If it's an integer, we could cast it, but float is generally safer and what pandas does for mixed data
+                    except (ValueError, TypeError):
+                        # leave as original if it fails, which handles the errors='coerce' / notna() logic in original
+                        pass
+
+            result.append(normalized_item)
+
         logger.info(f"Processed {len(result)} menu items")
         return result
-    
+
     def _flatten_all_items(self, all_menu_items: Dict[str, List[Dict]]) -> pd.DataFrame:
         """
         Flatten all menu items using pandas json_normalize for efficiency.
