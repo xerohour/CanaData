@@ -1,7 +1,17 @@
 import os
 from datetime import datetime
 import html
+import urllib.parse
 from CanaData import CanaData
+
+def is_safe_url(url):
+    if not url or url == '#':
+        return True
+    try:
+        parsed = urllib.parse.urlparse(url)
+        return parsed.scheme in ("http", "https")
+    except Exception:
+        return False
 
 """
 HTML Report Generator Module
@@ -306,6 +316,7 @@ def generate_html_report(data, region_name="Colorado"):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https: data:; script-src 'none';">
         <title>Weedmaps Discovery Report - {html.escape(str(region_name))}</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -393,7 +404,14 @@ def generate_html_report(data, region_name="Colorado"):
                     </div>
                     <div class="footer-actions">
                         <span style="font-size: 0.8rem; color: var(--text-muted)">{html.escape(str(item.get('license_type', 'Recreational')))}</span>
-                        <a href="{html.escape(str(item.get('web_url') or '#'))}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get('name', '')))} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                        """
+
+        web_url = str(item.get('web_url') or '#')
+        if not is_safe_url(web_url):
+            web_url = '#'
+
+        html_content += f"""
+                        <a href="{html.escape(web_url)}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get('name', '')))} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
                     </div>
                 </div>
         """
