@@ -26,5 +26,5 @@ def test_stress_locking():
     for t in threads:
         t.join()
 
-    duration = time.time() - start_time
+    _duration = time.time() - start_time
     assert len(scraper.allMenuItems) == 1000
