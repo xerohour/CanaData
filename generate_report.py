@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 import html
+import urllib.parse
 from CanaData import CanaData
 
 """
@@ -11,6 +12,15 @@ consumer-facing HTML report. It uses a modern, "Glassmorphism" design aesthetic
 to present cannabis listing data in a visually appealing way.
 """
 
+
+def _safe_url(url, default="#"):
+    if not url:
+        return default
+    url_str = str(url).strip()
+    parsed = urllib.parse.urlparse(url_str)
+    if parsed.scheme.lower() in ('http', 'https', 'data', 'mailto', 'tel') or not parsed.scheme:
+        return url_str
+    return default
 
 def generate_html_report(data, region_name="Colorado"):
     """
@@ -306,6 +316,7 @@ def generate_html_report(data, region_name="Colorado"):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
         <title>Weedmaps Discovery Report - {html.escape(str(region_name))}</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -358,7 +369,7 @@ def generate_html_report(data, region_name="Colorado"):
         html_content += f"""
                 <div class="card">
                     <div class="card-header">
-                        <img src="{html.escape(str(avatar))}" alt="{html.escape(str(item.get('name') or ''))}" class="avatar">
+                        <img src="{html.escape(_safe_url(avatar))}" alt="{html.escape(str(item.get('name') or ''))}" class="avatar">
                         <div class="listing-info">
                             <h2>{html.escape(str(item.get('name') or ''))}</h2>
                             <span class="badge badge-type">{html.escape(str(item.get('type') or ''))}</span>
@@ -393,7 +404,7 @@ def generate_html_report(data, region_name="Colorado"):
                     </div>
                     <div class="footer-actions">
                         <span style="font-size: 0.8rem; color: var(--text-muted)">{html.escape(str(item.get('license_type', 'Recreational')))}</span>
-                        <a href="{html.escape(str(item.get('web_url') or '#'))}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get('name', '')))} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                        <a href="{html.escape(_safe_url(item.get('web_url') or '#'))}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get('name', '')))} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
                     </div>
                 </div>
         """
