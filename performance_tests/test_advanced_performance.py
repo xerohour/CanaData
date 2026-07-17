@@ -1,7 +1,6 @@
 import os
 import sys
 import json
-import pandas as pd
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from optimized_data_processor import OptimizedDataProcessor
@@ -12,11 +11,12 @@ def test_large_nesting_performance(benchmark):
         data = json.load(f)
 
     processor = OptimizedDataProcessor()
-    df = pd.json_normalize(data.get('data', {}).get('products', []))
-    df = pd.concat([df] * 50, ignore_index=True)
+    items = data.get('data', {}).get('products', [])
+    items = items * 50
+    mock_data = {'loc_1': items}
 
     def process_data():
-        return processor._handle_remaining_nesting(df.copy())
+        return processor.process_menu_data(mock_data)
 
     result = benchmark(process_data)
     assert len(result) > 0
