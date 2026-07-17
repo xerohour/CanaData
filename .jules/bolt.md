@@ -7,3 +7,7 @@
 ## 2026-06-30 - Optimized pandas column evaluation
 **Learning:** Using `df[col].dropna()` in pandas has O(N) memory overhead and is slow for large DataFrames.
 **Action:** Use `df[col].first_valid_index()` along with checking for duplicate indices to securely extract the first scalar value without allocating a full Series copy. Use list comprehensions over `.apply` for complex row operations.
+
+## 2025-01-20 - Global State Locking is not the bottleneck
+**Learning:** The global `_menu_data_lock` only wraps fast O(1) dictionary assignments, while network I/O runs unlocked. Artificial delays (`time.sleep`) in benchmarks provided a false positive for lock contention.
+**Action:** Always benchmark genuine logic and remove artificial delays to correctly evaluate state management performance.
