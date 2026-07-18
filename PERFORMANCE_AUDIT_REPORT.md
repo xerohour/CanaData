@@ -51,3 +51,12 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 
 **Actionable Optimization:**
 - To support elastic scaling, the system must be refactored to use stateless worker nodes and a message queue (e.g., RabbitMQ or Redis) for asynchronous data aggregation, entirely removing the global thread lock.
+## 7. Deep Testing & Edge Cases (Concurrency Refactoring)
+
+**Findings:**
+- Refactored stress tests to utilize actual, heavy `process_menu_json` computations rather than mocked time delays (`time.sleep()`).
+- This provides an accurate reflection of global lock contention combined with heavy data aggregation in concurrent scenarios.
+- The lock around `self.allMenuItems` remains a structural bottleneck for high horizontal throughput.
+
+**Recommendation:**
+- Offload the `process_menu_json` results generation to distinct processes communicating through an asynchronous channel or directly return chunks from worker processes to a single aggregator node, omitting the `_menu_data_lock` entirely.

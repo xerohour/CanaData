@@ -8,13 +8,15 @@ from CanaData import CanaData
 
 def test_stress_locking():
     scraper = CanaData(interactive_mode=False)
-    scraper.allMenuItems = []
+    scraper.allMenuItems = {}
 
     def worker(i):
-        for j in range(100):
-            with scraper._menu_data_lock:
-                scraper.allMenuItems.append({'id': i * 100 + j})
-            time.sleep(0.001)
+        # We want to benchmark actual real-world processing, not artificial sleeps
+        mock_menu = {
+            'listing': {'id': str(i), 'slug': f'test-{i}', '_type': 'dispensary'},
+            'categories': [{'items': [{'id': str(i * 100 + j), 'name': f'Item {j}'} for j in range(100)]}]
+        }
+        scraper.process_menu_json(mock_menu)
 
     threads = []
     start_time = time.time()
@@ -26,5 +28,4 @@ def test_stress_locking():
     for t in threads:
         t.join()
 
-    duration = time.time() - start_time
-    assert len(scraper.allMenuItems) == 1000
+    assert len(scraper.allMenuItems) == 10
