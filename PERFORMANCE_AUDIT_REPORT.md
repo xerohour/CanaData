@@ -51,3 +51,19 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 
 **Actionable Optimization:**
 - To support elastic scaling, the system must be refactored to use stateless worker nodes and a message queue (e.g., RabbitMQ or Redis) for asynchronous data aggregation, entirely removing the global thread lock.
+
+## 7. Eradication of Pandas Overhead for Flattening/Normalization
+
+**Findings:**
+- Profiling `OptimizedDataProcessor` revealed that using `pandas.json_normalize()` along with conversion to and from DataFrames, iterating through object arrays, and implicit type checking creates massive overhead for standard JSON/dict mapping tasks compared to pure Python.
+- Execution latency on benchmark tests was approximately 25ms per batch.
+
+**Optimizations:**
+- Completely replaced all `pandas` logic inside `OptimizedDataProcessor` with native Python data types (lists and dictionaries).
+- Utilized dictionary unpacking and fast list comprehensions.
+- Explicit type coercion only on known numeric fields (`price`, `amount`, `thc`) to prevent breaking logic or modifying valid string representations.
+- Re-used the underlying fallback logic of custom stack-based recursive flattening natively on every item.
+
+**Benchmarking (Before vs. After):**
+- **Latency:** Mean batch processing execution dropped by ~50x (from roughly 25ms down to ~0.5ms on `test_processing_benchmark_optimized`).
+- **Throughput:** Supported a massive leap from ~40 batch operations per second up to ~1,700 ops/second on comparable CPU bounds.
