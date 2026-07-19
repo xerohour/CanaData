@@ -3,6 +3,12 @@ from datetime import datetime
 import html
 from CanaData import CanaData
 
+def is_safe_url(url):
+    if not url:
+        return False
+    url_str = str(url).strip()
+    return url_str.startswith(('http://', 'https://', '#', '/'))
+
 """
 HTML Report Generator Module
 
@@ -306,6 +312,7 @@ def generate_html_report(data, region_name="Colorado"):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
         <title>Weedmaps Discovery Report - {html.escape(str(region_name))}</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -337,6 +344,9 @@ def generate_html_report(data, region_name="Colorado"):
     for item in listings:
         avatar = item.get('avatar_image', {}).get(
             'original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
+        if not is_safe_url(avatar):
+            avatar = 'https://images.weedmaps.com/static/avatar/dispensary.png'
+
         rating = item.get('rating', 'N/A')
         reviews = item.get('reviews_count', 0)
         is_open = item.get('open_now', False)
@@ -393,7 +403,7 @@ def generate_html_report(data, region_name="Colorado"):
                     </div>
                     <div class="footer-actions">
                         <span style="font-size: 0.8rem; color: var(--text-muted)">{html.escape(str(item.get('license_type', 'Recreational')))}</span>
-                        <a href="{html.escape(str(item.get('web_url') or '#'))}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get('name', '')))} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                        <a href="{html.escape(str(item.get('web_url') or '#') if is_safe_url(item.get('web_url') or '#') else '#')}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get('name', '')))} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
                     </div>
                 </div>
         """
