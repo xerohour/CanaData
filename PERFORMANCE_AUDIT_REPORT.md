@@ -51,3 +51,12 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 
 **Actionable Optimization:**
 - To support elastic scaling, the system must be refactored to use stateless worker nodes and a message queue (e.g., RabbitMQ or Redis) for asynchronous data aggregation, entirely removing the global thread lock.
+## 7. True Architecture Scalability (Re-evaluation)
+
+**Findings:**
+- Previous stress tests injected artificial delays (`time.sleep`) inside the critical section, falsely indicating severe lock contention.
+- In reality, the global `_menu_data_lock` used for synchronizing writes to `self.allMenuItems` only wraps extremely fast in-memory dictionary assignments (O(1) operations). Slow network I/O is handled outside the lock.
+- It is not a concurrency bottleneck. Attempting to remove it by creating intermediate objects introduces unnecessary overhead.
+
+**Actionable Optimization:**
+- Refactored stress tests to remove artificial delays and correctly use dictionary assignments. The current architecture efficiently handles concurrency and does not suffer from lock contention as previously suspected.
