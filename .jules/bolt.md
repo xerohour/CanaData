@@ -7,3 +7,6 @@
 ## 2026-06-30 - Optimized pandas column evaluation
 **Learning:** Using `df[col].dropna()` in pandas has O(N) memory overhead and is slow for large DataFrames.
 **Action:** Use `df[col].first_valid_index()` along with checking for duplicate indices to securely extract the first scalar value without allocating a full Series copy. Use list comprehensions over `.apply` for complex row operations.
+## 2024-11-01 - Python Dictionary Merging Optimization
+**Learning:** Iterative dictionary copying (`dict.copy()`) and updating (`dict.update()`) within Python loops causes significant O(N) allocation overhead.
+**Action:** Always prefer Python 3.9's dictionary union operator (`|`) combined with list comprehensions (e.g., `[template | item for item in list]`) for merging and padding operations, as it executes at C-speed and reduces memory latency.
