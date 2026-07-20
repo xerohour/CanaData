@@ -460,11 +460,18 @@ class CanaParse:
                 pass
         return raw_html
 
+    def _is_valid_url(self, url: str) -> bool:
+        if not url:
+            return False
+        url_str = str(url).strip()
+        return url_str.startswith(('http://', 'https://', '#', '/'))
+
     def _add_html_head(self, doc):
         """Append metadata and script links to head."""
         doc.asis('<meta charset="utf-8">')
         doc.asis(
             '<meta name="viewport" content="width=device-width, initial-scale=1">')
+        doc.asis('<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src \'self\' https: data:; style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src https://fonts.gstatic.com; script-src \'self\' \'unsafe-inline\' https://code.jquery.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;">')
         doc.asis('<link rel="preconnect" href="https://fonts.googleapis.com">')
         doc.asis(
             '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>')
@@ -1211,15 +1218,17 @@ class CanaParse:
             # Image
             with tag('td', klass="thumb"):
                 if img_url and img_url != "None" and img_url != "nan":
-                    with tag('a', ('data-fancybox', 'gallery'), ('aria-label', f"View full image of {prod_name}"), href=img_url):
-                        doc.stag('img', src=img_url, alt=prod_name, klass="img-thumbnail",
+                    safe_img_url = img_url if self._is_valid_url(img_url) else 'https://images.weedmaps.com/static/avatar/dispensary.png'
+                    with tag('a', ('data-fancybox', 'gallery'), ('aria-label', f"View full image of {prod_name}"), href=safe_img_url):
+                        doc.stag('img', src=safe_img_url, alt=prod_name, klass="img-thumbnail",
                                  onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';")
                 else:
                     text("-")
 
             # Strain Name + Link
             with tag('td'):
-                with tag('a', href=url, target="_blank", style="font-weight: 600; display: block; margin-bottom: 4px;"):
+                safe_url = url if self._is_valid_url(url) else '#'
+                with tag('a', href=safe_url, target="_blank", style="font-weight: 600; display: block; margin-bottom: 4px;"):
                     text(prod_name)
                 if brand_name:
                     with tag('span', style="font-size: 0.8rem; color: var(--text-muted);"):
