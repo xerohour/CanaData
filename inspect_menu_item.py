@@ -28,7 +28,7 @@ def inspect_menu(slug):
     }
     print(f"Fetching menu for {slug}...")
     try:
-        req = requests.get(url, timeout=10)
+        req = requests.get(url, headers=headers, timeout=10)
         if req.status_code == 200:
             data = req.json()
             categories = data.get('categories', [])
