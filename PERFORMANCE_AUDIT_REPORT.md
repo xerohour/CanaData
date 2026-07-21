@@ -60,3 +60,12 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 
 **Actionable Optimization:**
 - Refactored stress tests to remove artificial delays and correctly use dictionary assignments. The current architecture efficiently handles concurrency and does not suffer from lock contention as previously suspected.
+
+## 8. Data Formatting Initialization Scaling
+**Findings:**
+- Profiling of `CanaData._original_organize_into_clean_list` revealed iteration overhead in the dataset normalization loop. Using `template_dict.copy()` followed by `flat_ordered_dict.update(item)` in a `for` loop scales poorly across tens of thousands of scraped items.
+- The `test_organize_clean_list_performance` benchmark recorded mean latency of ~2.91 ms for formatting a test batch of ~1,000 items.
+
+**Actionable Optimization:**
+- Refactored the normalization loop to use Python 3.9's dictionary union operator (`|`) combined with list comprehensions (`[template_dict | item for item in flatDictList]`).
+- This executes at C-speed, completely avoiding the overhead of explicit dictionary instantiation and iteration at the Python level.
