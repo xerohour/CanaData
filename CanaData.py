@@ -516,12 +516,11 @@ class CanaData:
         else:
             for category in categories:
                 for item in category.get('items', []):
-                    item_copy = dict(item)
-                    item_copy.update({
+                    item_copy = item | {
                         'locations_found_at': [listing_url],
                         'listing_id': listing_id,
                         'listing_wmid': listing.get('wmid')
-                    })
+                    }
 
                     # Extract strain data if present
                     if 'strain_data' in item_copy:
@@ -579,12 +578,11 @@ class CanaData:
             if not isinstance(item, dict):
                 continue
 
-            item_copy = dict(item)
-            item_copy.update({
+            item_copy = item | {
                 'locations_found_at': [listing_url],
                 'listing_id': listing_id,
                 'listing_wmid': listing_wmid,
-            })
+            }
 
             strain_data = item_copy.get('strain_data')
             if isinstance(strain_data, dict):
@@ -739,21 +737,10 @@ class CanaData:
 
         all_keys = sorted(list(all_keys_set))
 
-        # This list will house all data after each key has been filled out
-        ready_list = []
-
         template_dict = dict.fromkeys(all_keys, 'None')
-        # Loop through the flatDictList to update any missing keys
-        for item in flatDictList:
-            # Create a dictionary with all keys initialized to 'None'
-            flat_ordered_dict = template_dict.copy()
-            # Update with actual values
-            flat_ordered_dict.update(item)
-
-            ready_list.append(flat_ordered_dict)
-
         # Replace our finished menu items list with our flat, ordered, dictionary list
-        self.finishedMenuItems = ready_list
+        # Use dictionary union operator for C-speed execution
+        self.finishedMenuItems = [template_dict | item for item in flatDictList]
 
     def flatten_dictionary(self, d: Dict[str, Any]) -> Dict[str, str]:
         """

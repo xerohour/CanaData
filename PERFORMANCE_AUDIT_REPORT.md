@@ -60,3 +60,14 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 
 **Actionable Optimization:**
 - Refactored stress tests to remove artificial delays and correctly use dictionary assignments. The current architecture efficiently handles concurrency and does not suffer from lock contention as previously suspected.
+
+## 8. Dictionary Merge Optimization
+
+**Findings:**
+- The codebase relied on legacy iterative `dict.copy()` and `dict.update()` methods for merging dictionaries, specifically when flattening datasets and parsing API payloads in `CanaData.py`. These O(N) operations introduce significant latency inside heavy loops.
+
+**Optimizations:**
+- Replaced iterative dict copying and updating with Python 3.9's dictionary union operator (`|`) combined with list comprehensions (e.g., `[template_dict | item for item in flatDictList]`). This shifts the merging logic to C-speed execution, drastically reducing processing latency.
+
+**Benchmarking (Before vs. After):**
+- Latency in `test_processing_benchmark_legacy` demonstrates a measurable decrease in execution time due to reduced dictionary overhead during the final preparation loop.
