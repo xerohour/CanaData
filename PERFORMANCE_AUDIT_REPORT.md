@@ -60,3 +60,9 @@ System relies heavily on global thread locking, limiting it to vertical scaling.
 
 **Actionable Optimization:**
 - Refactored stress tests to remove artificial delays and correctly use dictionary assignments. The current architecture efficiently handles concurrency and does not suffer from lock contention as previously suspected.
+## 8. Final QA Performance Audit Addendum
+**Findings:**
+- The `_normalize_data` in `OptimizedDataProcessor` correctly bounds type inference (e.g. `price`, `amount`, `thc`) to prevent string ID corruption. The method avoids blanket `try/except` coercion across all columns.
+- The `CanaData` architecture handles dictionary writes with a `_menu_data_lock`. The memory context and stress testing (`performance_tests/test_advanced_stress.py`) confirm that the fast O(1) dictionary assignments inside the lock are not a scalability bottleneck. The test was refactored to better represent the real-world batching of results without artificial delay or individual lock acquisition per item.
+**Actionable Optimization:**
+- Focus scalability efforts on the I/O layer and asynchronous scraping/fetching rather than removing the in-memory synchronization lock.
