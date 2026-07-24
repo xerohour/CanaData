@@ -1,7 +1,5 @@
-import pytest
 from CanaData import CanaData
-import time
-import requests
+
 
 def test_api_calls_efficiency():
     # Looking for N+1 queries by tracing API requests
@@ -24,3 +22,4 @@ def test_api_calls_efficiency():
     scraper.getMenus()
 
     print(f"Total API requests for {len(scraper.allLocations)} locations: {request_count}")
+    assert request_count <= len(scraper.allLocations)

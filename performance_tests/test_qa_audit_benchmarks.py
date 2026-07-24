@@ -1,5 +1,5 @@
-import pytest
 from CanaData import CanaData
+
 
 def test_benchmark_flatten_dictionary_latency(benchmark):
     scraper = CanaData()

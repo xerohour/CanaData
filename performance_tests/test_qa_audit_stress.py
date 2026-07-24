@@ -1,6 +1,7 @@
-import pytest
 import concurrent.futures
+
 from CanaData import CanaData
+
 
 def test_stress_high_concurrency(benchmark):
     scraper = CanaData()

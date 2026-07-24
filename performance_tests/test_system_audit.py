@@ -1,8 +1,10 @@
-import pytest
-import psutil
-import os
 import gc
+import os
+
+import psutil
+
 from CanaData import CanaData
+
 
 def test_memory_leak_scraping():
     process = psutil.Process(os.getpid())

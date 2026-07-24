@@ -1,8 +1,10 @@
-import pytest
 import gc
-import psutil
 import os
+
+import psutil
+
 from optimized_data_processor import OptimizedDataProcessor
+
 
 def test_memory_leak_processor():
     process = psutil.Process(os.getpid())
@@ -23,4 +25,4 @@ def test_memory_leak_processor():
 
     memory_diff = end_memory - start_memory
     print(f"Memory diff: {memory_diff / 1024 / 1024} MB")
-    # Not asserting, just observing if it's large
+    assert memory_diff < 200 * 1024 * 1024
