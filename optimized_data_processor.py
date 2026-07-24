@@ -189,7 +189,7 @@ class OptimizedDataProcessor:
         
         # Convert data types where possible
         for col in df.columns:
-            # Try to convert to numeric where possible
+            # Try to convert to numeric where possible. Carefully constrain to avoid coercing string IDs.
             if 'price' in col.lower() or 'amount' in col.lower() or 'thc' in col.lower():
                 original_col = df[col]
                 numeric_col = pd.to_numeric(original_col, errors='coerce')
