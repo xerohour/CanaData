@@ -9,3 +9,6 @@
 ## 2026-07-19 - Skip Link Target Focus
 **Learning:** Skip links require the target container to have `tabindex="-1"`. Without this, the browser scrolls to the container but keyboard focus is not programmatically moved, breaking keyboard navigation flow.
 **Action:** Always add `tabindex="-1"` to the target element of a skip-to-content link to ensure focus is properly set when the link is activated.
+## 2026-07-24 - Emoji Icons as Decorative Elements
+**Learning:** The portal uses large emojis as decorative visual icons in cards. Without `aria-hidden="true"`, screen readers read these out before the actual card heading (e.g., "bar chart, Interactive Dashboard"), which creates a clunky and confusing navigation experience.
+**Action:** Always add `aria-hidden="true"` to emoji-based decorative structural icons across the application to keep screen reader flow clean and focused on the actual content.
