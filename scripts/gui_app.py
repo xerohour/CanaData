@@ -4,20 +4,17 @@ import queue
 import subprocess
 import sys
 import threading
+import tkinter as tk
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List
-
-import tkinter as tk
 from tkinter import messagebox, ttk
-
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from CanaData import CanaData  # noqa: E402
+from CanaData import CanaData
 
 
 @dataclass
@@ -290,7 +287,7 @@ class CanaDataGUI:
                 and config.slug_value in {"", "global"}
             )
 
-            run_summaries: List[str] = []
+            run_summaries: list[str] = []
 
             if metadata_only:
                 cana.set_city_slug("global")
@@ -344,7 +341,7 @@ class CanaDataGUI:
         os.environ["MAX_WORKERS"] = str(config.max_workers)
         os.environ["RATE_LIMIT"] = str(config.rate_limit)
 
-    def _resolve_slugs(self, config: RunConfig) -> List[str]:
+    def _resolve_slugs(self, config: RunConfig) -> list[str]:
         if config.slug_mode == "single":
             return [config.slug_value]
         if config.slug_mode == "all":
@@ -355,7 +352,7 @@ class CanaDataGUI:
             return self._read_slug_file(ROOT / "slugs.txt")
         return [config.slug_value]
 
-    def _read_slug_file(self, path: Path) -> List[str]:
+    def _read_slug_file(self, path: Path) -> list[str]:
         if not path.exists():
             raise FileNotFoundError(f"Missing slug file: {path.name}")
         lines = [line.strip().lower().replace(" ", "-") for line in path.read_text(encoding="utf-8").splitlines()]

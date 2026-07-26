@@ -1,22 +1,24 @@
-import requests
-import json
-import re
 import csv
+import json
 import logging
 import os
+import re
 import subprocess
-from datetime import datetime
-from os import path as ospath
-from os import makedirs
-from sys import path
-from typing import Optional, List, Dict, Any
-from dotenv import load_dotenv
-from LeaflyScraper import scrape_leafly
-from CannMenusClient import CannMenusClient
 import threading
-from concurrent_processor import ConcurrentMenuProcessor
+from datetime import datetime
+from os import makedirs
+from os import path as ospath
+from sys import path
+from typing import Any
+
+import requests
+from dotenv import load_dotenv
+
 from cache_manager import CacheManager
 from cached_api_client import CachedAPIClient
+from CannMenusClient import CannMenusClient
+from concurrent_processor import ConcurrentMenuProcessor
+from LeaflyScraper import scrape_leafly
 from optimized_data_processor import OptimizedDataProcessor
 
 # Load environment variables
@@ -79,7 +81,7 @@ class CanaData:
         # Pagination & Page size
         self.pageSize: str = f"&page_size={os.getenv('PAGE_SIZE', '100')}&size={os.getenv('PAGE_SIZE', '100')}"
         # Populated with the City/State Slug
-        self.searchSlug: Optional[str] = None
+        self.searchSlug: str | None = None
         # Set to True if we are grabbing storefronts
         self.storefronts: bool = True
         # Set to True if we are grabbing deliveries
@@ -91,27 +93,27 @@ class CanaData:
         # Number of Items found
         self.menuItemsFound: int = 0
         # Number returned from Weedmaps as to Max # of locations
-        self.maxLocations: Optional[int] = None
+        self.maxLocations: int | None = None
         # Dataset of locations
-        self.locations: List[Dict[str, Any]] = []
+        self.locations: list[dict[str, Any]] = []
         # Dictionary of Empty Location Menus
-        self.emptyMenus: Dict[str, Any] = {}
+        self.emptyMenus: dict[str, Any] = {}
         # Avoids duplicating items from deliveries using their Storefront Menus
-        self.allMenuItems: Dict[str, List[Dict[str, Any]]] = {}
+        self.allMenuItems: dict[str, list[dict[str, Any]]] = {}
         # List of flattened menu items
-        self.finishedMenuItems: List[Dict[str, str]] = []
+        self.finishedMenuItems: list[dict[str, str]] = []
         # List of total flattened locations
-        self.totalLocations: List[Dict[str, Any]] = []
+        self.totalLocations: list[dict[str, Any]] = []
         # List of States with No locations
-        self.unFriendlyStates: List[str] = []
+        self.unFriendlyStates: list[str] = []
         # Set to True if there are no locations
         self.NonGreenState: bool = False
         # Sets whether or not we grab the slugs for the search
         self.slugGrab: bool = False
         # Brand and Strain datasets
-        self.brands: List[Dict[str, Any]] = []
-        self.strains: List[Dict[str, Any]] = []
-        self.extractedStrains: Dict[str, Any] = {}
+        self.brands: list[dict[str, Any]] = []
+        self.strains: list[dict[str, Any]] = []
+        self.extractedStrains: dict[str, Any] = {}
         self.brandsFound: int = 0
         self.strainsFound: int = 0
 
@@ -174,7 +176,6 @@ class CanaData:
             except Exception as e:
                 logger.warning(f"Cached request failed, trying without cache: {e}")
                 # Fall back to direct request
-                pass
 
         # Direct request without cache
         try:
@@ -199,7 +200,7 @@ class CanaData:
                 logger.warning(f"Request failed with status {req.status_code}: {req.text}")
                 return False
         except requests.exceptions.RequestException as e:
-            logger.error(f"Network error occurred: {str(e)}")
+            logger.error(f"Network error occurred: {e!s}")
             return self._do_curl_request(url)
 
     def _do_curl_request(self, url: str):
@@ -242,7 +243,7 @@ class CanaData:
             logger.error(f"Curl fallback failed: {e}")
             return False
 
-    def getLocations(self, lat: Optional[float] = None, long: Optional[float] = None) -> None:
+    def getLocations(self, lat: float | None = None, long: float | None = None) -> None:
         """
         Retrieve all dispensary/delivery locations for the current search slug.
         """
@@ -252,7 +253,7 @@ class CanaData:
 
         while True:
             # Construct the paginated API URL with current offset
-            url = f'{self.baseUrl}?offset={str(self.locationsFound)}{self.pageSize}'
+            url = f'{self.baseUrl}?offset={self.locationsFound!s}{self.pageSize}'
 
             # Add filters based on user selection or defaults
             if self.storefronts:
@@ -361,7 +362,7 @@ class CanaData:
             for error in processor.errors[:5]:  # Log first 5 errors
                 logger.warning(f"Error for {error['location']['slug']}: {error['error']}")
 
-    def _fetch_and_process_menu(self, location: Dict[str, Any]) -> bool:
+    def _fetch_and_process_menu(self, location: dict[str, Any]) -> bool:
         """Fetch and process menu for a single location"""
         location_slug = location["slug"]
         location_type = location.get("type", "dispensary")
@@ -387,7 +388,7 @@ class CanaData:
             return False
 
         except Exception as e:
-            logger.error(f"Error processing {location_slug}: {str(e)}")
+            logger.error(f"Error processing {location_slug}: {e!s}")
             return False
 
     def _to_listing_path_type(self, location_type: str) -> str:
@@ -396,12 +397,12 @@ class CanaData:
             return 'deliveries'
         return 'dispensaries'
 
-    def _fetch_discovery_menu_items(self, location_slug: str, listing_path_type: str) -> Optional[Dict[str, Any]]:
+    def _fetch_discovery_menu_items(self, location_slug: str, listing_path_type: str) -> dict[str, Any] | None:
         """Fetch paginated menu items from discovery endpoint."""
         page = 1
         page_size = int(os.getenv('MENU_PAGE_SIZE', 100))
-        all_items: List[Dict[str, Any]] = []
-        meta: Dict[str, Any] = {}
+        all_items: list[dict[str, Any]] = []
+        meta: dict[str, Any] = {}
 
         while True:
             url = (
@@ -435,7 +436,7 @@ class CanaData:
         """
         offset: int = 0
         while True:
-            url = f'{self.brandsBaseUrl}?offset={str(offset)}{self.pageSize}'
+            url = f'{self.brandsBaseUrl}?offset={offset!s}{self.pageSize}'
             logger.info(f"Fetching brands (offset: {offset})...")
 
             data = self.do_request(url)
@@ -465,7 +466,7 @@ class CanaData:
         logger.warning("Global Strains endpoint is currently unreliable. Proceeding with attempt, but menu-based extraction is recommended.")
         offset: int = 0
         while True:
-            url = f'{self.strainsBaseUrl}?offset={str(offset)}{self.pageSize}'
+            url = f'{self.strainsBaseUrl}?offset={offset!s}{self.pageSize}'
             logger.info(f"Fetching strains (offset: {offset})...")
 
             data = self.do_request(url)
@@ -491,7 +492,7 @@ class CanaData:
                 break
         logger.info(f"Retrieved {self.strainsFound} strains.")
 
-    def process_menu_json(self, menu_json: Dict[str, Any]) -> None:
+    def process_menu_json(self, menu_json: dict[str, Any]) -> None:
         """
         Process the JSON response for a single location's menu.
         """
@@ -507,8 +508,8 @@ class CanaData:
 
         categories = menu_json.get('categories', [])
         menu_items_count = 0
-        local_menu_items: List[Dict[str, Any]] = []
-        local_extracted_strains: Dict[str, Any] = {}
+        local_menu_items: list[dict[str, Any]] = []
+        local_extracted_strains: dict[str, Any] = {}
         is_empty_menu = not categories
 
         if is_empty_menu:
@@ -558,7 +559,7 @@ class CanaData:
 
         logger.info(f"Processed {menu_items_count} items for {listing_slug}")
 
-    def process_menu_items_json(self, menu_json: Dict[str, Any], location: Dict[str, Any]) -> None:
+    def process_menu_items_json(self, menu_json: dict[str, Any], location: dict[str, Any]) -> None:
         """Process discovery/v1/listings/{type}/{slug}/menu_items payload."""
         listing_slug = location.get('slug')
         listing_type = self._to_listing_path_type(location.get('type', 'dispensary'))
@@ -572,8 +573,8 @@ class CanaData:
             return
 
         menu_items_count = 0
-        local_menu_items: List[Dict[str, Any]] = []
-        local_extracted_strains: Dict[str, Any] = {}
+        local_menu_items: list[dict[str, Any]] = []
+        local_extracted_strains: dict[str, Any] = {}
 
         for item in menu_items:
             if not isinstance(item, dict):
@@ -755,7 +756,7 @@ class CanaData:
         # Replace our finished menu items list with our flat, ordered, dictionary list
         self.finishedMenuItems = ready_list
 
-    def flatten_dictionary(self, d: Dict[str, Any]) -> Dict[str, str]:
+    def flatten_dictionary(self, d: dict[str, Any]) -> dict[str, str]:
         """
         Recursively flatten a nested dictionary using dot notation for keys.
 
@@ -847,7 +848,7 @@ class CanaData:
         # Set searchSlug to City/State provided
         self.searchSlug = search
 
-    def csv_maker(self, filename: str, data: List[Dict[str, Any]], preorganized: bool = False) -> None:
+    def csv_maker(self, filename: str, data: list[dict[str, Any]], preorganized: bool = False) -> None:
         """
         Export a list of dictionaries to a CSV file with timestamp.
 
@@ -902,7 +903,7 @@ class CanaData:
                 output.writerow(row.values())
 
             # Print visual notification of finished export & number of items seen
-            print(f'Successfully exported ({str(len(data))} items) to CSV -> {sanitized_filename}.csv')
+            print(f'Successfully exported ({len(data)!s} items) to CSV -> {sanitized_filename}.csv')
 
     def dataToCSV(self) -> None:
         """
@@ -924,14 +925,14 @@ class CanaData:
         try:
             self.csv_maker(f'{self.searchSlug}_results', self.finishedMenuItems)
         except Exception as e:
-            print(f'Error: {str(e)}')
+            print(f'Error: {e!s}')
             print('^^ Probably were no actual items (if error says \'list index out of range\')')
 
         # Attempt high-level listings export
         try:
             self.csv_maker(f'{self.searchSlug}_total_listings', self.totalLocations)
         except Exception as e:
-            print(f'Error: {str(e)}')
+            print(f'Error: {e!s}')
             print('^^ Musta been a bad search query? (if error says \'list index out of range\')')
 
         # Attempt Brands export
@@ -939,14 +940,14 @@ class CanaData:
             try:
                 self.csv_maker('all_brands', self.brands)
             except Exception as e:
-                print(f'Error exporting brands: {str(e)}')
+                print(f'Error exporting brands: {e!s}')
 
         # Attempt Strains export
         if self.strains:
             try:
                 self.csv_maker('all_strains', self.strains)
             except Exception as e:
-                print(f'Error exporting strains: {str(e)}')
+                print(f'Error exporting strains: {e!s}')
 
         # Attempt Extracted Strains export (Menu-based)
         if self.extractedStrains:
@@ -958,9 +959,9 @@ class CanaData:
                 self.csv_maker(filename, extracted_list)
                 print(f'- Exported {len(extracted_list)} unique strains found in menus.')
             except Exception as e:
-                print(f'Error exporting extracted strains: {str(e)}')
+                print(f'Error exporting extracted strains: {e!s}')
 
-        print(f'\n\nResults for -> {self.searchSlug}:\n- {str(self.locationsFound)} Locations\n- {str(len(self.allMenuItems.keys()))} Menus\n- {str(len(self.emptyMenus.keys()))} Empty Menus\n- {str(self.menuItemsFound)} Menu Items')
+        print(f'\n\nResults for -> {self.searchSlug}:\n- {self.locationsFound!s} Locations\n- {len(self.allMenuItems.keys())!s} Menus\n- {len(self.emptyMenus.keys())!s} Empty Menus\n- {self.menuItemsFound!s} Menu Items')
 
     def resetDataSets(self) -> None:
         """
@@ -1028,7 +1029,7 @@ class CanaData:
     def set_city_slug(self, search: str) -> None:
         self.setCitySlug(search)
 
-    def get_locations(self, lat: Optional[float] = None, long: Optional[float] = None) -> None:
+    def get_locations(self, lat: float | None = None, long: float | None = None) -> None:
         self.getLocations(lat=lat, long=long)
 
     def get_menus(self) -> None:

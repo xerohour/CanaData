@@ -1,7 +1,8 @@
-from CanaData import CanaData
 import json
 import logging
 import sys
+
+from CanaData import CanaData
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s', stream=sys.stdout)

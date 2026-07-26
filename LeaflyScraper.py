@@ -1,4 +1,5 @@
 import os
+
 from apify_client import ApifyClient
 from dotenv import load_dotenv
 
@@ -63,7 +64,7 @@ def scrape_leafly(location_slug):
 
         return results
     except Exception as e:
-        print(f"❌ Leafly scrape failed: {str(e)}")
+        print(f"❌ Leafly scrape failed: {e!s}")
         return []
 
 if __name__ == "__main__":

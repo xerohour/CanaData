@@ -1,14 +1,15 @@
-import os
+import argparse
 import csv
-import re
+import glob
 import json
 import logging
-import argparse
-import glob
+import os
+import re
 from datetime import datetime
-from typing import List, Any
-from yattag import Doc, indent
+from typing import Any
+
 from dotenv import load_dotenv
+from yattag import Doc, indent
 
 # Load environment variables
 load_dotenv()
@@ -87,8 +88,8 @@ class CanaParse:
             base_dir, f"CanaData_{datetime.today().strftime('%m-%d-%Y')}"))
         self.no_filter = no_filter
         self.filters = []
-        self.raw_data: List[List[Any]] = []
-        self.filtered_tables: List[List[List[Any]]] = []
+        self.raw_data: list[list[Any]] = []
+        self.filtered_tables: list[list[list[Any]]] = []
         self.header_map = {}
         self.listings_map = {}
 
@@ -142,7 +143,7 @@ class CanaParse:
             logger.info(
                 f"Loaded {len(self.filters)} filters from {filters_path}")
         except Exception as e:
-            logger.error(f"Failed to load filters: {str(e)}")
+            logger.error(f"Failed to load filters: {e!s}")
 
     def load_csv_data(self):
         """Read the CSV file and pre-filter rows with pricing data."""
@@ -200,7 +201,7 @@ class CanaParse:
             logger.info(f"Loaded {len(self.raw_data)} rows with pricing data.")
             return True
         except Exception as e:
-            logger.error(f"Error reading CSV: {str(e)}")
+            logger.error(f"Error reading CSV: {e!s}")
             return False
 
     def apply_filters(self):
@@ -219,7 +220,7 @@ class CanaParse:
             price_col = f.key
 
             # Apply filters
-            filtered: List[Any] = [
+            filtered: list[Any] = [
                 # copy row to avoid mutating raw_data
                 row[:] for row in self.raw_data
                 if self.is_match(row, f, price_col)
@@ -418,7 +419,7 @@ class CanaParse:
     def as_currency(self, amount):
         """Format number as USD currency."""
         try:
-            return '${:,.2f}'.format(float(amount))
+            return f'${float(amount):,.2f}'
         except Exception:
             return str(amount)
 
@@ -427,7 +428,7 @@ class CanaParse:
         try:
             val = float(amount)
             if 0 <= val <= 100:
-                return '{:,.2f}%'.format(val)
+                return f'{val:,.2f}%'
         except Exception:
             pass
         return ""
@@ -1149,23 +1150,21 @@ class CanaParse:
                 safe_json = json.dumps(serialized_rows).replace('<', '\\u003c').replace('>', '\\u003e').replace('&', '\\u0026')
                 doc.asis(safe_json)
 
-            with tag('div', klass='table-container'):
-                with tag('table'):
-                    with tag('thead'):
-                        with tag('tr'):
-                            # Define headers based on data content
-                            headers = ['Price', 'Image',
-                                       'Product', 'Category', 'THC']
-                            if f.cbd_floor > 0:
-                                headers.append('CBD')
-                            headers.extend(['Dispensary', 'City', 'Details'])
+            with tag('div', klass='table-container'), tag('table'):
+                with tag('thead'), tag('tr'):
+                    # Define headers based on data content
+                    headers = ['Price', 'Image',
+                               'Product', 'Category', 'THC']
+                    if f.cbd_floor > 0:
+                        headers.append('CBD')
+                    headers.extend(['Dispensary', 'City', 'Details'])
 
-                            for label in headers:
-                                with tag('th'):
-                                    text(label)
+                    for label in headers:
+                        with tag('th'):
+                            text(label)
 
-                    with tag('tbody'):
-                        pass
+                with tag('tbody'):
+                    pass
 
     def _generate_row(self, doc, tag, text, row, f):
         """Generate a single table row."""
@@ -1210,10 +1209,9 @@ class CanaParse:
             
         with tag('tr'):
             # Price
-            with tag('td'):
-                with tag('div', klass="price-tag"):
-                    p_val = self.get_price_by_key(row, price_col)
-                    text(self.as_currency(p_val) if p_val is not None else "-")
+            with tag('td'), tag('div', klass="price-tag"):
+                p_val = self.get_price_by_key(row, price_col)
+                text(self.as_currency(p_val) if p_val is not None else "-")
 
             # Image
             with tag('td', klass="thumb"):

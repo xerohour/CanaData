@@ -1,10 +1,10 @@
-import threading
-import time
 import os
 import sys
+import threading
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from CanaData import CanaData
+
 
 def test_high_concurrency_global_lock_contention(benchmark):
     # This tests the high concurrency and race conditions in distributed systems scaling as requested.

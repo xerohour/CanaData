@@ -1,5 +1,6 @@
 import csv
 
+
 def create_mock_csv(filename="mock_data.csv"):
     # CanaParse expects about 30 columns check CanaParse.py for indices
     # We will create a list of sufficient length and populate specific indices
