@@ -717,43 +717,25 @@ class CanaData:
         """
         Original data organization method for backward compatibility.
         """
-        # Grab the data from allMenuItems
-        listings = self.allMenuItems
+        # Flatten all datasets using list comprehension for speed
+        flatDictList = [
+            self.flatten_dictionary(item)
+            for items in self.allMenuItems.values()
+            for item in items
+        ]
 
-        # This is where our flat datasets will reside once finished
-        flatDictList = []
+        if not flatDictList:
+            self.finishedMenuItems = []
+            return
 
-        # Loop through the Listings
-        for listing in listings:
-            # Loop through the menu item Dictionaries for each listings
-            for item in listings[listing]:
-                # Flatten the dataset for each item
-                flatData = self.flatten_dictionary(item)
-                # Add the flat dataset to our flatDictList
-                flatDictList.append(flatData)
+        # Collect all possible keys efficiently using set union
+        all_keys = sorted(set().union(*(d.keys() for d in flatDictList)))
 
-        # This set will collect all possible keys
-        all_keys_set = set()
-        for item in flatDictList:
-            all_keys_set.update(item.keys())
-
-        all_keys = sorted(list(all_keys_set))
-
-        # This list will house all data after each key has been filled out
-        ready_list = []
-
+        # Create a dictionary with all keys initialized to 'None'
         template_dict = dict.fromkeys(all_keys, 'None')
-        # Loop through the flatDictList to update any missing keys
-        for item in flatDictList:
-            # Create a dictionary with all keys initialized to 'None'
-            flat_ordered_dict = template_dict.copy()
-            # Update with actual values
-            flat_ordered_dict.update(item)
 
-            ready_list.append(flat_ordered_dict)
-
-        # Replace our finished menu items list with our flat, ordered, dictionary list
-        self.finishedMenuItems = ready_list
+        # Replace our finished menu items list using fast dictionary merge operator (|)
+        self.finishedMenuItems = [template_dict | item for item in flatDictList]
 
     def flatten_dictionary(self, d: Dict[str, Any]) -> Dict[str, str]:
         """
