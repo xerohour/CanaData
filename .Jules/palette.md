@@ -12,3 +12,6 @@
 ## 2026-07-24 - Emoji Icons as Decorative Elements
 **Learning:** The portal uses large emojis as decorative visual icons in cards. Without `aria-hidden="true"`, screen readers read these out before the actual card heading (e.g., "bar chart, Interactive Dashboard"), which creates a clunky and confusing navigation experience.
 **Action:** Always add `aria-hidden="true"` to emoji-based decorative structural icons across the application to keep screen reader flow clean and focused on the actual content.
+## 2026-07-27 - Missing Skip-to-Content Links in Dashboard
+**Learning:** Found that the main index and the generated dashboard missing a "skip to main content" link while `generate_report.py` had it.
+**Action:** When creating HTML pages with large navbars or header areas, ensure a `.skip-link` is added and accessible via keyboard navigation for screen reader users.

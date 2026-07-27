@@ -8,6 +8,25 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
+        /* Accessibility Improvements */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary);
+            color: var(--bg);
+            padding: 8px;
+            z-index: 100;
+            transition: top 0.3s;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 0 0 8px 0;
+        }
+
+        .skip-link:focus {
+            top: 0;
+        }
+
         :root {
             --primary: #00ffa3;
             --secondary: #00d4ff;
@@ -203,7 +222,8 @@
     </style>
 </head>
 <body>
-    <div class="portal-container">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <div class="portal-container" id="main-content" tabindex="-1">
         <header>
             <h1>CanaData Portal</h1>
             <p class="subtitle">Access responsive analytics and scraped reports for Weedmaps listings and menus.</p>
