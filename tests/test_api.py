@@ -1,7 +1,9 @@
 import pytest
 import responses
+
 from CanaData import CanaData
 from CannMenusClient import CannMenusClient
+
 
 @pytest.fixture
 def cana():

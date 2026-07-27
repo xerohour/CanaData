@@ -1,7 +1,8 @@
-from CanaData import CanaData
 import json
 import logging
 import sys
+
+from CanaData import CanaData
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s', stream=sys.stdout)
@@ -37,7 +38,7 @@ def explore_endpoint(name, url):
         
         if first_item and isinstance(first_item, dict):
             logger.info("Potential cross-reference fields found in first item:")
-            id_fields = [k for k in first_item.keys() if 'id' in k.lower() or 'slug' in k.lower() or 'license' in k.lower() or 'sku' in k.lower()]
+            id_fields = [k for k in first_item if 'id' in k.lower() or 'slug' in k.lower() or 'license' in k.lower() or 'sku' in k.lower()]
             for field in id_fields:
                 logger.info(f"  - {field}: {first_item[field]}")
         

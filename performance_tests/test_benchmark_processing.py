@@ -10,8 +10,8 @@ sys.path.insert(
             os.path.dirname(__file__),
             '..')))
 
-from optimized_data_processor import OptimizedDataProcessor  # noqa: E402
-from CanaData import CanaData  # noqa: E402
+from CanaData import CanaData
+from optimized_data_processor import OptimizedDataProcessor
 
 
 def test_processing_benchmark_optimized(benchmark):

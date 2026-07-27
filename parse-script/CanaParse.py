@@ -1,14 +1,15 @@
-import os
+import argparse
 import csv
-import re
+import glob
 import json
 import logging
-import argparse
-import glob
-from datetime import datetime
-from typing import List, Any
-from yattag import Doc, indent
+import os
+import re
+from datetime import datetime, timezone
+from typing import Any
+
 from dotenv import load_dotenv
+from yattag import Doc, indent
 
 # Load environment variables
 load_dotenv()
@@ -87,8 +88,8 @@ class CanaParse:
             base_dir, f"CanaData_{datetime.today().strftime('%m-%d-%Y')}"))
         self.no_filter = no_filter
         self.filters = []
-        self.raw_data: List[List[Any]] = []
-        self.filtered_tables: List[List[List[Any]]] = []
+        self.raw_data: list[list[Any]] = []
+        self.filtered_tables: list[list[list[Any]]] = []
         self.header_map = {}
         self.listings_map = {}
 
@@ -142,7 +143,7 @@ class CanaParse:
             logger.info(
                 f"Loaded {len(self.filters)} filters from {filters_path}")
         except Exception as e:
-            logger.error(f"Failed to load filters: {str(e)}")
+            logger.error(f"Failed to load filters: {e!s}")
 
     def load_csv_data(self):
         """Read the CSV file and pre-filter rows with pricing data."""
@@ -200,16 +201,15 @@ class CanaParse:
             logger.info(f"Loaded {len(self.raw_data)} rows with pricing data.")
             return True
         except Exception as e:
-            logger.error(f"Error reading CSV: {str(e)}")
+            logger.error(f"Error reading CSV: {e!s}")
             return False
 
     def apply_filters(self):
         """
         Iterate through all filters and apply them to the raw data.
         """
-        if not self.raw_data:
-            if not self.load_csv_data():
-                return
+        if not self.raw_data and not self.load_csv_data():
+            return
 
         self.filtered_tables = []
         for f in self.filters:
@@ -219,7 +219,7 @@ class CanaParse:
             price_col = f.key
 
             # Apply filters
-            filtered: List[Any] = [
+            filtered: list[Any] = [
                 # copy row to avoid mutating raw_data
                 row[:] for row in self.raw_data
                 if self.is_match(row, f, price_col)
@@ -350,14 +350,12 @@ class CanaParse:
         row_str = " ".join([str(x) for x in row]).lower()
 
         # 4. Brands
-        if f.brands:
-            if not any(brand.lower() in row_str for brand in f.brands):
-                return False
+        if f.brands and not any(brand.lower() in row_str for brand in f.brands):
+            return False
 
         # 5. Strains
-        if f.strains:
-            if not any(strain.lower() in row_str for strain in f.strains):
-                return False
+        if f.strains and not any(strain.lower() in row_str for strain in f.strains):
+            return False
 
         # 6. Stores
         if f.stores:
@@ -367,28 +365,24 @@ class CanaParse:
                 return False
 
         # 7. Bad Words (Exclusion)
-        if f.bad_words:
-            if any(word.lower() in row_str for word in f.bad_words):
-                return False
+        if f.bad_words and any(word.lower() in row_str for word in f.bad_words):
+            return False
 
         # 8. Good Words (Required)
-        if f.good_words:
-            if not any(word.lower() in row_str for word in f.good_words):
-                return False
+        if f.good_words and not any(word.lower() in row_str for word in f.good_words):
+            return False
 
         # 9. THC Floor
         if f.thc_floor > 0:
             thc_val = self.extract_thc(row)
-            if thc_val < f.thc_floor:
-                if f.thc_floor_strict:
-                    return False
+            if thc_val < f.thc_floor and f.thc_floor_strict:
+                return False
 
         # 10. CBD Floor
         if f.cbd_floor > 0.001:
             cbd_val = self.extract_cbd(row)
-            if cbd_val < f.cbd_floor:
-                if f.cbd_floor_strict:
-                    return False
+            if cbd_val < f.cbd_floor and f.cbd_floor_strict:
+                return False
 
         return True
 
@@ -418,7 +412,7 @@ class CanaParse:
     def as_currency(self, amount):
         """Format number as USD currency."""
         try:
-            return '${:,.2f}'.format(float(amount))
+            return f'${float(amount):,.2f}'
         except Exception:
             return str(amount)
 
@@ -427,7 +421,7 @@ class CanaParse:
         try:
             val = float(amount)
             if 0 <= val <= 100:
-                return '{:,.2f}%'.format(val)
+                return f'{val:,.2f}%'
         except Exception:
             pass
         return ""
@@ -440,12 +434,11 @@ class CanaParse:
         with tag('html', lang="en"):
             with tag('head'):
                 self._add_html_head(doc)
-            with tag('body'):
-                with tag('div', klass="container-fluid main"):
-                    self._generate_navbar(doc, tag, text)
-                    # Global Search Bar
-                    with tag('div', klass="search-container"):
-                        doc.stag('input', ('aria-label', 'Search products, brands, categories, or dispensaries'), type="text", id="global-search",
+            with tag('body'), tag('div', klass="container-fluid main"):
+                self._generate_navbar(doc, tag, text)
+                # Global Search Bar
+                with tag('div', klass="search-container"):
+                    doc.stag('input', ('aria-label', 'Search products, brands, categories, or dispensaries'), type="text", id="global-search",
                                  placeholder="🔍 Search products, brands, categories, or dispensaries...", 
                                  klass="search-input")
                     for i, f in enumerate(self.filters):
@@ -1045,18 +1038,16 @@ class CanaParse:
             with tag('div', klass="navbar-brand"):
                 text("CANADATA ANALYTICS")
 
-            with tag('div'):
-                with tag('ul', klass="navbar-nav"):
-                    for f in self.filters:
-                        with tag('li'):
-                            with tag('a', klass="nav-link", href=f'#{f.name.replace(" ", "_").lower()}'):
-                                text(f.name)
+            with tag('div'), tag('ul', klass="navbar-nav"):
+                for f in self.filters:
+                    with tag('li'), tag('a', klass="nav-link", href=f'#{f.name.replace(" ", "_").lower()}'):
+                        text(f.name)
 
             with tag('div', style="text-align: right"):
                 with tag('div', style="font-size: 0.8rem; color: var(--text-muted)"):
                     text(f"Source: {self.csv_file}")
                 with tag('div', style="font-size: 0.8rem; color: var(--accent)"):
-                    now = datetime.now().strftime("%b %d, %Y")
+                    now = datetime.now(timezone.utc).strftime("%b %d, %Y")
                     text(f"Updated: {now}")
 
     def _generate_filter_section(self, doc, tag, text, i, f):
@@ -1099,11 +1090,10 @@ class CanaParse:
                 loc_id = str(row[0]) if len(row) > 0 else ""
                 store_info = self.listings_map.get(loc_id, {})
                 dispensary_name = store_info.get('name', "") if isinstance(store_info, dict) else store_info
-                if not dispensary_name:
-                    if loc_idx >= 0 and len(row) > loc_idx:
-                        loc_val = row[loc_idx]
-                        if '/' in loc_val:
-                            dispensary_name = loc_val.split('/')[-1].replace('"', '').replace(']', '').replace('-', ' ').title()
+                if not dispensary_name and loc_idx >= 0 and len(row) > loc_idx:
+                    loc_val = row[loc_idx]
+                    if '/' in loc_val:
+                        dispensary_name = loc_val.split('/')[-1].replace('"', '').replace(']', '').replace('-', ' ').title()
                 
                 store_city = store_info.get('city', "") if isinstance(store_info, dict) else ""
                 
@@ -1149,23 +1139,21 @@ class CanaParse:
                 safe_json = json.dumps(serialized_rows).replace('<', '\\u003c').replace('>', '\\u003e').replace('&', '\\u0026')
                 doc.asis(safe_json)
 
-            with tag('div', klass='table-container'):
-                with tag('table'):
-                    with tag('thead'):
-                        with tag('tr'):
-                            # Define headers based on data content
-                            headers = ['Price', 'Image',
-                                       'Product', 'Category', 'THC']
-                            if f.cbd_floor > 0:
-                                headers.append('CBD')
-                            headers.extend(['Dispensary', 'City', 'Details'])
+            with tag('div', klass='table-container'), tag('table'):
+                with tag('thead'), tag('tr'):
+                    # Define headers based on data content
+                    headers = ['Price', 'Image',
+                               'Product', 'Category', 'THC']
+                    if f.cbd_floor > 0:
+                        headers.append('CBD')
+                    headers.extend(['Dispensary', 'City', 'Details'])
 
-                            for label in headers:
-                                with tag('th'):
-                                    text(label)
+                    for label in headers:
+                        with tag('th'):
+                            text(label)
 
-                    with tag('tbody'):
-                        pass
+                with tag('tbody'):
+                    pass
 
     def _generate_row(self, doc, tag, text, row, f):
         """Generate a single table row."""
@@ -1210,10 +1198,9 @@ class CanaParse:
             
         with tag('tr'):
             # Price
-            with tag('td'):
-                with tag('div', klass="price-tag"):
-                    p_val = self.get_price_by_key(row, price_col)
-                    text(self.as_currency(p_val) if p_val is not None else "-")
+            with tag('td'), tag('div', klass="price-tag"):
+                p_val = self.get_price_by_key(row, price_col)
+                text(self.as_currency(p_val) if p_val is not None else "-")
 
             # Image
             with tag('td', klass="thumb"):
@@ -1235,9 +1222,8 @@ class CanaParse:
                         text(brand_name)
 
             # Category
-            with tag('td'):
-                with tag('span', style="background: rgba(0, 212, 255, 0.1); color: var(--secondary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;"):
-                    text(category_name)
+            with tag('td'), tag('span', style="background: rgba(0, 212, 255, 0.1); color: var(--secondary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;"):
+                text(category_name)
 
             # THC
             thc_val = self.extract_thc(row)

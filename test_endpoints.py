@@ -1,5 +1,6 @@
 import requests
 
+
 def check_endpoint(name, url):
     print(f"\n--- Testing: {name} ---")
     print(f"URL: {url}")

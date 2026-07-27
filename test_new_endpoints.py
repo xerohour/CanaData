@@ -1,5 +1,7 @@
-import requests
 import json
+
+import requests
+
 
 def check_endpoint(url):
     print(f"Testing URL: {url}")

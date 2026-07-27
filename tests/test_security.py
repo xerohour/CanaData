@@ -1,8 +1,11 @@
 import os
-import pytest
-from CanaData import CanaData
-from datetime import datetime
 import shutil
+from datetime import datetime, timezone
+
+import pytest
+
+from CanaData import CanaData
+
 
 class TestSecurity:
 
@@ -13,7 +16,7 @@ class TestSecurity:
         if os.path.exists(traversal_file):
             os.remove(traversal_file)
 
-        today = datetime.today().strftime('%m-%d-%Y')
+        today = datetime.now(timezone.utc).strftime('%m-%d-%Y')
         # Check where CanaData writes
         dirs_to_check = [f'CanaData_{today}', f'tests/CanaData_{today}']
 
@@ -42,8 +45,8 @@ class TestSecurity:
         # Attempt to exploit
         try:
             cana.csv_maker(malicious_filename, data)
-        except Exception:
-            pass
+        except Exception as e:
+            print(e)
 
         # Check if traversal occurred (file written outside intended directory)
         traversal_file = "traversal_test.csv"
@@ -55,7 +58,7 @@ class TestSecurity:
         # We need to find where it was written.
         # Based on sys.path[0], it could be in tests/CanaData_DATE or ./CanaData_DATE
         import sys
-        today = datetime.today().strftime('%m-%d-%Y')
+        today = datetime.now(timezone.utc).strftime('%m-%d-%Y')
         sanitized_filename = "..traversal_test"
 
         # Possible locations

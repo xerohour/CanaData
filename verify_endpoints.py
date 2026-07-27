@@ -1,5 +1,6 @@
-import requests
 import os
+
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -23,7 +24,7 @@ def check_endpoint(name, url, headers=None):
         else:
             print(f"  [WARN] {status} - {name}")
     except Exception as e:
-        print(f"  [ERROR] {str(e)} - {name}")
+        print(f"  [ERROR] {e!s} - {name}")
     return False
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from optimized_data_processor import OptimizedDataProcessor
 
+
 def test_processing_benchmark_optimized(benchmark):
     sample_file = os.path.join(os.path.dirname(__file__), '..', 'sample_products.json')
     with open(sample_file) as f:
