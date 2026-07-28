@@ -1,7 +1,9 @@
+import html
 import os
 from datetime import datetime
-import html
+
 from CanaData import CanaData
+
 
 def is_safe_url(url):
     if not url:

@@ -1,5 +1,6 @@
 import requests
 
+
 def get_valid_slug():
     # Remove region filter to ensure we get *any* listing
     url = "https://api-g.weedmaps.com/discovery/v1/listings?filter[any_retailer_services][]=storefront&page_size=1"

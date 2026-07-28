@@ -1,6 +1,7 @@
-from CanaData import CanaData
 import logging
 import sys
+
+from CanaData import CanaData
 
 # Configure logging to show the output in the console
 # The logger in CanaData.py is named 'CanaData' or '__name__'

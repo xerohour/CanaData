@@ -1,8 +1,11 @@
 import os
-import pytest
-from CanaData import CanaData
-from datetime import datetime
 import shutil
+from datetime import datetime
+
+import pytest
+
+from CanaData import CanaData
+
 
 class TestSecurity:
 

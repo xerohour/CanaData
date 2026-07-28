@@ -1,8 +1,9 @@
-import pandas as pd
-import logging
-from typing import List, Dict, Any
 import json
+import logging
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any
+
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ class OptimizedDataProcessor:
     def __init__(self, max_workers: int = 4):
         self.max_workers = max_workers
     
-    def process_menu_data(self, all_menu_items: Dict[str, List[Dict]]) -> List[Dict[str, Any]]:
+    def process_menu_data(self, all_menu_items: dict[str, list[dict]]) -> list[dict[str, Any]]:
         """
         Process all menu items with optimized flattening.
         
@@ -39,7 +40,7 @@ class OptimizedDataProcessor:
         logger.info(f"Processed {len(result)} menu items")
         return result
     
-    def _flatten_all_items(self, all_menu_items: Dict[str, List[Dict]]) -> pd.DataFrame:
+    def _flatten_all_items(self, all_menu_items: dict[str, list[dict]]) -> pd.DataFrame:
         """
         Flatten all menu items using pandas json_normalize for efficiency.
         """
@@ -96,7 +97,7 @@ class OptimizedDataProcessor:
         
         return df
     
-    def _fallback_flattening(self, items: List[Dict]) -> pd.DataFrame:
+    def _fallback_flattening(self, items: list[dict]) -> pd.DataFrame:
         """
         Fallback to custom flattening if pandas fails.
         """
@@ -122,7 +123,7 @@ class OptimizedDataProcessor:
         
         return pd.DataFrame(all_flattened)
     
-    def _flatten_batch(self, batch: List[Dict]) -> List[Dict]:
+    def _flatten_batch(self, batch: list[dict]) -> list[dict]:
         """
         Flatten a batch of items using the existing custom algorithm.
         """
@@ -132,7 +133,7 @@ class OptimizedDataProcessor:
             flattened_items.append(flattened)
         return flattened_items
     
-    def _flatten_dictionary_custom(self, d: Dict) -> Dict:
+    def _flatten_dictionary_custom(self, d: dict) -> dict:
         """
         Optimized version of the existing custom flattening algorithm.
         """

@@ -1,5 +1,6 @@
 import requests
 
+
 def check_simple(url):
     print(f"Testing URL: {url}")
     try:

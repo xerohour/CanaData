@@ -1,5 +1,7 @@
 import concurrent.futures
+
 from CanaData import CanaData
+
 
 def test_flatten_dictionary_simple():
     cana = CanaData()
