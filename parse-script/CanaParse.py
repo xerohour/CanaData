@@ -1021,6 +1021,13 @@ class CanaParse:
                 renderSection(sectionId);
             });
 
+            $('th').on('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    $(this).click();
+                }
+            });
+
             // Global search
             $('#global-search').on('keyup', function() {
                 var val = $(this).val();
@@ -1161,8 +1168,12 @@ class CanaParse:
                             headers.extend(['Dispensary', 'City', 'Details'])
 
                             for label in headers:
-                                with tag('th'):
-                                    text(label)
+                                if label.upper() not in ['IMAGE', 'DETAILS']:
+                                    with tag('th', ('aria-label', f"Sort by {label}"), tabindex="0", role="button"):
+                                        text(label)
+                                else:
+                                    with tag('th'):
+                                        text(label)
 
                     with tag('tbody'):
                         pass

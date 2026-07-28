@@ -12,3 +12,6 @@
 ## 2026-07-24 - Emoji Icons as Decorative Elements
 **Learning:** The portal uses large emojis as decorative visual icons in cards. Without `aria-hidden="true"`, screen readers read these out before the actual card heading (e.g., "bar chart, Interactive Dashboard"), which creates a clunky and confusing navigation experience.
 **Action:** Always add `aria-hidden="true"` to emoji-based decorative structural icons across the application to keep screen reader flow clean and focused on the actual content.
+## 2024-05-24 - Interactive Table Header Accessibility
+**Learning:** Interactive table headers that sort data via JavaScript `onclick` events are completely inaccessible to keyboard users unless they are explicitly given a `tabindex="0"`, an appropriate ARIA role (e.g., `button`), and a keyboard event listener (handling Enter/Space keys to trigger the click).
+**Action:** Always verify that interactive elements like sorting headers can receive focus and have keydown handlers to ensure keyboard accessibility.
