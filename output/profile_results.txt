@@ -1,0 +1,32 @@
+Initial Memory: 94.23 MB
+Time Taken: 0.0948s
+Final Memory: 96.86 MB
+Memory Diff: 2.62 MB
+
+Profiler Output:
+         99823 function calls (90043 primitive calls) in 0.095 seconds
+
+   Ordered by: cumulative time
+   List reduced from 650 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.095    0.095 /app/optimized_data_processor.py:18(process_menu_data)
+        1    0.000    0.000    0.036    0.036 /app/optimized_data_processor.py:42(_flatten_all_items)
+        1    0.000    0.000    0.032    0.032 /app/optimized_data_processor.py:180(_normalize_data)
+        1    0.000    0.000    0.026    0.026 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:2125(to_dict)
+        1    0.005    0.005    0.025    0.025 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/methods/to_dict.py:97(to_dict)
+        1    0.000    0.000    0.024    0.024 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:303(json_normalize)
+       16    0.000    0.000    0.015    0.001 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/generic.py:10142(where)
+       16    0.000    0.000    0.015    0.001 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/generic.py:9969(_where)
+    151/1    0.000    0.000    0.014    0.014 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:219(_simple_json_normalize)
+      150    0.002    0.000    0.014    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:194(_normalize_json_ordered)
+      155    0.001    0.000    0.012    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/internals/managers.py:399(apply)
+        1    0.001    0.001    0.012    0.012 /app/optimized_data_processor.py:69(_handle_remaining_nesting)
+       96    0.000    0.000    0.011    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/indexing.py:1192(__getitem__)
+ 9000/150    0.009    0.000    0.011    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:153(_normalize_json)
+        1    0.000    0.000    0.010    0.010 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:1591(itertuples)
+       30    0.000    0.000    0.009    0.000 {method 'extend' of 'list' objects}
+       63    0.000    0.000    0.009    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:1660(<genexpr>)
+30712/30518    0.007    0.000    0.009    0.000 {built-in method builtins.isinstance}
+        1    0.000    0.000    0.009    0.009 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:702(__init__)
+       62    0.000    0.000    0.008    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/indexing.py:1710(_getitem_tuple)
