@@ -46,7 +46,7 @@ class OptimizedDataProcessor:
         # Collect all items with location info
         # Using list comprehension for initialization performance
         items_with_location = [
-            {**item, '_location_id': location_id}
+            item | {'_location_id': location_id}
             for location_id, items in all_menu_items.items()
             for item in items
         ]
@@ -80,8 +80,11 @@ class OptimizedDataProcessor:
                 if first_idx is not None:
                     val = df[col].loc[first_idx]
                     if isinstance(val, pd.Series):
-                        val = val.dropna().iloc[0]
-                    if isinstance(val, (dict, list)):
+                        arr = val.to_numpy()
+                        mask = pd.notna(arr)
+                        if mask.any():
+                            val = arr[mask][0]
+                    if type(val) in (dict, list):
                         nested_columns.append(col)
         
         # Flatten nested columns
@@ -89,7 +92,11 @@ class OptimizedDataProcessor:
             try:
                 # Convert to string representation for nested data
                 # Using list comprehension for performance
-                df[col] = [json.dumps(x) if isinstance(x, (dict, list)) else str(x) for x in df[col]]
+                arr = df[col].to_numpy()
+                _type = type
+                _dumps = json.dumps
+                _str = str
+                df[col] = [_dumps(x) if _type(x) in (dict, list) else _str(x) for x in arr]
             except Exception as e:
                 logger.warning(f"Failed to flatten column {col}: {e}")
                 df[col] = df[col].astype(str)
@@ -140,25 +147,20 @@ class OptimizedDataProcessor:
         result = {}
         
         # Use iterative approach with explicit stack
-        stack = [iter(d.items())]
-        keys = []
+        stack = [(d.items(), "")]
         
         while stack:
-            for k, v in stack[-1]:
-                key = '.'.join(keys + [k]) if keys else k
+            items, prefix = stack.pop()
+            for k, v in items:
+                key = f"{prefix}.{k}" if prefix else k
                 
                 if isinstance(v, dict):
-                    # Push nested dict to stack
-                    keys.append(k)
-                    stack.append(iter(v.items()))
-                    break
+                    stack.append((v.items(), key))
                 elif isinstance(v, list):
                     if v and isinstance(v[0], dict):
                         # Handle list of dicts by taking first item or joining
                         if len(v) == 1:
-                            # Single item, flatten it
-                            nested_dict = {f"{k}.{sub_k}": sub_v for sub_k, sub_v in v[0].items()}
-                            result.update(nested_dict)
+                            stack.append((v[0].items(), key))
                         else:
                             # Multiple items, convert to JSON string
                             result[key] = json.dumps(v)
@@ -169,11 +171,6 @@ class OptimizedDataProcessor:
                     result[key] = 'None'
                 else:
                     result[key] = str(v)
-            else:
-                # Pop from stack when iterator is exhausted
-                if len(stack) > 1:
-                    keys.pop()
-                stack.pop()
         
         return result
     
