@@ -731,6 +731,12 @@ class CanaParse:
             border-top: 1px solid var(--glass-border);
         }
 
+        /* Accessibility Improvements */
+        *:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 4px;
+        }
+
         /* Scrollbar */
         ::-webkit-scrollbar { width: 10px; height: 10px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
@@ -992,11 +998,17 @@ class CanaParse:
             $('th').each(function() {
                 var text = $(this).text().trim();
                 if (text && text !== 'IMAGE' && text !== 'DETAILS') {
-                    $(this).css('cursor', 'pointer').append(' <span class="sort-icon" style="color: var(--text-muted); font-size: 0.8rem; margin-left: 4px;">↕</span>');
+                    $(this).css('cursor', 'pointer')
+                           .attr('tabindex', '0')
+                           .attr('role', 'button')
+                           .attr('aria-label', 'Sort by ' + text)
+                           .append(' <span class="sort-icon" style="color: var(--text-muted); font-size: 0.8rem; margin-left: 4px;">↕</span>');
                 }
             });
 
-            $('th').on('click', function() {
+            $('th').on('click keydown', function(e) {
+                if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+                if (e.type === 'keydown') e.preventDefault();
                 var text = $(this).text().trim();
                 if (text === 'IMAGE' || text === 'DETAILS') return;
                 

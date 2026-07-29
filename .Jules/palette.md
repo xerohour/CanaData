@@ -12,3 +12,6 @@
 ## 2026-07-24 - Emoji Icons as Decorative Elements
 **Learning:** The portal uses large emojis as decorative visual icons in cards. Without `aria-hidden="true"`, screen readers read these out before the actual card heading (e.g., "bar chart, Interactive Dashboard"), which creates a clunky and confusing navigation experience.
 **Action:** Always add `aria-hidden="true"` to emoji-based decorative structural icons across the application to keep screen reader flow clean and focused on the actual content.
+## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
+**Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
+**Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
