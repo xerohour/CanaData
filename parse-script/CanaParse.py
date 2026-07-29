@@ -1,22 +1,23 @@
-import os
+import argparse
 import csv
-import re
+import glob
 import json
 import logging
-import argparse
-import glob
-from datetime import datetime
-from typing import List, Any
-from yattag import Doc, indent
+import os
+import re
+from datetime import datetime, timezone
+from typing import Any
+
 from dotenv import load_dotenv
+from yattag import Doc, indent
 
 # Load environment variables
 load_dotenv()
 
 # Configure logging
 logging.basicConfig(
-    level=os.getenv('LOG_LEVEL', 'INFO'),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -54,8 +55,7 @@ class FlowerFilter:
         """Populate filter attributes from a dictionary."""
         self.table_sort_col = str(data.get("table_sort_col", ""))
         self.limit_results_amt = int(data.get("limit_results_amt", -1))
-        self.limit_results_amt_email = int(
-            data.get("limit_results_amt_email", -1))
+        self.limit_results_amt_email = int(data.get("limit_results_amt_email", -1))
         self.name = str(data.get("name", ""))
         self.key = str(data.get("key", ""))
         self.compare = str(data.get("compare", ""))
@@ -81,14 +81,17 @@ class CanaParse:
 
     def __init__(self, csv_file=None, csv_folder=None, no_filter=False):
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.csv_file = csv_file or os.getenv(
-            'CSV_FILE', 'colorado_results.csv')
-        self.csv_folder = csv_folder or os.getenv('CSV_FOLDER', os.path.join(
-            base_dir, f"CanaData_{datetime.today().strftime('%m-%d-%Y')}"))
+        self.csv_file = csv_file or os.getenv("CSV_FILE", "colorado_results.csv")
+        self.csv_folder = csv_folder or os.getenv(
+            "CSV_FOLDER",
+            os.path.join(
+                base_dir, f"CanaData_{datetime.now(timezone.utc).strftime('%m-%d-%Y')}"
+            ),
+        )
         self.no_filter = no_filter
         self.filters = []
-        self.raw_data: List[List[Any]] = []
-        self.filtered_tables: List[List[List[Any]]] = []
+        self.raw_data: list[list[Any]] = []
+        self.filtered_tables: list[list[list[Any]]] = []
         self.header_map = {}
         self.listings_map = {}
 
@@ -98,26 +101,32 @@ class CanaParse:
     def load_listings_map(self):
         """Build mapping of location IDs to store names and cities."""
         self.listings_map = {}
-        listings_file = self.csv_file.replace('_results.csv', '_total_listings.csv')
+        listings_file = self.csv_file.replace("_results.csv", "_total_listings.csv")
         listings_path = os.path.join(self.csv_folder, listings_file)
         if os.path.exists(listings_path):
             try:
-                with open(listings_path, encoding='utf8') as f:
+                with open(listings_path, encoding="utf8") as f:
                     reader = csv.reader(f)
                     header = next(reader)
-                    id_idx = header.index('id')
-                    name_idx = header.index('name')
-                    city_idx = header.index('city') if 'city' in header else -1
+                    id_idx = header.index("id")
+                    name_idx = header.index("name")
+                    city_idx = header.index("city") if "city" in header else -1
                     for row in reader:
                         if len(row) > max(id_idx, name_idx):
                             store_id = row[id_idx].strip()
                             store_name = row[name_idx].strip()
-                            store_city = row[city_idx].strip() if city_idx >= 0 and len(row) > city_idx else ""
+                            store_city = (
+                                row[city_idx].strip()
+                                if city_idx >= 0 and len(row) > city_idx
+                                else ""
+                            )
                             self.listings_map[store_id] = {
-                                'name': store_name,
-                                'city': store_city
+                                "name": store_name,
+                                "city": store_city,
                             }
-                logger.info(f"Loaded {len(self.listings_map)} store names and cities from {listings_path}")
+                logger.info(
+                    f"Loaded {len(self.listings_map)} store names and cities from {listings_path}"
+                )
             except Exception as e:
                 logger.warning(f"Failed to load listings map: {e}")
 
@@ -132,17 +141,16 @@ class CanaParse:
             logger.info("No-filter mode enabled: Included all results.")
             return
 
-        filters_path = os.path.join(
-            os.path.dirname(__file__), 'flower-filters.json')
+        filters_path = os.path.join(os.path.dirname(__file__), "flower-filters.json")
         try:
-            with open(filters_path, 'r') as f:
+            with open(filters_path, "r") as f:
                 data = json.load(f)
-                self.filters = [FlowerFilter(f_data)
-                                for f_data in data.get('filters', [])]
-            logger.info(
-                f"Loaded {len(self.filters)} filters from {filters_path}")
+                self.filters = [
+                    FlowerFilter(f_data) for f_data in data.get("filters", [])
+                ]
+            logger.info(f"Loaded {len(self.filters)} filters from {filters_path}")
         except Exception as e:
-            logger.error(f"Failed to load filters: {str(e)}")
+            logger.error(f"Failed to load filters: {e!s}")
 
     def load_csv_data(self):
         """Read the CSV file and pre-filter rows with pricing data."""
@@ -151,7 +159,8 @@ class CanaParse:
         # Fallback: If specific file not found, look for any result CSV in the folder
         if not os.path.exists(file_path):
             logger.warning(
-                f"Primary CSV file not found: {file_path}. Searching for fallbacks...")
+                f"Primary CSV file not found: {file_path}. Searching for fallbacks..."
+            )
             fallback_pattern = os.path.join(self.csv_folder, "*_results.csv")
             fallbacks = glob.glob(fallback_pattern)
             if fallbacks:
@@ -168,48 +177,54 @@ class CanaParse:
                 reader = csv.reader(f)
                 header = next(reader)
                 self.header_map = {name.strip(): i for i, name in enumerate(header)}
-                
+
                 # Check for price fields dynamically
-                price_price_idx = self.header_map.get('price.price', -1)
-                prices_gram_idx = self.header_map.get('prices.gram', -1)
-                prices_ounce_idx = self.header_map.get('prices.ounce', -1)
-                
+                price_price_idx = self.header_map.get("price.price", -1)
+                prices_gram_idx = self.header_map.get("prices.gram", -1)
+                prices_ounce_idx = self.header_map.get("prices.ounce", -1)
+
                 self.raw_data = []
                 for row in reader:
-                    if not row or len(row) <= max(price_price_idx, prices_gram_idx, prices_ounce_idx):
+                    if not row or len(row) <= max(
+                        price_price_idx, prices_gram_idx, prices_ounce_idx
+                    ):
                         continue
-                    
+
                     # Row is valid if it has some non-zero numeric price or nested price JSON list
                     has_price = False
                     if price_price_idx >= 0:
                         val = row[price_price_idx]
-                        if val and val != 'nan' and val.replace('.', '', 1).replace('-', '', 1).isdigit() and float(val) > 0:
+                        if (
+                            val
+                            and val != "nan"
+                            and val.replace(".", "", 1).replace("-", "", 1).isdigit()
+                            and float(val) > 0
+                        ):
                             has_price = True
                     if not has_price and prices_gram_idx >= 0:
                         val = row[prices_gram_idx]
-                        if val and val != 'nan' and val != 'None' and '[' in val:
+                        if val and val != "nan" and val != "None" and "[" in val:
                             has_price = True
                     if not has_price and prices_ounce_idx >= 0:
                         val = row[prices_ounce_idx]
-                        if val and val != 'nan' and val != 'None' and '[' in val:
+                        if val and val != "nan" and val != "None" and "[" in val:
                             has_price = True
-                            
+
                     if has_price:
                         self.raw_data.append(row)
-                        
+
             logger.info(f"Loaded {len(self.raw_data)} rows with pricing data.")
             return True
         except Exception as e:
-            logger.error(f"Error reading CSV: {str(e)}")
+            logger.error(f"Error reading CSV: {e!s}")
             return False
 
     def apply_filters(self):
         """
         Iterate through all filters and apply them to the raw data.
         """
-        if not self.raw_data:
-            if not self.load_csv_data():
-                return
+        if not self.raw_data and not self.load_csv_data():
+            return
 
         self.filtered_tables = []
         for f in self.filters:
@@ -219,16 +234,20 @@ class CanaParse:
             price_col = f.key
 
             # Apply filters
-            filtered: List[Any] = [
+            filtered: list[Any] = [
                 # copy row to avoid mutating raw_data
-                row[:] for row in self.raw_data
+                row[:]
+                for row in self.raw_data
                 if self.is_match(row, f, price_col)
             ]
 
             # Handle result limits and sorting
             if f.limit_results_amt > -1 and len(filtered) > f.limit_results_amt:
-                filtered = sorted(filtered, key=lambda x: self.get_price_by_key(x, price_col) or 999999)
-                filtered = filtered[:f.limit_results_amt]
+                filtered = sorted(
+                    filtered,
+                    key=lambda x: self.get_price_by_key(x, price_col) or 999999,
+                )
+                filtered = filtered[: f.limit_results_amt]
 
             self.filtered_tables.append(filtered)
             logger.info(f"Filter '{f.name}' yielded {len(filtered)} results.")
@@ -245,86 +264,104 @@ class CanaParse:
         idx = self.header_map.get(key, -1)
         if idx >= 0 and idx < len(row):
             val = str(row[idx])
-            if val and val != 'nan' and val.replace('.', '', 1).isdigit():
+            if val and val != "nan" and val.replace(".", "", 1).isdigit():
                 return float(val)
 
         # Otherwise, parse the JSON fields ('prices.ounce', 'prices.gram')
         # Map filter key to the label we are searching for in the JSON price list
         label_mapping = {
-            'prices.half_gram': ['half_gram', 'half gram', '1/2 g', '0.5 g', '0.5g', '1/2g'],
-            'prices.gram': ['gram', '1 g', '1g', '1.0g', '1.0 g'],
-            'prices.two_grams': ['two_grams', '2 g', '2g', '2.0g', '2.0 g'],
-            'prices.eighth': ['eighth', '1/8', '3.5 g', '3.5g'],
-            'prices.quarter': ['quarter', '1/4', '7 g', '7g', '7.0g'],
-            'prices.half_ounce': ['half_ounce', 'half ounce', '1/2', '14 g', '14g'],
-            'prices.ounce': ['ounce', '1 oz', '1oz', '28 g', '28g']
+            "prices.half_gram": [
+                "half_gram",
+                "half gram",
+                "1/2 g",
+                "0.5 g",
+                "0.5g",
+                "1/2g",
+            ],
+            "prices.gram": ["gram", "1 g", "1g", "1.0g", "1.0 g"],
+            "prices.two_grams": ["two_grams", "2 g", "2g", "2.0g", "2.0 g"],
+            "prices.eighth": ["eighth", "1/8", "3.5 g", "3.5g"],
+            "prices.quarter": ["quarter", "1/4", "7 g", "7g", "7.0g"],
+            "prices.half_ounce": ["half_ounce", "half ounce", "1/2", "14 g", "14g"],
+            "prices.ounce": ["ounce", "1 oz", "1oz", "28 g", "28g"],
         }
 
         search_labels = label_mapping.get(key, [])
-        
+
         # Check prices.ounce first (usually contains eighth, quarter, half, ounce)
-        ounce_idx = self.header_map.get('prices.ounce', -1)
+        ounce_idx = self.header_map.get("prices.ounce", -1)
         if ounce_idx >= 0 and ounce_idx < len(row):
             ounce_val = row[ounce_idx]
-            if ounce_val and ounce_val != 'nan' and ounce_val.startswith('['):
+            if ounce_val and ounce_val != "nan" and ounce_val.startswith("["):
                 try:
                     price_list = json.loads(ounce_val)
                     for item in price_list:
-                        label = str(item.get('label', '')).lower()
-                        units = str(item.get('units', '')).lower()
+                        label = str(item.get("label", "")).lower()
+                        units = str(item.get("units", "")).lower()
                         # If label matches any search label
                         if any(lbl in label or lbl in units for lbl in search_labels):
-                            p = item.get('price')
+                            p = item.get("price")
                             if p is not None:
                                 return float(p)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"An error occurred: {e}")
 
         # Check prices.gram next
-        gram_idx = self.header_map.get('prices.gram', -1)
+        gram_idx = self.header_map.get("prices.gram", -1)
         if gram_idx >= 0 and gram_idx < len(row):
             gram_val = row[gram_idx]
-            if gram_val and gram_val != 'nan' and gram_val.startswith('['):
+            if gram_val and gram_val != "nan" and gram_val.startswith("["):
                 try:
                     price_list = json.loads(gram_val)
                     for item in price_list:
-                        label = str(item.get('label', '')).lower()
-                        units = str(item.get('units', '')).lower()
+                        label = str(item.get("label", "")).lower()
+                        units = str(item.get("units", "")).lower()
                         if any(lbl in label or lbl in units for lbl in search_labels):
-                            p = item.get('price')
+                            p = item.get("price")
                             if p is not None:
                                 return float(p)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"An error occurred: {e}")
 
         # Fallback: check price.price and price.unit
-        price_price_idx = self.header_map.get('price.price', -1)
-        price_unit_idx = self.header_map.get('price.unit', -1)
-        price_quantity_idx = self.header_map.get('price.quantity', -1)
-        if price_price_idx >= 0 and price_price_idx < len(row) and price_unit_idx >= 0 and price_unit_idx < len(row):
+        price_price_idx = self.header_map.get("price.price", -1)
+        price_unit_idx = self.header_map.get("price.unit", -1)
+        price_quantity_idx = self.header_map.get("price.quantity", -1)
+        if (
+            price_price_idx >= 0
+            and price_price_idx < len(row)
+            and price_unit_idx >= 0
+            and price_unit_idx < len(row)
+        ):
             unit_val = str(row[price_unit_idx]).lower()
-            qty_val = str(row[price_quantity_idx]).lower() if price_quantity_idx >= 0 and price_quantity_idx < len(row) else ''
-            
+            qty_val = (
+                str(row[price_quantity_idx]).lower()
+                if price_quantity_idx >= 0 and price_quantity_idx < len(row)
+                else ""
+            )
+
             # Map key to unit & quantity
             key_unit_qty = {
-                'prices.half_gram': ('gram', '1/2'),
-                'prices.gram': ('gram', '1'),
-                'prices.eighth': ('ounce', '1/8'),
-                'prices.quarter': ('ounce', '1/4'),
-                'prices.half_ounce': ('ounce', '1/2'),
-                'prices.ounce': ('ounce', '1')
+                "prices.half_gram": ("gram", "1/2"),
+                "prices.gram": ("gram", "1"),
+                "prices.eighth": ("ounce", "1/8"),
+                "prices.quarter": ("ounce", "1/4"),
+                "prices.half_ounce": ("ounce", "1/2"),
+                "prices.ounce": ("ounce", "1"),
             }
             if key in key_unit_qty:
                 target_unit, target_qty = key_unit_qty[key]
-                if target_unit in unit_val and (not target_qty or target_qty in qty_val or target_qty in unit_val):
+                if target_unit in unit_val and (
+                    not target_qty or target_qty in qty_val or target_qty in unit_val
+                ):
                     p_val = row[price_price_idx]
-                    if p_val and p_val != 'nan' and p_val.replace('.', '', 1).isdigit():
+                    if p_val and p_val != "nan" and p_val.replace(".", "", 1).isdigit():
                         return float(p_val)
-                        
+
             # If key is prices.gram and unit is unit (vapes/concentrates sold as a single unit)
-            if key == 'prices.gram' and 'unit' in unit_val:
+            if key == "prices.gram" and "unit" in unit_val:
                 p_val = row[price_price_idx]
-                if p_val and p_val != 'nan' and p_val.replace('.', '', 1).isdigit():
+                if p_val and p_val != "nan" and p_val.replace(".", "", 1).isdigit():
                     return float(p_val)
 
         return None
@@ -341,8 +378,10 @@ class CanaParse:
 
         # 2. Categories
         if f.categories:
-            cat_idx = self.header_map.get('category.name', -1)
-            cat_val = str(row[cat_idx]).lower() if cat_idx >= 0 and cat_idx < len(row) else ""
+            cat_idx = self.header_map.get("category.name", -1)
+            cat_val = (
+                str(row[cat_idx]).lower() if cat_idx >= 0 and cat_idx < len(row) else ""
+            )
             if cat_val not in [c.lower() for c in f.categories]:
                 return False
 
@@ -350,9 +389,8 @@ class CanaParse:
         row_str = " ".join([str(x) for x in row]).lower()
 
         # 4. Brands
-        if f.brands:
-            if not any(brand.lower() in row_str for brand in f.brands):
-                return False
+        if f.brands and not any(brand.lower() in row_str for brand in f.brands):
+            return False
 
         # 5. Strains
         if f.strains:
@@ -367,9 +405,8 @@ class CanaParse:
                 return False
 
         # 7. Bad Words (Exclusion)
-        if f.bad_words:
-            if any(word.lower() in row_str for word in f.bad_words):
-                return False
+        if f.bad_words and any(word.lower() in row_str for word in f.bad_words):
+            return False
 
         # 8. Good Words (Required)
         if f.good_words:
@@ -379,46 +416,44 @@ class CanaParse:
         # 9. THC Floor
         if f.thc_floor > 0:
             thc_val = self.extract_thc(row)
-            if thc_val < f.thc_floor:
-                if f.thc_floor_strict:
-                    return False
+            if thc_val < f.thc_floor and f.thc_floor_strict:
+                return False
 
         # 10. CBD Floor
         if f.cbd_floor > 0.001:
             cbd_val = self.extract_cbd(row)
-            if cbd_val < f.cbd_floor:
-                if f.cbd_floor_strict:
-                    return False
+            if cbd_val < f.cbd_floor and f.cbd_floor_strict:
+                return False
 
         return True
 
     def extract_thc(self, row):
         """Extract numeric value for THC from text or dedicated column."""
-        thc_idx = self.header_map.get('metrics.aggregates.thc', -1)
+        thc_idx = self.header_map.get("metrics.aggregates.thc", -1)
         if thc_idx >= 0 and thc_idx < len(row):
             val = str(row[thc_idx])
-            if val and val != 'nan' and val.replace('.', '', 1).isdigit():
+            if val and val != "nan" and val.replace(".", "", 1).isdigit():
                 return float(val)
         return 0.0
 
     def extract_cbd(self, row):
         """Extract numeric value for CBD from text or dedicated column."""
-        cbd_idx = self.header_map.get('metrics.aggregates.cbd', -1)
+        cbd_idx = self.header_map.get("metrics.aggregates.cbd", -1)
         if cbd_idx >= 0 and cbd_idx < len(row):
             val = str(row[cbd_idx])
-            if val and val != 'nan' and val.replace('.', '', 1).isdigit():
+            if val and val != "nan" and val.replace(".", "", 1).isdigit():
                 return float(val)
         return 0.0
 
     def clean_html(self, raw_html):
         """Remove HTML tags from a string."""
-        cleanr = re.compile('<.*?>')
-        return re.sub(cleanr, '', str(raw_html))
+        cleanr = re.compile("<.*?>")
+        return re.sub(cleanr, "", str(raw_html))
 
     def as_currency(self, amount):
         """Format number as USD currency."""
         try:
-            return '${:,.2f}'.format(float(amount))
+            return f"${float(amount):,.2f}"
         except Exception:
             return str(amount)
 
@@ -427,56 +462,67 @@ class CanaParse:
         try:
             val = float(amount)
             if 0 <= val <= 100:
-                return '{:,.2f}%'.format(val)
-        except Exception:
-            pass
+                return f"{val:,.2f}%"
+        except Exception as e:
+            logger.warning(f"An error occurred: {e}")
         return ""
 
     def generate_html(self):
         """Build the full HTML dashboard."""
         doc, tag, text = Doc().tagtext()
 
-        doc.asis('<!DOCTYPE html>')
-        with tag('html', lang="en"):
-            with tag('head'):
+        doc.asis("<!DOCTYPE html>")
+        with tag("html", lang="en"):
+            with tag("head"):
                 self._add_html_head(doc)
-            with tag('body'):
-                with tag('div', klass="container-fluid main"):
-                    self._generate_navbar(doc, tag, text)
-                    # Global Search Bar
-                    with tag('div', klass="search-container"):
-                        doc.stag('input', ('aria-label', 'Search products, brands, categories, or dispensaries'), type="text", id="global-search",
-                                 placeholder="🔍 Search products, brands, categories, or dispensaries...", 
-                                 klass="search-input")
-                    for i, f in enumerate(self.filters):
-                        self._generate_filter_section(doc, tag, text, i, f)
-                    self._generate_footer(doc, tag, text)
+            with tag("body"), tag("div", klass="container-fluid main"):
+                self._generate_navbar(doc, tag, text)
+                # Global Search Bar
+                with tag("div", klass="search-container"):
+                    doc.stag(
+                        "input",
+                        (
+                            "aria-label",
+                            "Search products, brands, categories, or dispensaries",
+                        ),
+                        type="text",
+                        id="global-search",
+                        placeholder="🔍 Search products, brands, categories, or dispensaries...",
+                        klass="search-input",
+                    )
+                for i, f in enumerate(self.filters):
+                    self._generate_filter_section(doc, tag, text, i, f)
+                self._generate_footer(doc, tag, text)
 
         raw_html = doc.getvalue()
         if len(raw_html) < 5 * 1024 * 1024:
             try:
                 return indent(raw_html)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"An error occurred: {e}")
         return raw_html
 
     def _is_valid_url(self, url: str) -> bool:
         if not url:
             return False
         url_str = str(url).strip()
-        return url_str.startswith(('http://', 'https://', '#', '/'))
+        return url_str.startswith(("http://", "https://", "#", "/"))
 
     def _add_html_head(self, doc):
         """Append metadata and script links to head."""
         doc.asis('<meta charset="utf-8">')
+        doc.asis('<meta name="viewport" content="width=device-width, initial-scale=1">')
         doc.asis(
-            '<meta name="viewport" content="width=device-width, initial-scale=1">')
-        doc.asis('<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src \'self\' https: data:; style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src https://fonts.gstatic.com; script-src \'self\' \'unsafe-inline\' https://code.jquery.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;">')
+            "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;\">"
+        )
         doc.asis('<link rel="preconnect" href="https://fonts.googleapis.com">')
+        doc.asis('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>')
         doc.asis(
-            '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>')
-        doc.asis('<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">')
-        doc.asis('<link href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" rel="stylesheet">')
+            '<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">'
+        )
+        doc.asis(
+            '<link href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" rel="stylesheet">'
+        )
 
         # Premium Glassmorphism CSS
         css = """
@@ -769,14 +815,16 @@ class CanaParse:
         }
         """
 
-        with doc.tag('style'):
+        with doc.tag("style"):
             doc.asis(css)
 
         # Scripts
         doc.asis(
-            '<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>')
+            '<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>'
+        )
         doc.asis(
-            '<script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>')
+            '<script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>'
+        )
 
         js_code = """
         $(document).ready(function() {
@@ -1037,26 +1085,33 @@ class CanaParse:
             });
         });
         """
-        doc.asis(f'<script>{js_code}</script>')
+        doc.asis(f"<script>{js_code}</script>")
 
     def _generate_navbar(self, doc, tag, text):
         """Generate common navigation bar."""
-        with tag('nav', klass="navbar"):
-            with tag('div', klass="navbar-brand"):
+        with tag("nav", klass="navbar"):
+            with tag("div", klass="navbar-brand"):
                 text("CANADATA ANALYTICS")
 
-            with tag('div'):
-                with tag('ul', klass="navbar-nav"):
-                    for f in self.filters:
-                        with tag('li'):
-                            with tag('a', klass="nav-link", href=f'#{f.name.replace(" ", "_").lower()}'):
-                                text(f.name)
+            with tag("div"), tag("ul", klass="navbar-nav"):
+                for f in self.filters:
+                    with (
+                        tag("li"),
+                        tag(
+                            "a",
+                            klass="nav-link",
+                            href=f"#{f.name.replace(' ', '_').lower()}",
+                        ),
+                    ):
+                        text(f.name)
 
-            with tag('div', style="text-align: right"):
-                with tag('div', style="font-size: 0.8rem; color: var(--text-muted)"):
+            with tag("div", style="text-align: right"):
+                with tag("div", style="font-size: 0.8rem; color: var(--text-muted)"):
                     text(f"Source: {self.csv_file}")
-                with tag('div', style="font-size: 0.8rem; color: var(--accent)"):
-                    now = datetime.now().strftime("%b %d, %Y")
+                with tag("div", style="font-size: 0.8rem; color: var(--accent)"):
+                    from datetime import timezone
+
+                    now = datetime.now(timezone.utc).strftime("%b %d, %Y")
                     text(f"Updated: {now}")
 
     def _generate_filter_section(self, doc, tag, text, i, f):
@@ -1064,217 +1119,307 @@ class CanaParse:
         results = self.filtered_tables[i]
         section_id = f.name.replace(" ", "_").lower()
 
-        with tag('div', id=section_id):
-            with tag('h3'):
+        with tag("div", id=section_id):
+            with tag("h3"):
                 text(f.name)
-                with tag('span', klass="badge"):
+                with tag("span", klass="badge"):
                     text(str(len(results)))
 
             if not results:
-                with tag('p', style="color: var(--text-muted); padding: 1rem;"):
+                with tag("p", style="color: var(--text-muted); padding: 1rem;"):
                     text("No results found for this filter.")
                 return
 
             # Write data to a script block for performant client-side rendering
-            img_idx = self.header_map.get('avatar_image.original_url', -1)
-            name_idx = self.header_map.get('name', -1)
-            brand_idx = self.header_map.get('brand_endorsement.brand_name', -1)
-            slug_idx = self.header_map.get('slug', -1)
-            cat_idx = self.header_map.get('category.name', -1)
-            loc_idx = self.header_map.get('locations_found_at', -1)
-            desc_idx = self.header_map.get('catalog_slug', -1)
+            img_idx = self.header_map.get("avatar_image.original_url", -1)
+            name_idx = self.header_map.get("name", -1)
+            brand_idx = self.header_map.get("brand_endorsement.brand_name", -1)
+            slug_idx = self.header_map.get("slug", -1)
+            cat_idx = self.header_map.get("category.name", -1)
+            loc_idx = self.header_map.get("locations_found_at", -1)
+            desc_idx = self.header_map.get("catalog_slug", -1)
             price_col = f.key
 
             serialized_rows = []
             for row in results:
-                img_url = str(row[img_idx]) if img_idx >= 0 and img_idx < len(row) else ""
-                prod_name = str(row[name_idx]) if name_idx >= 0 and name_idx < len(row) else "N/A"
-                brand_name = str(row[brand_idx]) if brand_idx >= 0 and brand_idx < len(row) else ""
-                slug_val = str(row[slug_idx]) if slug_idx >= 0 and slug_idx < len(row) else ""
-                category_name = str(row[cat_idx]) if cat_idx >= 0 and cat_idx < len(row) else ""
+                img_url = (
+                    str(row[img_idx]) if img_idx >= 0 and img_idx < len(row) else ""
+                )
+                prod_name = (
+                    str(row[name_idx])
+                    if name_idx >= 0 and name_idx < len(row)
+                    else "N/A"
+                )
+                brand_name = (
+                    str(row[brand_idx])
+                    if brand_idx >= 0 and brand_idx < len(row)
+                    else ""
+                )
+                slug_val = (
+                    str(row[slug_idx]) if slug_idx >= 0 and slug_idx < len(row) else ""
+                )
+                category_name = (
+                    str(row[cat_idx]) if cat_idx >= 0 and cat_idx < len(row) else ""
+                )
                 p_val = self.get_price_by_key(row, price_col)
                 thc_val = self.extract_thc(row)
                 cbd_val = self.extract_cbd(row) if f.cbd_floor > 0 else None
-                
+
                 loc_id = str(row[0]) if len(row) > 0 else ""
                 store_info = self.listings_map.get(loc_id, {})
-                dispensary_name = store_info.get('name', "") if isinstance(store_info, dict) else store_info
-                if not dispensary_name:
-                    if loc_idx >= 0 and len(row) > loc_idx:
-                        loc_val = row[loc_idx]
-                        if '/' in loc_val:
-                            dispensary_name = loc_val.split('/')[-1].replace('"', '').replace(']', '').replace('-', ' ').title()
-                
-                store_city = store_info.get('city', "") if isinstance(store_info, dict) else ""
-                
-                desc = self.clean_html(row[desc_idx]) if desc_idx >= 0 and desc_idx < len(row) else ""
+                dispensary_name = (
+                    store_info.get("name", "")
+                    if isinstance(store_info, dict)
+                    else store_info
+                )
+                if not dispensary_name and loc_idx >= 0 and len(row) > loc_idx:
+                    loc_val = row[loc_idx]
+                    if "/" in loc_val:
+                        dispensary_name = (
+                            loc_val.split("/")[-1]
+                            .replace('"', "")
+                            .replace("]", "")
+                            .replace("-", " ")
+                            .title()
+                        )
+
+                store_city = (
+                    store_info.get("city", "") if isinstance(store_info, dict) else ""
+                )
+
+                desc = (
+                    self.clean_html(row[desc_idx])
+                    if desc_idx >= 0 and desc_idx < len(row)
+                    else ""
+                )
                 if desc == "None" or desc == "nan":
                     desc = ""
-                
+
                 loc_val = ""
                 if loc_idx >= 0 and loc_idx < len(row):
                     loc_raw = str(row[loc_idx])
-                    if '[' in loc_raw:
+                    if "[" in loc_raw:
                         try:
                             loc_list = json.loads(loc_raw)
                             if loc_list:
                                 loc_val = str(loc_list[0])
                         except Exception:
-                            loc_val = loc_raw.replace('[', '').replace(']', '').replace('"', '').replace("'", "").strip()
+                            loc_val = (
+                                loc_raw.replace("[", "")
+                                .replace("]", "")
+                                .replace('"', "")
+                                .replace("'", "")
+                                .strip()
+                            )
                     else:
                         loc_val = loc_raw.strip()
 
                 if loc_val and slug_val:
-                    loc_val_clean = loc_val.rstrip('/')
+                    loc_val_clean = loc_val.rstrip("/")
                     url = f"https://weedmaps.com{loc_val_clean}/menu/{slug_val}"
                 else:
                     url = "#"
 
-                serialized_rows.append({
-                    'price': p_val,
-                    'img_url': img_url,
-                    'name': prod_name,
-                    'brand': brand_name,
-                    'category': category_name,
-                    'thc': thc_val,
-                    'cbd': cbd_val,
-                    'dispensary': dispensary_name,
-                    'city': store_city,
-                    'desc': desc,
-                    'url': url
-                })
+                serialized_rows.append(
+                    {
+                        "price": p_val,
+                        "img_url": img_url,
+                        "name": prod_name,
+                        "brand": brand_name,
+                        "category": category_name,
+                        "thc": thc_val,
+                        "cbd": cbd_val,
+                        "dispensary": dispensary_name,
+                        "city": store_city,
+                        "desc": desc,
+                        "url": url,
+                    }
+                )
 
-            with tag('script', id=f"data-{section_id}", type="application/json"):
+            with tag("script", id=f"data-{section_id}", type="application/json"):
                 # Prevent XSS by escaping characters that can break out of the script tag
-                safe_json = json.dumps(serialized_rows).replace('<', '\\u003c').replace('>', '\\u003e').replace('&', '\\u0026')
+                safe_json = (
+                    json.dumps(serialized_rows)
+                    .replace("<", "\\u003c")
+                    .replace(">", "\\u003e")
+                    .replace("&", "\\u0026")
+                )
                 doc.asis(safe_json)
 
-            with tag('div', klass='table-container'):
-                with tag('table'):
-                    with tag('thead'):
-                        with tag('tr'):
-                            # Define headers based on data content
-                            headers = ['Price', 'Image',
-                                       'Product', 'Category', 'THC']
-                            if f.cbd_floor > 0:
-                                headers.append('CBD')
-                            headers.extend(['Dispensary', 'City', 'Details'])
+            with tag("div", klass="table-container"), tag("table"):
+                with tag("thead"), tag("tr"):
+                    # Define headers based on data content
+                    headers = ["Price", "Image", "Product", "Category", "THC"]
+                    if f.cbd_floor > 0:
+                        headers.append("CBD")
+                    headers.extend(["Dispensary", "City", "Details"])
 
-                            for label in headers:
-                                with tag('th'):
-                                    text(label)
+                    for label in headers:
+                        with tag("th"):
+                            text(label)
 
-                    with tag('tbody'):
-                        pass
+                with tag("tbody"):
+                    pass
 
     def _generate_row(self, doc, tag, text, row, f):
         """Generate a single table row."""
         price_col = f.key
-        
+
         # Get dynamic indices
-        img_idx = self.header_map.get('avatar_image.original_url', -1)
-        name_idx = self.header_map.get('name', -1)
-        brand_idx = self.header_map.get('brand_endorsement.brand_name', -1)
-        slug_idx = self.header_map.get('slug', -1)
-        cat_idx = self.header_map.get('category.name', -1)
-        
+        img_idx = self.header_map.get("avatar_image.original_url", -1)
+        name_idx = self.header_map.get("name", -1)
+        brand_idx = self.header_map.get("brand_endorsement.brand_name", -1)
+        slug_idx = self.header_map.get("slug", -1)
+        cat_idx = self.header_map.get("category.name", -1)
+
         # Resolve values
         img_url = str(row[img_idx]) if img_idx >= 0 and img_idx < len(row) else ""
-        prod_name = str(row[name_idx]) if name_idx >= 0 and name_idx < len(row) else "N/A"
-        brand_name = str(row[brand_idx]) if brand_idx >= 0 and brand_idx < len(row) else ""
+        prod_name = (
+            str(row[name_idx]) if name_idx >= 0 and name_idx < len(row) else "N/A"
+        )
+        brand_name = (
+            str(row[brand_idx]) if brand_idx >= 0 and brand_idx < len(row) else ""
+        )
         if brand_name == "None":
             brand_name = ""
         slug_val = str(row[slug_idx]) if slug_idx >= 0 and slug_idx < len(row) else ""
         category_name = str(row[cat_idx]) if cat_idx >= 0 and cat_idx < len(row) else ""
-        
+
         # Resolve Weedmaps product page URL from locations_found_at
-        loc_idx = self.header_map.get('locations_found_at', -1)
+        loc_idx = self.header_map.get("locations_found_at", -1)
         loc_val = ""
         if loc_idx >= 0 and loc_idx < len(row):
             loc_raw = str(row[loc_idx])
-            if '[' in loc_raw:
+            if "[" in loc_raw:
                 try:
                     loc_list = json.loads(loc_raw)
                     if loc_list:
                         loc_val = str(loc_list[0])
                 except Exception:
-                    loc_val = loc_raw.replace('[', '').replace(']', '').replace('"', '').replace("'", "").strip()
+                    loc_val = (
+                        loc_raw.replace("[", "")
+                        .replace("]", "")
+                        .replace('"', "")
+                        .replace("'", "")
+                        .strip()
+                    )
             else:
                 loc_val = loc_raw.strip()
 
         if loc_val and slug_val:
-            loc_val_clean = loc_val.rstrip('/')
+            loc_val_clean = loc_val.rstrip("/")
             url = f"https://weedmaps.com{loc_val_clean}/menu/{slug_val}"
         else:
             url = "#"
-            
-        with tag('tr'):
+
+        with tag("tr"):
             # Price
-            with tag('td'):
-                with tag('div', klass="price-tag"):
-                    p_val = self.get_price_by_key(row, price_col)
-                    text(self.as_currency(p_val) if p_val is not None else "-")
+            with tag("td"), tag("div", klass="price-tag"):
+                p_val = self.get_price_by_key(row, price_col)
+                text(self.as_currency(p_val) if p_val is not None else "-")
 
             # Image
-            with tag('td', klass="thumb"):
+            with tag("td", klass="thumb"):
                 if img_url and img_url != "None" and img_url != "nan":
-                    safe_img_url = img_url if self._is_valid_url(img_url) else 'https://images.weedmaps.com/static/avatar/dispensary.png'
-                    with tag('a', ('data-fancybox', 'gallery'), ('aria-label', f"View full image of {prod_name}"), href=safe_img_url):
-                        doc.stag('img', src=safe_img_url, alt=prod_name, klass="img-thumbnail",
-                                 onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';")
+                    safe_img_url = (
+                        img_url
+                        if self._is_valid_url(img_url)
+                        else "https://images.weedmaps.com/static/avatar/dispensary.png"
+                    )
+                    with tag(
+                        "a",
+                        ("data-fancybox", "gallery"),
+                        ("aria-label", f"View full image of {prod_name}"),
+                        href=safe_img_url,
+                    ):
+                        doc.stag(
+                            "img",
+                            src=safe_img_url,
+                            alt=prod_name,
+                            klass="img-thumbnail",
+                            onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';",
+                        )
                 else:
                     text("-")
 
             # Strain Name + Link
-            with tag('td'):
-                safe_url = url if self._is_valid_url(url) else '#'
-                with tag('a', href=safe_url, target="_blank", style="font-weight: 600; display: block; margin-bottom: 4px;"):
+            with tag("td"):
+                safe_url = url if self._is_valid_url(url) else "#"
+                with tag(
+                    "a",
+                    href=safe_url,
+                    target="_blank",
+                    style="font-weight: 600; display: block; margin-bottom: 4px;",
+                ):
                     text(prod_name)
                 if brand_name:
-                    with tag('span', style="font-size: 0.8rem; color: var(--text-muted);"):
+                    with tag(
+                        "span", style="font-size: 0.8rem; color: var(--text-muted);"
+                    ):
                         text(brand_name)
 
             # Category
-            with tag('td'):
-                with tag('span', style="background: rgba(0, 212, 255, 0.1); color: var(--secondary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;"):
-                    text(category_name)
+            with (
+                tag("td"),
+                tag(
+                    "span",
+                    style="background: rgba(0, 212, 255, 0.1); color: var(--secondary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;",
+                ),
+            ):
+                text(category_name)
 
             # THC
             thc_val = self.extract_thc(row)
-            with tag('td'):
+            with tag("td"):
                 text(self.as_percentage(thc_val) if thc_val else "-")
 
             # CBD
             if f.cbd_floor > 0:
                 cbd_val = self.extract_cbd(row)
-                with tag('td'):
+                with tag("td"):
                     text(self.as_percentage(cbd_val) if cbd_val else "-")
 
             # Dispensary
-            with tag('td'):
+            with tag("td"):
                 loc_id = str(row[0]) if len(row) > 0 else ""
                 store_info = self.listings_map.get(loc_id, {})
-                dispensary_name = store_info.get('name', "") if isinstance(store_info, dict) else store_info
+                dispensary_name = (
+                    store_info.get("name", "")
+                    if isinstance(store_info, dict)
+                    else store_info
+                )
                 if not dispensary_name:
-                    loc_idx = self.header_map.get('locations_found_at', -1)
+                    loc_idx = self.header_map.get("locations_found_at", -1)
                     if loc_idx >= 0 and len(row) > loc_idx:
                         loc_val = row[loc_idx]
-                        if '/' in loc_val:
-                            dispensary_name = loc_val.split('/')[-1].replace('"', '').replace(']', '').replace('-', ' ').title()
+                        if "/" in loc_val:
+                            dispensary_name = (
+                                loc_val.split("/")[-1]
+                                .replace('"', "")
+                                .replace("]", "")
+                                .replace("-", " ")
+                                .title()
+                            )
                 text(dispensary_name or "N/A")
 
             # City
-            with tag('td'):
+            with tag("td"):
                 loc_id = str(row[0]) if len(row) > 0 else ""
                 store_info = self.listings_map.get(loc_id, {})
-                store_city = store_info.get('city', "") if isinstance(store_info, dict) else ""
+                store_city = (
+                    store_info.get("city", "") if isinstance(store_info, dict) else ""
+                )
                 text(store_city or "N/A")
 
             # Info (Cleaned)
-            with tag('td', klass="info-cell"):
+            with tag("td", klass="info-cell"):
                 # Use catalog_slug as info fallback if desc is empty
-                desc_idx = self.header_map.get('catalog_slug', -1)
-                desc = self.clean_html(row[desc_idx]) if desc_idx >= 0 and desc_idx < len(row) else ""
+                desc_idx = self.header_map.get("catalog_slug", -1)
+                desc = (
+                    self.clean_html(row[desc_idx])
+                    if desc_idx >= 0 and desc_idx < len(row)
+                    else ""
+                )
                 if desc == "None" or desc == "nan":
                     desc = ""
                 # Truncate if too long
@@ -1284,14 +1429,14 @@ class CanaParse:
 
     def _generate_footer(self, doc, tag, text):
         """Add footer boilerplate."""
-        with tag('div', klass="footer"):
+        with tag("div", klass="footer"):
             text("© 2026 CanaData Analytics • Generated with ❤️ and ☕")
 
     def save_html(self, output_path="output/index.html"):
         """Save generated HTML to file."""
         html_content = self.generate_html()
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(html_content)
         logger.info(f"HTML report saved to: {output_path}")
 
@@ -1299,38 +1444,42 @@ class CanaParse:
 def getComparisonVal(op, val1, val2):
     """Evaluate a comparison operation."""
     try:
-        if op == '>=':
+        if op == ">=":
             return 1 if val1 >= val2 else 0
-        if op == '<=':
+        if op == "<=":
             return 1 if 0 < val1 <= val2 else 0
-        if op == '==':
+        if op == "==":
             return 1 if val1 == val2 else 0
-        if op == '>':
+        if op == ">":
             return 1 if val1 > val2 else 0
-        if op == '<':
+        if op == "<":
             return 1 if 0 < val1 < val2 else 0
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"An error occurred: {e}")
     return 0
 
 
 def main():
     """Execution entry point."""
     parser_args = argparse.ArgumentParser(
-        description="CanaParse: Filter and generate HTML reports from CanaData CSVs.")
+        description="CanaParse: Filter and generate HTML reports from CanaData CSVs."
+    )
     parser_args.add_argument(
-        "--file", help="Specific CSV file name (e.g., results.csv)")
+        "--file", help="Specific CSV file name (e.g., results.csv)"
+    )
+    parser_args.add_argument("--folder", help="Specific folder containing the CSV file")
     parser_args.add_argument(
-        "--folder", help="Specific folder containing the CSV file")
+        "--output", default="output/index.html", help="Path to save the HTML report"
+    )
     parser_args.add_argument(
-        "--output", default="output/index.html", help="Path to save the HTML report")
-    parser_args.add_argument(
-        "--no-filter", action="store_true", help="Include all results without filtering")
+        "--no-filter", action="store_true", help="Include all results without filtering"
+    )
 
     args = parser_args.parse_args()
 
-    parser = CanaParse(csv_file=args.file,
-                       csv_folder=args.folder, no_filter=args.no_filter)
+    parser = CanaParse(
+        csv_file=args.file, csv_folder=args.folder, no_filter=args.no_filter
+    )
     if parser.load_csv_data():
         parser.apply_filters()
         parser.save_html(output_path=args.output)

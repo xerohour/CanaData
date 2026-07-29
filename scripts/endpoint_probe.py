@@ -2,10 +2,9 @@ import argparse
 import json
 import subprocess
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
-
-DEFAULT_HEADERS: List[str] = [
+DEFAULT_HEADERS: list[str] = [
     "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
     "Accept: application/json, text/plain, */*",
     "Accept-Language: en-US,en;q=0.9",
@@ -14,19 +13,25 @@ DEFAULT_HEADERS: List[str] = [
 ]
 
 
-ENDPOINTS: List[Tuple[str, str]] = [
+ENDPOINTS: list[tuple[str, str]] = [
     ("listings", "https://api-g.weedmaps.com/discovery/v1/listings?page_size=1&size=1"),
     ("brands", "https://api-g.weedmaps.com/discovery/v1/brands?page_size=1&size=1"),
     ("products", "https://api-g.weedmaps.com/discovery/v1/products?page_size=1&size=1"),
     ("categories", "https://api-g.weedmaps.com/discovery/v1/categories"),
     ("deals", "https://api-g.weedmaps.com/discovery/v1/deals?page_size=1&size=1"),
-    ("search", "https://api-g.weedmaps.com/discovery/v1/search?q=flower&page_size=1&size=1"),
+    (
+        "search",
+        "https://api-g.weedmaps.com/discovery/v1/search?q=flower&page_size=1&size=1",
+    ),
     ("tags", "https://api-g.weedmaps.com/discovery/v1/tags?page_size=1&size=1"),
-    ("brand_products", "https://api-g.weedmaps.com/discovery/v1/brands/products?page_size=1&size=1"),
+    (
+        "brand_products",
+        "https://api-g.weedmaps.com/discovery/v1/brands/products?page_size=1&size=1",
+    ),
 ]
 
 
-def run_curl(url: str, timeout_seconds: int = 30) -> Dict[str, Any]:
+def run_curl(url: str, timeout_seconds: int = 30) -> dict[str, Any]:
     cmd = ["curl", "-sS", "-L", "-g"]
     for header in DEFAULT_HEADERS:
         cmd.extend(["-H", header])
@@ -52,7 +57,7 @@ def run_curl(url: str, timeout_seconds: int = 30) -> Dict[str, Any]:
     except ValueError:
         status = 0
 
-    report: Dict[str, Any] = {
+    report: dict[str, Any] = {
         "status": status,
         "ok": 200 <= status < 300,
         "response_type": "text",
@@ -103,12 +108,16 @@ def run_curl(url: str, timeout_seconds: int = 30) -> Dict[str, Any]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Probe Weedmaps endpoints and emit JSON health report.")
+    parser = argparse.ArgumentParser(
+        description="Probe Weedmaps endpoints and emit JSON health report."
+    )
     parser.add_argument("--output", help="Optional file path to write JSON report")
-    parser.add_argument("--timeout", type=int, default=30, help="curl timeout in seconds")
+    parser.add_argument(
+        "--timeout", type=int, default=30, help="curl timeout in seconds"
+    )
     args = parser.parse_args()
 
-    checks: List[Dict[str, Any]] = []
+    checks: list[dict[str, Any]] = []
     for name, url in ENDPOINTS:
         result = run_curl(url, timeout_seconds=args.timeout)
         result["name"] = name

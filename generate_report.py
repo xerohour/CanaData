@@ -1,13 +1,16 @@
-import os
-from datetime import datetime
 import html
+import os
+from datetime import datetime, timezone
+
 from CanaData import CanaData
+
 
 def is_safe_url(url):
     if not url:
         return False
     url_str = str(url).strip()
-    return url_str.startswith(('http://', 'https://', '#', '/'))
+    return url_str.startswith(("http://", "https://", "#", "/"))
+
 
 """
 HTML Report Generator Module
@@ -38,9 +41,9 @@ def generate_html_report(data, region_name="Colorado"):
     Output:
         Creates a file named `listing_report.html` in the current working directory.
     """
-    listings = data.get('data', {}).get('listings', [])
-    meta = data.get('meta', {})
-    total_listings = meta.get('total_listings', len(listings))
+    listings = data.get("data", {}).get("listings", [])
+    meta = data.get("meta", {})
+    total_listings = meta.get("total_listings", len(listings))
 
     # Modern CSS with Glasmorphism and Vibrant Colors
     css = """
@@ -324,7 +327,7 @@ def generate_html_report(data, region_name="Colorado"):
         <div class="container" id="main-content" tabindex="-1">
             <header>
                 <h1>{html.escape(str(region_name))} Discovery</h1>
-                <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now().strftime('%b %d, %Y')}</p>
+                <p class="meta-summary">Found {total_listings} matches in the region • Generated on {datetime.now(timezone.utc).strftime("%b %d, %Y")}</p>
             </header>
 
             <div class="listing-grid">
@@ -342,25 +345,26 @@ def generate_html_report(data, region_name="Colorado"):
         """
 
     for item in listings:
-        avatar = item.get('avatar_image', {}).get(
-            'original_url', 'https://images.weedmaps.com/static/avatar/dispensary.png')
+        avatar = item.get("avatar_image", {}).get(
+            "original_url", "https://images.weedmaps.com/static/avatar/dispensary.png"
+        )
         if not is_safe_url(avatar):
-            avatar = 'https://images.weedmaps.com/static/avatar/dispensary.png'
+            avatar = "https://images.weedmaps.com/static/avatar/dispensary.png"
 
-        rating = item.get('rating', 'N/A')
-        reviews = item.get('reviews_count', 0)
-        is_open = item.get('open_now', False)
+        rating = item.get("rating", "N/A")
+        reviews = item.get("reviews_count", 0)
+        is_open = item.get("open_now", False)
         status_text = "Open Now" if is_open else "Closed"
         status_class = "badge-open" if is_open else "badge-closed"
 
-        promo = item.get('promo_code')
+        promo = item.get("promo_code")
         promo_html = ""
         if promo:
             # Security: Sanitize optional nested API fields to prevent XSS
             promo_html = f"""
             <div class="promo-section">
-                <div class="promo-title">✨ PROMO: {html.escape(str(promo.get('code', 'Special Offer')))}</div>
-                <div class="promo-body">{html.escape(str(promo.get('title', 'Check website for details')))}</div>
+                <div class="promo-title">✨ PROMO: {html.escape(str(promo.get("code", "Special Offer")))}</div>
+                <div class="promo-body">{html.escape(str(promo.get("title", "Check website for details")))}</div>
             </div>
             """
 
@@ -368,10 +372,10 @@ def generate_html_report(data, region_name="Colorado"):
         html_content += f"""
                 <div class="card">
                     <div class="card-header">
-                        <img src="{html.escape(str(avatar))}" alt="{html.escape(str(item.get('name') or ''))}" class="avatar">
+                        <img src="{html.escape(str(avatar))}" alt="{html.escape(str(item.get("name") or ""))}" class="avatar">
                         <div class="listing-info">
-                            <h2>{html.escape(str(item.get('name') or ''))}</h2>
-                            <span class="badge badge-type">{html.escape(str(item.get('type') or ''))}</span>
+                            <h2>{html.escape(str(item.get("name") or ""))}</h2>
+                            <span class="badge badge-type">{html.escape(str(item.get("type") or ""))}</span>
                             <span class="badge badge-rating">★ {html.escape(str(rating))} ({html.escape(str(reviews))})</span>
                             <span class="badge {status_class}">{status_text}</span>
                         </div>
@@ -380,30 +384,30 @@ def generate_html_report(data, region_name="Colorado"):
                         <table class="data-table">
                             <tr>
                                 <td class="label">Address</td>
-                                <td class="value">{html.escape(str(item.get('address', 'N/A')))}</td>
+                                <td class="value">{html.escape(str(item.get("address", "N/A")))}</td>
                             </tr>
                             <tr>
                                 <td class="label">City</td>
-                                <td class="value">{html.escape(str(item.get('city', 'N/A')))}</td>
+                                <td class="value">{html.escape(str(item.get("city", "N/A")))}</td>
                             </tr>
                             <tr>
                                 <td class="label">Hours Today</td>
-                                <td class="value">{html.escape(str(item.get('todays_hours_str', 'N/A')))}</td>
+                                <td class="value">{html.escape(str(item.get("todays_hours_str", "N/A")))}</td>
                             </tr>
                             <tr>
                                 <td class="label">Phone</td>
-                                <td class="value">{html.escape(str(item.get('phone_number', 'N/A')))}</td>
+                                <td class="value">{html.escape(str(item.get("phone_number", "N/A")))}</td>
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">{html.escape(str(item.get('menu_items_count', 0)))} items</td>
+                                <td class="value">{html.escape(str(item.get("menu_items_count", 0)))} items</td>
                             </tr>
                         </table>
                         {promo_html}
                     </div>
                     <div class="footer-actions">
-                        <span style="font-size: 0.8rem; color: var(--text-muted)">{html.escape(str(item.get('license_type', 'Recreational')))}</span>
-                        <a href="{html.escape(str(item.get('web_url') or '#') if is_safe_url(item.get('web_url') or '#') else '#')}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get('name', '')))} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                        <span style="font-size: 0.8rem; color: var(--text-muted)">{html.escape(str(item.get("license_type", "Recreational")))}</span>
+                        <a href="{html.escape(str(item.get("web_url") or "#") if is_safe_url(item.get("web_url") or "#") else "#")}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get("name", "")))} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
                     </div>
                 </div>
         """
@@ -415,11 +419,10 @@ def generate_html_report(data, region_name="Colorado"):
     </html>
     """
 
-    with open('listing_report.html', 'w', encoding='utf-8') as f:
+    with open("listing_report.html", "w", encoding="utf-8") as f:
         f.write(html_content)
 
-    print(
-        f"✅ Success! Report generated: {os.path.abspath('listing_report.html')}")
+    print(f"✅ Success! Report generated: {os.path.abspath('listing_report.html')}")
 
 
 if __name__ == "__main__":
@@ -429,7 +432,7 @@ if __name__ == "__main__":
     url = "https://api-g.weedmaps.com/discovery/v1/listings?filter[any_retailer_services][]=storefront&filter[any_retailer_services][]=delivery&filter[region_slug[deliveries]]=colorado&filter[region_slug[dispensaries]]=colorado&page_size=24&size=24"
 
     data = cana.do_request(url)
-    if data and data != 'break':
+    if data and data != "break":
         generate_html_report(data)
     else:
         print("❌ Failed to retrieve data from Weedmaps.")
