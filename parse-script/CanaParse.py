@@ -441,7 +441,9 @@ class CanaParse:
             with tag('head'):
                 self._add_html_head(doc)
             with tag('body'):
-                with tag('div', klass="container-fluid main"):
+                with tag('a', klass="skip-link", href="#main-content"):
+                    text("Skip to main content")
+                with tag('div', klass="container-fluid main", id="main-content", tabindex="-1"):
                     self._generate_navbar(doc, tag, text)
                     # Global Search Bar
                     with tag('div', klass="search-container"):
@@ -504,6 +506,53 @@ class CanaParse:
             line-height: 1.6;
             padding: 2rem;
         }
+        *:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 4px;
+        }
+
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary);
+            color: var(--bg);
+            padding: 8px;
+            z-index: 100;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 0 0 8px 0;
+            transition: top 0.2s ease;
+        }
+
+        .skip-link:focus {
+            top: 0;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px dashed var(--glass-border);
+            margin: 2rem 0;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            color: var(--text-muted);
+        }
+
+
 
         /* Navbar / Header */
         .navbar {
@@ -1071,8 +1120,13 @@ class CanaParse:
                     text(str(len(results)))
 
             if not results:
-                with tag('p', style="color: var(--text-muted); padding: 1rem;"):
-                    text("No results found for this filter.")
+                with tag('div', klass="empty-state"):
+                    with tag('div', klass="empty-state-icon", **{'aria-hidden': 'true'}):
+                        text("🏜️")
+                    with tag('h3'):
+                        text("No listings found")
+                    with tag('p'):
+                        text("Try adjusting your filters or search criteria.")
                 return
 
             # Write data to a script block for performant client-side rendering
