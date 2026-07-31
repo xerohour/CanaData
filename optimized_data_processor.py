@@ -45,11 +45,13 @@ class OptimizedDataProcessor:
         """
         # Collect all items with location info
         # Using list comprehension for initialization performance
-        items_with_location = [
-            {**item, '_location_id': location_id}
-            for location_id, items in all_menu_items.items()
-            for item in items
-        ]
+        items_with_location = []
+        _append = items_with_location.append
+        for location_id, items in all_menu_items.items():
+            for item in items:
+                new_item = item.copy()
+                new_item['_location_id'] = location_id
+                _append(new_item)
         
         if not items_with_location:
             return pd.DataFrame()
@@ -72,24 +74,25 @@ class OptimizedDataProcessor:
         """
         # Identify columns that still contain nested data
         nested_columns = []
+        _valid_types = (dict, list)
         for col in df.columns:
             # Check if any value in column is a dict or list
             # Avoid O(N) dropna() by using first_valid_index
             if df[col].dtype == 'object':
                 first_idx = df[col].first_valid_index()
                 if first_idx is not None:
-                    val = df[col].loc[first_idx]
-                    if isinstance(val, pd.Series):
-                        val = val.dropna().iloc[0]
-                    if isinstance(val, (dict, list)):
+                    val = df[col].at[first_idx]
+                    if type(val) in _valid_types:
                         nested_columns.append(col)
         
+        _dumps = json.dumps
+        _str = str
         # Flatten nested columns
         for col in nested_columns:
             try:
                 # Convert to string representation for nested data
-                # Using list comprehension for performance
-                df[col] = [json.dumps(x) if isinstance(x, (dict, list)) else str(x) for x in df[col]]
+                # Using list comprehension and pre-bound types over numpy array for performance
+                df[col] = [_dumps(x) if type(x) in _valid_types else _str(x) for x in df[col].to_numpy()]
             except Exception as e:
                 logger.warning(f"Failed to flatten column {col}: {e}")
                 df[col] = df[col].astype(str)
@@ -188,12 +191,13 @@ class OptimizedDataProcessor:
         df = df.fillna('None')
         
         # Convert data types where possible
-        for col in df.columns:
+        # Pre-filter columns to avoid repeatedly calling .lower() on all column names
+        cols_to_convert = [c for c in df.columns if any(k in c.lower() for k in ('price', 'amount', 'thc'))]
+        for col in cols_to_convert:
             # Try to convert to numeric where possible. Carefully constrain to avoid coercing string IDs.
-            if 'price' in col.lower() or 'amount' in col.lower() or 'thc' in col.lower():
-                original_col = df[col]
-                numeric_col = pd.to_numeric(original_col, errors='coerce')
-                df[col] = numeric_col.where(numeric_col.notna(), original_col)
+            original_col = df[col]
+            numeric_col = pd.to_numeric(original_col, errors='coerce')
+            df[col] = numeric_col.where(numeric_col.notna(), original_col)
         
         # Sort columns for consistency
         df = df.reindex(sorted(df.columns), axis=1)
