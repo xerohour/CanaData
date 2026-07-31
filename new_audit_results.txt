@@ -1,0 +1,21 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+benchmark: 5.2.3 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: /app
+plugins: benchmark-5.2.3
+collected 3 items
+
+performance_tests/test_new_system_audit.py ...                           [100%]
+
+
+---------------------------------------------------------------------------------------- benchmark: 2 tests ----------------------------------------------------------------------------------------
+Name (time in ms)                     Min                 Max               Mean             StdDev             Median                IQR            Outliers      OPS            Rounds  Iterations
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+test_audit_high_concurrency       46.5443 (1.0)      115.4302 (1.15)     79.0791 (1.38)     25.5856 (2.27)     87.3069 (1.59)     45.2315 (12.19)         5;0  12.6456 (0.72)          9           1
+test_audit_latency_throughput     51.0861 (1.10)     100.2310 (1.0)      57.1747 (1.0)      11.2587 (1.0)      55.0737 (1.0)       3.7091 (1.0)           1;1  17.4903 (1.0)          17           1
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Legend:
+  Outliers: 1 Standard Deviation from Mean; 1.5 IQR (InterQuartile Range) from 1st Quartile and 3rd Quartile.
+  OPS: Operations Per Second, computed as 1 / Mean
+============================== 3 passed in 6.85s ===============================

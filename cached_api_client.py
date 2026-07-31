@@ -1,7 +1,9 @@
-import requests
-import time
 import logging
-from typing import Dict, Any, Optional
+import time
+from typing import Any
+
+import requests
+
 from cache_manager import CacheManager
 
 logger = logging.getLogger(__name__)
@@ -17,7 +19,7 @@ class CachedAPIClient:
     def get(
         self,
         url: str,
-        params: Optional[Dict] = None,
+        params: dict | None = None,
         use_cache: bool = True,
         force_refresh: bool = False,
         **kwargs,
@@ -50,7 +52,7 @@ class CachedAPIClient:
             raise
 
     def get_with_retry(
-        self, url: str, params: Optional[Dict] = None, max_retries: int = 3, **kwargs
+        self, url: str, params: dict | None = None, max_retries: int = 3, **kwargs
     ) -> Any:
         """Make GET request with retry logic and caching"""
         for attempt in range(max_retries):

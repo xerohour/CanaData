@@ -9,3 +9,5 @@ pandas
 flake8
 pytest-benchmark
 psutil
+pytest-benchmark
+psutil

@@ -1,5 +1,6 @@
-import requests
 import os
+
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -64,7 +65,7 @@ class CannMenusClient:
             response.raise_for_status()
             return response.json().get("data", [])
         except Exception as e:
-            print(f"Error fetching retailers: {str(e)}")
+            print(f"Error fetching retailers: {e!s}")
             return []
 
     def get_menu(self, retailer_id):
@@ -86,7 +87,7 @@ class CannMenusClient:
             # Returns already flattened/normalized menu items
             return response.json().get("data", [])
         except Exception as e:
-            print(f"Error fetching menu: {str(e)}")
+            print(f"Error fetching menu: {e!s}")
             return []
 
 
