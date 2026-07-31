@@ -8,3 +8,4 @@ apify-client
 pandas
 flake8
 pytest-benchmark
+psutil
