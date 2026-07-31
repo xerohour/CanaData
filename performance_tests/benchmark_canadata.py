@@ -1,10 +1,12 @@
 import cProfile
-import pstats
 import io
-import time
-from memory_profiler import profile
-from CanaData import CanaData
 import json
+import pstats
+import time
+
+from memory_profiler import profile
+
+from CanaData import CanaData
 
 # Setup mock data for performance testing
 mock_data = []

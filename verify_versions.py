@@ -1,5 +1,6 @@
-import requests
 import time
+
+import requests
 
 
 def check_url(url, description, headers=None):
@@ -31,7 +32,7 @@ def check_url(url, description, headers=None):
         else:
             print(f"  [FAIL] {resp.status_code}")
     except Exception as e:
-        print(f"  [ERROR] {str(e)}")
+        print(f"  [ERROR] {e!s}")
     print("-" * 40)
     return False
 

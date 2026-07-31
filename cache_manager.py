@@ -1,9 +1,9 @@
-import time
-import json
 import hashlib
-from typing import Any, Optional, Dict
-from pathlib import Path
+import json
 import logging
+import time
+from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class CacheManager:
         self.cache_dir.mkdir(exist_ok=True)
 
         # Memory cache with TTL
-        self.memory_cache: Dict[str, Dict[str, Any]] = {}
+        self.memory_cache: dict[str, dict[str, Any]] = {}
         self.memory_cache_size = max(1, memory_cache_size)
         self.memory_cache_ttl = memory_cache_ttl
 
@@ -48,7 +48,7 @@ class CacheManager:
             "api_requests": 0,
         }
 
-    def _generate_cache_key(self, url: str, params: Optional[Dict] = None) -> str:
+    def _generate_cache_key(self, url: str, params: dict | None = None) -> str:
         """Generate a unique cache key for the request"""
         cache_string = url
         if params:
@@ -58,7 +58,7 @@ class CacheManager:
 
         return hashlib.md5(cache_string.encode()).hexdigest()
 
-    def get(self, url: str, params: Optional[Dict] = None) -> Optional[Any]:
+    def get(self, url: str, params: dict | None = None) -> Any | None:
         """Retrieve data from cache"""
         cache_key = self._generate_cache_key(url, params)
 
@@ -93,7 +93,7 @@ class CacheManager:
         self.stats["disk_misses"] += 1
         return None
 
-    def set(self, url: str, data: Any, params: Optional[Dict] = None) -> None:
+    def set(self, url: str, data: Any, params: dict | None = None) -> None:
         """Store data in cache"""
         cache_key = self._generate_cache_key(url, params)
 
@@ -113,7 +113,7 @@ class CacheManager:
             )
             self.memory_cache.pop(oldest_key, None)
 
-    def _get_from_disk(self, cache_key: str) -> Optional[Any]:
+    def _get_from_disk(self, cache_key: str) -> Any | None:
         """Retrieve data from disk cache"""
         cache_file = self.cache_dir / f"{cache_key}.cache"
 
@@ -150,12 +150,12 @@ class CacheManager:
         except (TypeError, ValueError) as e:
             logger.warning(f"Failed to save cache file {cache_file}: {e}")
 
-    def invalidate(self, pattern: Optional[str] = None) -> None:
+    def invalidate(self, pattern: str | None = None) -> None:
         """Invalidate cache entries"""
         if pattern:
             # Invalidate entries matching pattern
             keys_to_remove = []
-            for key in self.memory_cache.keys():
+            for key in self.memory_cache:
                 if pattern in str(key):
                     keys_to_remove.append(key)
 
@@ -173,7 +173,7 @@ class CacheManager:
                 for cache_file in self.cache_dir.glob("*.cache"):
                     cache_file.unlink()
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache performance statistics"""
         total_requests = self.stats["memory_hits"] + self.stats["memory_misses"]
         hit_rate = 0.0

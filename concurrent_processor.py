@@ -1,10 +1,11 @@
 import concurrent.futures
+import logging
+import random
 import threading
 import time
-import random
-import logging
-from typing import List, Dict, Any, Callable
+from collections.abc import Callable
 from functools import wraps
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ def retry_with_backoff(max_retries=3, base_delay=1.0, max_delay=60.0):
                 except Exception as e:
                     retries += 1
                     if retries >= max_retries:
-                        raise e
+                        raise
 
                     # Exponential backoff with jitter
                     delay = min(base_delay * (2 ** (retries - 1)), max_delay)
@@ -30,7 +31,7 @@ def retry_with_backoff(max_retries=3, base_delay=1.0, max_delay=60.0):
                     time.sleep(delay + jitter)
 
                     logger.warning(
-                        f"Retry {retries}/{max_retries} after error: {str(e)}"
+                        f"Retry {retries}/{max_retries} after error: {e!s}"
                     )
 
             return func(*args, **kwargs)
@@ -47,12 +48,12 @@ class ConcurrentMenuProcessor:
         self.semaphore = threading.Semaphore(max_workers)
         self.last_request_time = 0.0
         self.request_lock = threading.Lock()
-        self.results: Dict[str, Any] = {}
-        self.errors: List[Dict[str, Any]] = []
+        self.results: dict[str, Any] = {}
+        self.errors: list[dict[str, Any]] = []
 
     def process_locations(
-        self, locations: List[Dict], process_func: Callable
-    ) -> Dict[str, Any]:
+        self, locations: list[dict], process_func: Callable
+    ) -> dict[str, Any]:
         """Process multiple locations concurrently"""
         # Reset results and errors for new processing run
         self.results = {}
@@ -84,7 +85,7 @@ class ConcurrentMenuProcessor:
         return self.results
 
     def _process_single_location(
-        self, location: Dict[str, Any], process_func: Callable
+        self, location: dict[str, Any], process_func: Callable
     ) -> Any:
         """Process a single location with rate limiting"""
         with self.semaphore:
