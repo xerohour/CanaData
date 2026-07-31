@@ -4,12 +4,7 @@ import os
 import sys
 
 # Ensure root directory is in path for imports to work during CI
-sys.path.insert(
-    0,
-    os.path.abspath(
-        os.path.join(
-            os.path.dirname(__file__),
-            '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from CanaData import CanaData  # noqa: E402
 
@@ -21,7 +16,7 @@ def test_stress_locking():
     def worker(i):
         for j in range(100):
             with scraper._menu_data_lock:
-                scraper.allMenuItems[f"{i}_{j}"] = [{'id': i * 100 + j}]
+                scraper.allMenuItems[f"{i}_{j}"] = [{"id": i * 100 + j}]
 
     threads = []
     start_time = time.time()
