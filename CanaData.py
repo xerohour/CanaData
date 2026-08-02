@@ -981,8 +981,15 @@ class CanaData:
 
             # Loop through the dataset
             for row in data:
+                # Sanitize values to prevent CSV Injection (Formula Injection)
+                sanitized_values = []
+                for val in row.values():
+                    if isinstance(val, str) and val.startswith(("=", "+", "-", "@", "\t", "\n")):
+                        sanitized_values.append(f"'{val}")
+                    else:
+                        sanitized_values.append(val)
                 # Write row of item's values
-                output.writerow(row.values())
+                output.writerow(sanitized_values)
 
             # Print visual notification of finished export & number of items seen
             print(
