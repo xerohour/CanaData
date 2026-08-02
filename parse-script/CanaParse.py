@@ -478,17 +478,21 @@ class CanaParse:
                     self._generate_navbar(doc, tag, text)
                     # Global Search Bar
                     with tag("div", klass="search-container"):
-                        doc.stag(
-                            "input",
-                            (
-                                "aria-label",
-                                "Search products, brands, categories, or dispensaries",
-                            ),
-                            type="text",
-                            id="global-search",
-                            placeholder="🔍 Search products, brands, categories, or dispensaries...",
-                            klass="search-input",
-                        )
+                        with tag("div", style="position: relative; width: 100%; max-width: 600px;"):
+                            doc.stag(
+                                "input",
+                                (
+                                    "aria-label",
+                                    "Search products, brands, categories, or dispensaries",
+                                ),
+                                type="text",
+                                id="global-search",
+                                placeholder="🔍 Search products, brands, categories, or dispensaries...",
+                                klass="search-input",
+                                style="max-width: 100%;"
+                            )
+                            with tag("div", klass="search-shortcut", **{"aria-hidden": "true"}):
+                                text("/")
                     for i, f in enumerate(self.filters):
                         self._generate_filter_section(doc, tag, text, i, f)
                     self._generate_footer(doc, tag, text)
@@ -818,6 +822,25 @@ class CanaParse:
             box-shadow: 0 0 15px rgba(0, 255, 163, 0.3);
             transform: scale(1.02);
         }
+
+        .search-shortcut {
+            position: absolute;
+            right: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--glass);
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            pointer-events: none;
+            border: 1px solid var(--glass-border);
+            font-family: monospace;
+        }
+
+        .search-input:focus + .search-shortcut {
+            opacity: 0;
+        }
         """
 
         with doc.tag("style"):
@@ -1093,6 +1116,14 @@ class CanaParse:
             // Initial render of all sections
             $.each(sections, function(id, data) {
                 renderSection(id);
+            });
+
+            // Keyboard shortcut for search
+            $(document).on('keydown', function(e) {
+                if (e.key === '/' && e.target.nodeName !== 'INPUT' && e.target.nodeName !== 'TEXTAREA') {
+                    e.preventDefault();
+                    $('#global-search').focus();
+                }
             });
         });
         """

@@ -302,6 +302,25 @@
             box-shadow: 0 0 15px rgba(0, 255, 163, 0.3);
             transform: scale(1.02);
         }
+
+        .search-shortcut {
+            position: absolute;
+            right: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--glass);
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            pointer-events: none;
+            border: 1px solid var(--glass-border);
+            font-family: monospace;
+        }
+
+        .search-input:focus + .search-shortcut {
+            opacity: 0;
+        }
         </style>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
@@ -568,6 +587,14 @@
             $.each(sections, function(id, data) {
                 renderSection(id);
             });
+
+            // Keyboard shortcut for search
+            $(document).on('keydown', function(e) {
+                if (e.key === '/' && e.target.nodeName !== 'INPUT' && e.target.nodeName !== 'TEXTAREA') {
+                    e.preventDefault();
+                    $('#global-search').focus();
+                }
+            });
         });
         </script>
   </head>
@@ -615,7 +642,10 @@
         </div>
       </nav>
       <div class="search-container">
-        <input aria-label="Search products, brands, categories, or dispensaries" type="text" id="global-search" placeholder="🔍 Search products, brands, categories, or dispensaries..." class="search-input" />
+        <div style="position: relative; width: 100%; max-width: 600px;">
+          <input aria-label="Search products, brands, categories, or dispensaries" type="text" id="global-search" placeholder="🔍 Search products, brands, categories, or dispensaries..." class="search-input" style="max-width: 100%;" />
+          <div class="search-shortcut" aria-hidden="true">/</div>
+        </div>
       </div>
       <div id="vape_pens_-_half_gram_&amp;_under">
         <h3>Vape Pens - Half Gram &amp; Under<span class="badge">0</span></h3>
