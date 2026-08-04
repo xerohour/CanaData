@@ -91,13 +91,18 @@ class OptimizedDataProcessor:
                         nested_columns.append(col)
 
         # Flatten nested columns
+        _dumps = json.dumps
+        _str = str
+        _dict = dict
+        _list = list
         for col in nested_columns:
             try:
                 # Convert to string representation for nested data
-                # Using list comprehension for performance
+                # Using numpy array and local pre-bound variables for performance
+                arr = df[col].to_numpy()
                 df[col] = [
-                    json.dumps(x) if isinstance(x, (dict, list)) else str(x)
-                    for x in df[col]
+                    _dumps(x) if type(x) in (_dict, _list) else _str(x)
+                    for x in arr
                 ]
             except Exception as e:
                 logger.warning(f"Failed to flatten column {col}: {e}")
