@@ -27,6 +27,23 @@
             padding: 0;
         }
 
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary);
+            color: var(--bg);
+            padding: 8px;
+            z-index: 100;
+            transition: top 0.2s;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .skip-link:focus {
+            top: 0;
+        }
+
         body {
             font-family: 'Outfit', 'Inter', sans-serif;
             background-color: var(--bg);
@@ -203,7 +220,8 @@
     </style>
 </head>
 <body>
-    <div class="portal-container">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <div class="portal-container" id="main-content" tabindex="-1">
         <header>
             <h1>CanaData Portal</h1>
             <p class="subtitle">Access responsive analytics and scraped reports for Weedmaps listings and menus.</p>
