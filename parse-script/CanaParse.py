@@ -1227,6 +1227,12 @@ class CanaParse:
                 else:
                     url = "#"
 
+                img_url = (
+                    img_url
+                    if self._is_valid_url(img_url)
+                    else "https://images.weedmaps.com/static/avatar/dispensary.png"
+                )
+
                 serialized_rows.append(
                     {
                         "price": p_val,
@@ -1239,7 +1245,7 @@ class CanaParse:
                         "dispensary": dispensary_name,
                         "city": store_city,
                         "desc": desc,
-                        "url": url,
+                        "url": url if self._is_valid_url(url) else "#",
                     }
                 )
 
@@ -1328,20 +1334,15 @@ class CanaParse:
             # Image
             with tag("td", klass="thumb"):
                 if img_url and img_url != "None" and img_url != "nan":
-                    safe_img_url = (
-                        img_url
-                        if self._is_valid_url(img_url)
-                        else "https://images.weedmaps.com/static/avatar/dispensary.png"
-                    )
                     with tag(
                         "a",
                         ("data-fancybox", "gallery"),
                         ("aria-label", f"View full image of {prod_name}"),
-                        href=safe_img_url,
+                        href=img_url,
                     ):
                         doc.stag(
                             "img",
-                            src=safe_img_url,
+                            src=img_url,
                             alt=prod_name,
                             klass="img-thumbnail",
                             onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';",
