@@ -1,3 +1,4 @@
+from pathlib import Path
 from sys import argv
 
 from CanaData import CanaData
@@ -12,25 +13,28 @@ if __name__ == "__main__":
     try:
         # Grab list of States from local file
         allStatesSlugs = [
-            line.rstrip("\n").lower().replace(" ", "-") for line in open("states.txt")
+            line.rstrip("\n").lower().replace(" ", "-")
+            for line in Path("states.txt").read_text(encoding="utf-8").splitlines()
         ]  # Updated by Manually through magic
-    except Exception:
+    except Exception:  # noqa: BLE001
         print("Looks like no states.txt file! No biggy, just cant use the all option!")
 
     try:
         # Grab list of known Cities from local file
         knownSlugs = [
-            line.rstrip("\n").lower().replace(" ", "-") for line in open("slugs.txt")
+            line.rstrip("\n").lower().replace(" ", "-")
+            for line in Path("slugs.txt").read_text(encoding="utf-8").splitlines()
         ]
-    except Exception:
+    except Exception:  # noqa: BLE001
         print("Looks like no slugs.txt file! No biggy, just cant use the slugs option!")
 
     try:
         # Grab list of known Cities from local file
         mySlugList = [
-            line.rstrip("\n").lower().replace(" ", "-") for line in open("mylist.txt")
+            line.rstrip("\n").lower().replace(" ", "-")
+            for line in Path("mylist.txt").read_text(encoding="utf-8").splitlines()
         ]  # Updated by Manually through magic
-    except Exception:
+    except Exception:  # noqa: BLE001
         print(
             "Looks like no mylist.txt file! No biggy, just cant use the mylist option!"
         )
@@ -42,12 +46,8 @@ if __name__ == "__main__":
         cana.TestMode()
 
     # Check if arguments were passed
-    if len(argList) > 1:
-        # There were arguments! Now to check for specifics
-
-        # This looks to see if we need to save the City list that we identify!
-        if "-slugs" in argList:
-            cana.slugs()
+    if len(argList) > 1 and "-slugs" in argList:
+        cana.slugs()
 
     # This specifically looks for the quick run argument and sets the State list
     if "-go" in argList:
