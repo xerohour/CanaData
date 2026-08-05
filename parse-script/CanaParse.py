@@ -474,7 +474,9 @@ class CanaParse:
             with tag("head"):
                 self._add_html_head(doc)
             with tag("body"):
-                with tag("div", klass="container-fluid main"):
+                with tag("a", href="#main-content", klass="skip-link"):
+                    text("Skip to main content")
+                with tag("div", klass="container-fluid main", id="main-content", tabindex="-1"):
                     self._generate_navbar(doc, tag, text)
                     # Global Search Bar
                     with tag("div", klass="search-container"):
@@ -538,6 +540,23 @@ class CanaParse:
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary);
+            color: var(--bg);
+            padding: 8px;
+            z-index: 100;
+            transition: top 0.2s;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .skip-link:focus {
+            top: 0;
+        }
 
         body {
             font-family: 'Outfit', 'Inter', sans-serif;

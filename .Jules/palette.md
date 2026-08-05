@@ -15,3 +15,6 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+## 2026-08-05 - [Add Skip Links to HTML Reports]
+**Learning:** Automatically generated HTML reports and static landing pages without `skip-to-content` links force keyboard-only users to manually tab through long navigation or configuration menus before reaching the core data or table grid.
+**Action:** Always include a visually hidden (but focusable via `:focus-visible`) `.skip-link` at the top of the HTML body, targeting the main content container which MUST have `tabindex="-1"` applied to manage focus correctly.
