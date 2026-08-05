@@ -15,7 +15,7 @@ def get_valid_slug():
                 slug = listings[0].get("slug")
                 print(f"Found slug: {slug}")
                 return slug
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Error finding slug: {e}")
     return None
 
@@ -74,7 +74,7 @@ def inspect_menu(slug):
                 print("No categories found.")
         else:
             print(f"Failed: {req.status_code}")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Error: {e}")
 
 

@@ -60,11 +60,10 @@ def scrape_leafly(location_slug):
         # Fetch results from the run's dataset
         print("✅ Scraping complete. Downloading results...")
         results = []
-        for item in client.dataset(run["defaultDatasetId"]).iterate_items():
-            results.append(item)
+        results.extend(client.dataset(run["defaultDatasetId"]).iterate_items())
 
         return results
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"❌ Leafly scrape failed: {e!s}")
         return []
 
