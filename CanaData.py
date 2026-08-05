@@ -578,19 +578,18 @@ class CanaData:
         local_extracted_strains: dict[str, Any] = {}
         is_empty_menu = not categories
 
+        locations_list = [listing_url]
+        listing_wmid = listing.get("wmid")
+
         if is_empty_menu:
             logger.info(f"Location {listing_slug} has no categories.")
         else:
             for category in categories:
                 for item in category.get("items", []):
-                    item_copy = dict(item)
-                    item_copy.update(
-                        {
-                            "locations_found_at": [listing_url],
-                            "listing_id": listing_id,
-                            "listing_wmid": listing.get("wmid"),
-                        }
-                    )
+                    item_copy = item.copy()
+                    item_copy["locations_found_at"] = locations_list
+                    item_copy["listing_id"] = listing_id
+                    item_copy["listing_wmid"] = listing_wmid
 
                     # Extract strain data if present
                     if "strain_data" in item_copy:
@@ -645,19 +644,16 @@ class CanaData:
         menu_items_count = 0
         local_menu_items: list[dict[str, Any]] = []
         local_extracted_strains: dict[str, Any] = {}
+        locations_list = [listing_url]
 
         for item in menu_items:
             if not isinstance(item, dict):
                 continue
 
-            item_copy = dict(item)
-            item_copy.update(
-                {
-                    "locations_found_at": [listing_url],
-                    "listing_id": listing_id,
-                    "listing_wmid": listing_wmid,
-                }
-            )
+            item_copy = item.copy()
+            item_copy["locations_found_at"] = locations_list
+            item_copy["listing_id"] = listing_id
+            item_copy["listing_wmid"] = listing_wmid
 
             strain_data = item_copy.get("strain_data")
             if isinstance(strain_data, dict):
