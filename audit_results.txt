@@ -1,0 +1,23 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+benchmark: 5.2.3 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: /app
+plugins: benchmark-5.2.3
+collected 3 items
+
+performance_tests/test_comprehensive_audit.py ...                        [100%]
+Wrote benchmark data in: <_io.BufferedWriter name='audit_benchmarks.json'>
+
+
+
+----------------------------------------------------------------------------------------- benchmark: 2 tests ----------------------------------------------------------------------------------------
+Name (time in ms)                     Min                 Max               Mean             StdDev              Median                IQR            Outliers      OPS            Rounds  Iterations
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+test_audit_latency_throughput     10.5832 (1.0)       11.9254 (1.0)      10.9208 (1.0)       0.2575 (1.0)       10.8943 (1.0)       0.2769 (1.0)          12;4  91.5685 (1.0)          50           1
+test_audit_high_concurrency       49.9923 (4.72)     116.6744 (9.78)     90.5877 (8.29)     33.5336 (130.23)   112.8773 (10.36)    59.6557 (215.46)        1;0  11.0390 (0.12)          5           1
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Legend:
+  Outliers: 1 Standard Deviation from Mean; 1.5 IQR (InterQuartile Range) from 1st Quartile and 3rd Quartile.
+  OPS: Operations Per Second, computed as 1 / Mean
+============================== 3 passed in 4.58s ===============================
