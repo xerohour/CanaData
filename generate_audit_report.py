@@ -1,4 +1,33 @@
-# Comprehensive Technical Audit Report: Performance & Scalability
+import json
+
+def generate_report():
+    try:
+        with open("audit_benchmarks.json", "r") as f:
+            bench_data = json.load(f)
+    except Exception as e:
+        print(f"Error loading benchmark JSON: {e}")
+        return
+
+    benchmarks = bench_data.get("benchmarks", [])
+
+    latency_stats = None
+    concurrency_stats = None
+
+    for b in benchmarks:
+        name = b.get("name", "")
+        if "test_audit_latency_throughput" in name:
+            latency_stats = b.get("stats", {})
+        elif "test_audit_high_concurrency" in name:
+            concurrency_stats = b.get("stats", {})
+
+    # Calculate throughput (ops/sec) = 1 / mean(seconds)
+    latency_throughput = 1.0 / latency_stats.get("mean", 1.0) if latency_stats else 0
+    concurrency_throughput = 1.0 / concurrency_stats.get("mean", 1.0) if concurrency_stats else 0
+
+    latency_mean_ms = latency_stats.get("mean", 0) * 1000 if latency_stats else 0
+    concurrency_mean_ms = concurrency_stats.get("mean", 0) * 1000 if concurrency_stats else 0
+
+    report_content = f"""# Comprehensive Technical Audit Report: Performance & Scalability
 
 ## 1. Codebase Profiling & Analysis
 
@@ -25,13 +54,13 @@ Automated benchmarks were executed using `pytest-benchmark`.
 **Results:**
 - **Latency & Throughput (`test_audit_latency_throughput`):**
   - Processing a large, nested JSON batch (simulating heavy data load).
-  - **Mean Latency:** ~10.9208 ms per batch.
-  - **Throughput:** ~91.5685 ops/sec.
+  - **Mean Latency:** ~{latency_mean_ms:.4f} ms per batch.
+  - **Throughput:** ~{latency_throughput:.4f} ops/sec.
   - The optimized data processor effectively handles large payloads.
 - **Concurrency Overhead (`test_audit_high_concurrency`):**
   - 50 threads injecting 25,000 records.
-  - **Mean Latency:** ~90.5877 ms.
-  - **Throughput:** ~11.0390 ops/sec.
+  - **Mean Latency:** ~{concurrency_mean_ms:.4f} ms.
+  - **Throughput:** ~{concurrency_throughput:.4f} ops/sec.
 
 ## 4. Scalability Analytics & Optimization Projections
 
@@ -53,3 +82,12 @@ Automated benchmarks were executed using `pytest-benchmark`.
     2. Decouple the scraper workers from data aggregation. Workers scrape and push normalized JSON directly to a durable datastore or queue.
     3. Remove `_menu_data_lock` entirely.
   - **Impact:** Infinite horizontal scaling. The system can instantly spin up hundreds of containerized workers to process states like California simultaneously without lock contention or memory exhaustion on a single node.
+"""
+
+    with open("FINAL_PERFORMANCE_AUDIT_REPORT.md", "w") as f:
+        f.write(report_content)
+
+    print("Successfully generated FINAL_PERFORMANCE_AUDIT_REPORT.md")
+
+if __name__ == "__main__":
+    generate_report()
