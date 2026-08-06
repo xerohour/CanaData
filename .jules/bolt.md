@@ -7,3 +7,6 @@
 ## 2026-06-30 - Optimized pandas column evaluation
 **Learning:** Using `df[col].dropna()` in pandas has O(N) memory overhead and is slow for large DataFrames.
 **Action:** Use `df[col].first_valid_index()` along with checking for duplicate indices to securely extract the first scalar value without allocating a full Series copy. Use list comprehensions over `.apply` for complex row operations.
+## 2024-08-06 - Micro-optimizing Deep Dictionary Flattening
+**Learning:** In tight recursive loops on deeply nested data (like JSON flattening), checking dict emptiness via `len(item.keys()) < 1` forces a view creation and len calculation, which scales poorly. Additionally, global variable lookups for built-ins (`dict`, `list`, `str`) or object methods (`".".join`) add hidden latency in large iterations.
+**Action:** Always use implicit truthiness (`if item:`) for emptiness checks. When iterating heavily, bind external functions and types to local variables (e.g., `_dict = dict`, `_join = ".".join`) outside the loop to bypass global/builtin lookup overhead.

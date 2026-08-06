@@ -860,45 +860,51 @@ class CanaData:
         result = {}
         stack = [iter(d.items())]  # Stack contains iterators of dictionary items
         keys = []  # Tracks the current path in the dictionary (e.g., ['price', 'amount'])
+
+        _dict = dict
+        _list = list
+        _join = ".".join
+        _str = str
+
         while stack:
             for k, v in stack[-1]:
                 keys.append(k)
-                if isinstance(v, list):
+                if isinstance(v, _list):
                     # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
-                    if len(v) > 0:
+                    if v:
                         for item in v:
                             if item:
-                                if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
-                                        result[".".join(keys)] = "None"
-                                    else:
+                                if isinstance(item, _dict):
+                                    if item:
                                         # Push the nested dict onto the stack
                                         stack.append(iter(item.items()))
-                                elif isinstance(item, list):
+                                    else:
+                                        result[_join(keys)] = "None"
+                                elif isinstance(item, _list):
                                     # Fallback for nested lists (semi-unsupported)
-                                    result[".".join(keys)] = ".".join(item)
+                                    result[_join(keys)] = _join(item)
                                     keys.pop()
                                 else:
                                     # Primitives in a list are joined by dot notation
-                                    result[".".join(keys)] = ".".join(str(x) for x in v)
+                                    result[_join(keys)] = _join(_str(x) for x in v)
                                     keys.pop()
                                     break
                         break
                     else:
-                        result[".".join(keys)] = "None"
+                        result[_join(keys)] = "None"
                         keys.pop()
-                elif isinstance(v, dict):
+                elif isinstance(v, _dict):
                     # Handle nested dictionaries
-                    if len(v.keys()) < 1:
-                        result[".".join(keys)] = "None"
-                        keys.pop()
-                    else:
+                    if v:
                         # Push the nested dict onto the stack
                         stack.append(iter(v.items()))
                         break
+                    else:
+                        result[_join(keys)] = "None"
+                        keys.pop()
                 else:
                     # Leaf node: Store the value as a string
-                    result[".".join(keys)] = str(v)
+                    result[_join(keys)] = _str(v)
                     keys.pop()
             else:
                 # Finished processing an iterator: pop the path segment and the iterator itself
