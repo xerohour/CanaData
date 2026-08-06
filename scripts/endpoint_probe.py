@@ -37,7 +37,9 @@ def run_curl(url: str, timeout_seconds: int = 30) -> dict[str, Any]:
         cmd.extend(["-H", header])
     cmd.extend(["-w", "\n__STATUS__:%{http_code}", url])
 
-    result = subprocess.run(cmd, capture_output=True, timeout=timeout_seconds)
+    result = subprocess.run(
+        cmd, capture_output=True, timeout=timeout_seconds, check=False
+    )
     text = (result.stdout or b"").decode("utf-8", "replace")
 
     if "__STATUS__:" not in text:

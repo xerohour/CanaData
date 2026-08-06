@@ -383,7 +383,7 @@ class CanaDataGUI:
                 summary = "Completed"
 
             self.event_queue.put(("done", summary))
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             self.event_queue.put(("error", str(exc)))
         finally:
             logger.removeHandler(handler)
@@ -459,7 +459,7 @@ class CanaDataGUI:
         self.log_text.configure(state=tk.DISABLED)
 
     def _default_output_dir(self) -> Path:
-        folder = f"CanaData_{datetime.now().strftime('%m-%d-%Y')}"
+        folder = f"CanaData_{datetime.now().strftime('%m-%d-%Y')}"  # noqa: DTZ005
         return ROOT / folder
 
     def open_output_folder(self) -> None:
