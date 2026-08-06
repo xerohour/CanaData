@@ -1024,8 +1024,8 @@ class CanaParse:
                     var nextBtn = $('<button class="btn btn-secondary" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Next</button>');
                     var info = $('<span style="color: var(--text-muted); font-size: 0.9rem;">Showing ' + (start + 1) + '-' + Math.min(end, totalRows) + ' of ' + totalRows + '</span>');
                     
-                    if (page === 1) prevBtn.prop('disabled', true).css('opacity', 0.5);
-                    if (page === totalPages) nextBtn.prop('disabled', true).css('opacity', 0.5);
+                    if (page === 1) { prevBtn.prop('disabled', true).css({'opacity': 0.5, 'cursor': 'not-allowed'}).attr('title', 'You are on the first page'); }
+                    if (page === totalPages) { nextBtn.prop('disabled', true).css({'opacity': 0.5, 'cursor': 'not-allowed'}).attr('title', 'You are on the last page'); }
                     
                     prevBtn.on('click', function() {
                         currentPages[id]--;
