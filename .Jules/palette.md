@@ -15,3 +15,6 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+## 2026-08-06 - Explicit Disabled States with Tooltips
+**Learning:** Disabled pagination buttons were only communicating their state via reduced opacity (50%), which isn't always clear to users.
+**Action:** Changed disabled state styling to include `cursor: not-allowed` and added a `title` tooltip explaining *why* the button is disabled (e.g., "You are on the first page"), which is a key UX enhancement for improving clarity.
