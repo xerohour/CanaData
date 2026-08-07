@@ -803,9 +803,9 @@ class CanaData:
         flatDictList = []
 
         # Loop through the Listings
-        for listing in listings:
+        for listing in listings.values():
             # Loop through the menu item Dictionaries for each listings
-            for item in listings[listing]:
+            for item in listing:
                 # Flatten the dataset for each item
                 flatData = self.flatten_dictionary(item)
                 # Add the flat dataset to our flatDictList
@@ -860,16 +860,17 @@ class CanaData:
         result = {}
         stack = [iter(d.items())]  # Stack contains iterators of dictionary items
         keys = []  # Tracks the current path in the dictionary (e.g., ['price', 'amount'])
+
         while stack:
             for k, v in stack[-1]:
                 keys.append(k)
                 if isinstance(v, list):
                     # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
-                    if len(v) > 0:
+                    if v:
                         for item in v:
                             if item:
                                 if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
+                                    if not item:
                                         result[".".join(keys)] = "None"
                                     else:
                                         # Push the nested dict onto the stack
@@ -889,7 +890,7 @@ class CanaData:
                         keys.pop()
                 elif isinstance(v, dict):
                     # Handle nested dictionaries
-                    if len(v.keys()) < 1:
+                    if not v:
                         result[".".join(keys)] = "None"
                         keys.pop()
                     else:
