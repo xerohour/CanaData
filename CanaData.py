@@ -140,9 +140,9 @@ class CanaData:
         # Caching configuration
         self.cache_enabled = cache_enabled
         if cache_enabled:
-            cache_ttl = int(os.getenv("CACHE_TTL", 3600))
+            cache_ttl = int(os.getenv("CACHE_TTL", "3600"))
             self.cache_manager = CacheManager(
-                memory_cache_size=int(os.getenv("MEMORY_CACHE_SIZE", 2000)),
+                memory_cache_size=int(os.getenv("MEMORY_CACHE_SIZE", "2000")),
                 memory_cache_ttl=cache_ttl,
                 disk_cache_ttl=cache_ttl * 6,  # Disk cache lasts longer
                 enable_disk_cache=os.getenv("ENABLE_DISK_CACHE", "true").lower()
@@ -181,7 +181,7 @@ class CanaData:
         if self.cache_enabled and self.api_client and use_cache:
             try:
                 return self.api_client.get(url, timeout=30)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.warning(f"Cached request failed, trying without cache: {e}")
                 # Fall back to direct request
 
@@ -196,7 +196,7 @@ class CanaData:
                         req.json().get("errors", [{}])[0].get("detail", req.text)
                     )
                     logger.error(f"Validation Error (422): {error_detail}")
-                except Exception:
+                except Exception:  # noqa: BLE001
                     logger.error(f"Validation Error (422): {req.text}")
                 return "break"
             elif req.status_code == 406:
@@ -240,7 +240,7 @@ class CanaData:
         ]
 
         try:
-            completed = subprocess.run(curl_cmd, capture_output=True, timeout=45)
+            completed = subprocess.run(curl_cmd, capture_output=True, timeout=45, check=False)
             output = (completed.stdout or b"").decode("utf-8", "replace")
             if "__STATUS__:" not in output:
                 logger.error("Curl output missing status marker")
@@ -258,7 +258,7 @@ class CanaData:
                         json.loads(body).get("errors", [{}])[0].get("detail", body)
                     )
                     logger.error(f"Validation Error (422 via curl): {error_detail}")
-                except Exception:
+                except Exception:  # noqa: BLE001
                     logger.error(f"Validation Error (422 via curl): {body}")
                 return "break"
 
@@ -266,7 +266,7 @@ class CanaData:
                 f"Curl request failed with status {status_code}: {body[:200]}"
             )
             return False
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Curl fallback failed: {e}")
             return False
 
@@ -443,7 +443,7 @@ class CanaData:
             )
             return False
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Error processing {location_slug}: {e!s}")
             return False
 
@@ -458,7 +458,7 @@ class CanaData:
     ) -> dict[str, Any] | None:
         """Fetch paginated menu items from discovery endpoint."""
         page = 1
-        page_size = int(os.getenv("MENU_PAGE_SIZE", 100))
+        page_size = int(os.getenv("MENU_PAGE_SIZE", "100"))
         all_items: list[dict[str, Any]] = []
         meta: dict[str, Any] = {}
 
@@ -950,7 +950,8 @@ class CanaData:
             - Subsequent rows: dictionary values in same order
             - UTF-8 encoding for special characters
         """
-        today = datetime.today().strftime("%m-%d-%Y")
+        from datetime import timezone
+        today = datetime.now(timezone.utc).strftime("%m-%d-%Y")
         # Variable on where to save the file
         home_dir = f"{path[0]}/CanaData_{today}"
 
@@ -1008,7 +1009,7 @@ class CanaData:
         # Attempt detailed results export
         try:
             self.csv_maker(f"{self.searchSlug}_results", self.finishedMenuItems)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Error: {e!s}")
             print(
                 "^^ Probably were no actual items (if error says 'list index out of range')"
@@ -1017,7 +1018,7 @@ class CanaData:
         # Attempt high-level listings export
         try:
             self.csv_maker(f"{self.searchSlug}_total_listings", self.totalLocations)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Error: {e!s}")
             print(
                 "^^ Musta been a bad search query? (if error says 'list index out of range')"
@@ -1027,14 +1028,14 @@ class CanaData:
         if self.brands:
             try:
                 self.csv_maker("all_brands", self.brands)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"Error exporting brands: {e!s}")
 
         # Attempt Strains export
         if self.strains:
             try:
                 self.csv_maker("all_strains", self.strains)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"Error exporting strains: {e!s}")
 
         # Attempt Extracted Strains export (Menu-based)
@@ -1052,7 +1053,7 @@ class CanaData:
                 print(
                     f"- Exported {len(extracted_list)} unique strains found in menus."
                 )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"Error exporting extracted strains: {e!s}")
 
         print(

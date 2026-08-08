@@ -66,7 +66,7 @@ class OptimizedDataProcessor:
             df = self._handle_remaining_nesting(df)
 
             return df
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(
                 f"Pandas normalization failed, falling back to custom method: {e}"
             )
@@ -99,7 +99,7 @@ class OptimizedDataProcessor:
                     json.dumps(x) if isinstance(x, (dict, list)) else str(x)
                     for x in df[col]
                 ]
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.warning(f"Failed to flatten column {col}: {e}")
                 df[col] = df[col].astype(str)
 
