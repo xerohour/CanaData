@@ -82,9 +82,10 @@ class CanaParse:
     def __init__(self, csv_file=None, csv_folder=None, no_filter=False):
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.csv_file = csv_file or os.getenv("CSV_FILE", "colorado_results.csv")
+        from datetime import timezone
         self.csv_folder = csv_folder or os.getenv(
             "CSV_FOLDER",
-            os.path.join(base_dir, f"CanaData_{datetime.today().strftime('%m-%d-%Y')}"),
+            os.path.join(base_dir, f"CanaData_{datetime.now(timezone.utc).strftime('%m-%d-%Y')}"),
         )
         self.no_filter = no_filter
         self.filters = []
@@ -125,7 +126,7 @@ class CanaParse:
                 logger.info(
                     f"Loaded {len(self.listings_map)} store names and cities from {listings_path}"
                 )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.warning(f"Failed to load listings map: {e}")
 
     def load_filters(self):
@@ -147,7 +148,7 @@ class CanaParse:
                     FlowerFilter(f_data) for f_data in data.get("filters", [])
                 ]
             logger.info(f"Loaded {len(self.filters)} filters from {filters_path}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to load filters: {e!s}")
 
     def load_csv_data(self):
@@ -213,7 +214,7 @@ class CanaParse:
 
             logger.info(f"Loaded {len(self.raw_data)} rows with pricing data.")
             return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Error reading CSV: {e!s}")
             return False
 
@@ -301,7 +302,7 @@ class CanaParse:
                             p = item.get("price")
                             if p is not None:
                                 return float(p)
-                except Exception:
+                except Exception:  # noqa: BLE001, S110
                     pass
 
         # Check prices.gram next
@@ -318,7 +319,7 @@ class CanaParse:
                             p = item.get("price")
                             if p is not None:
                                 return float(p)
-                except Exception:
+                except Exception:  # noqa: BLE001, S110
                     pass
 
         # Fallback: check price.price and price.unit
@@ -391,9 +392,8 @@ class CanaParse:
             return False
 
         # 5. Strains
-        if f.strains:
-            if not any(strain.lower() in row_str for strain in f.strains):
-                return False
+        if f.strains and not any(strain.lower() in row_str for strain in f.strains):
+            return False
 
         # 6. Stores
         if f.stores:
@@ -407,9 +407,8 @@ class CanaParse:
             return False
 
         # 8. Good Words (Required)
-        if f.good_words:
-            if not any(word.lower() in row_str for word in f.good_words):
-                return False
+        if f.good_words and not any(word.lower() in row_str for word in f.good_words):
+            return False
 
         # 9. THC Floor
         if f.thc_floor > 0:
@@ -452,7 +451,7 @@ class CanaParse:
         """Format number as USD currency."""
         try:
             return f"${float(amount):,.2f}"
-        except Exception:
+        except (ValueError, TypeError):
             return str(amount)
 
     def as_percentage(self, amount):
@@ -461,7 +460,7 @@ class CanaParse:
             val = float(amount)
             if 0 <= val <= 100:
                 return f"{val:,.2f}%"
-        except Exception:
+        except (ValueError, TypeError):
             pass
         return ""
 
@@ -473,8 +472,7 @@ class CanaParse:
         with tag("html", lang="en"):
             with tag("head"):
                 self._add_html_head(doc)
-            with tag("body"):
-                with tag("div", klass="container-fluid main"):
+            with tag("body"), tag("div", klass="container-fluid main"):
                     self._generate_navbar(doc, tag, text)
                     # Global Search Bar
                     with tag("div", klass="search-container"):
@@ -497,7 +495,7 @@ class CanaParse:
         if len(raw_html) < 5 * 1024 * 1024:
             try:
                 return indent(raw_html)
-            except Exception:
+            except Exception: # noqa: BLE001, S110
                 pass
         return raw_html
 
@@ -1117,7 +1115,8 @@ class CanaParse:
                 with tag("div", style="font-size: 0.8rem; color: var(--text-muted)"):
                     text(f"Source: {self.csv_file}")
                 with tag("div", style="font-size: 0.8rem; color: var(--accent)"):
-                    now = datetime.now().strftime("%b %d, %Y")
+                    from datetime import timezone
+                    now = datetime.now(timezone.utc).strftime("%b %d, %Y")
                     text(f"Updated: {now}")
 
     def _generate_filter_section(self, doc, tag, text, i, f):
@@ -1178,8 +1177,7 @@ class CanaParse:
                     if isinstance(store_info, dict)
                     else store_info
                 )
-                if not dispensary_name:
-                    if loc_idx >= 0 and len(row) > loc_idx:
+                if not dispensary_name and loc_idx >= 0 and len(row) > loc_idx:
                         loc_val = row[loc_idx]
                         if "/" in loc_val:
                             dispensary_name = (
@@ -1210,7 +1208,7 @@ class CanaParse:
                             loc_list = json.loads(loc_raw)
                             if loc_list:
                                 loc_val = str(loc_list[0])
-                        except Exception:
+                        except Exception: # noqa: BLE001
                             loc_val = (
                                 loc_raw.replace("[", "")
                                 .replace("]", "")
@@ -1302,7 +1300,7 @@ class CanaParse:
                     loc_list = json.loads(loc_raw)
                     if loc_list:
                         loc_val = str(loc_list[0])
-                except Exception:
+                except Exception: # noqa: BLE001
                     loc_val = (
                         loc_raw.replace("[", "")
                         .replace("]", "")
@@ -1366,8 +1364,7 @@ class CanaParse:
                         text(brand_name)
 
             # Category
-            with tag("td"):
-                with tag(
+            with tag("td"), tag(
                     "span",
                     style="background: rgba(0, 212, 255, 0.1); color: var(--secondary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;",
                 ):
@@ -1459,7 +1456,7 @@ def getComparisonVal(op, val1, val2):
             return 1 if val1 > val2 else 0
         if op == "<":
             return 1 if 0 < val1 < val2 else 0
-    except Exception:
+    except (TypeError, ValueError):
         pass
     return 0
 

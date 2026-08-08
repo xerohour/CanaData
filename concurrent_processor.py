@@ -76,7 +76,7 @@ class ConcurrentMenuProcessor:
                 try:
                     result = future.result()
                     self.results[location["slug"]] = result
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     self.errors.append({"location": location, "error": str(exc)})
                     logger.error(
                         f"Location {location['slug']} generated an exception: {exc}"
