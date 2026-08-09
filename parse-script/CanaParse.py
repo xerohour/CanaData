@@ -537,6 +537,12 @@ class CanaParse:
             --glass-border: rgba(255, 255, 255, 0.1);
         }
 
+        @media (prefers-reduced-motion: no-preference) {
+            html {
+                scroll-behavior: smooth;
+            }
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
@@ -1106,10 +1112,13 @@ class CanaParse:
 
             with tag("div"), tag("ul", klass="navbar-nav"):
                 for f in self.filters:
-                    with tag("li"), tag(
-                        "a",
-                        klass="nav-link",
-                        href=f"#{f.name.replace(' ', '_').lower()}",
+                    with (
+                        tag("li"),
+                        tag(
+                            "a",
+                            klass="nav-link",
+                            href=f"#{f.name.replace(' ', '_').lower()}",
+                        ),
                     ):
                         text(f.name)
 
