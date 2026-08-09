@@ -583,14 +583,12 @@ class CanaData:
         else:
             for category in categories:
                 for item in category.get("items", []):
-                    item_copy = dict(item)
-                    item_copy.update(
-                        {
-                            "locations_found_at": [listing_url],
-                            "listing_id": listing_id,
-                            "listing_wmid": listing.get("wmid"),
-                        }
-                    )
+                    # ⚡ Bolt Optimization: Use item.copy() and direct key assignments instead of dict(item) + .update()
+                    # to avoid creating redundant intermediate dictionary objects in this hot loop, reducing overhead.
+                    item_copy = item.copy()
+                    item_copy["locations_found_at"] = [listing_url]
+                    item_copy["listing_id"] = listing_id
+                    item_copy["listing_wmid"] = listing.get("wmid")
 
                     # Extract strain data if present
                     if "strain_data" in item_copy:
@@ -650,14 +648,12 @@ class CanaData:
             if not isinstance(item, dict):
                 continue
 
-            item_copy = dict(item)
-            item_copy.update(
-                {
-                    "locations_found_at": [listing_url],
-                    "listing_id": listing_id,
-                    "listing_wmid": listing_wmid,
-                }
-            )
+            # ⚡ Bolt Optimization: Use item.copy() and direct key assignments instead of dict(item) + .update()
+            # to prevent intermediate object allocations in hot loops.
+            item_copy = item.copy()
+            item_copy["locations_found_at"] = [listing_url]
+            item_copy["listing_id"] = listing_id
+            item_copy["listing_wmid"] = listing_wmid
 
             strain_data = item_copy.get("strain_data")
             if isinstance(strain_data, dict):
