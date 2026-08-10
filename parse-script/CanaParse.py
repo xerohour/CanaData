@@ -525,6 +525,12 @@ class CanaParse:
 
         # Premium Glassmorphism CSS
         css = """
+        @media (prefers-reduced-motion: no-preference) {
+            html {
+                scroll-behavior: smooth;
+            }
+        }
+
         :root {
             --primary: #00ffa3;
             --secondary: #00d4ff;
