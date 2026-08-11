@@ -65,6 +65,12 @@ def generate_html_report(data, region_name="Colorado"):
         padding: 0;
     }
 
+    @media (prefers-reduced-motion: no-preference) {
+        html {
+            scroll-behavior: smooth;
+        }
+    }
+
     body {
         font-family: 'Outfit', 'Inter', sans-serif;
         background-color: var(--bg);
