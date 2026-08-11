@@ -47,7 +47,7 @@ def check_endpoint(url):
                 print(f"Top level keys: {data.keys()}")
         else:
             print(f"Failed with text: {resp.text[:200]}")
-    except Exception as e:
+    except (Exception, ValueError, TypeError) as e:
         print(f"Error: {e}")
     print("-" * 20)
 
