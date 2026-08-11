@@ -6,7 +6,7 @@ import sys
 import threading
 import tkinter as tk
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from tkinter import messagebox, ttk
 
