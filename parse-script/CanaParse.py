@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from dotenv import load_dotenv
@@ -84,7 +84,7 @@ class CanaParse:
         self.csv_file = csv_file or os.getenv("CSV_FILE", "colorado_results.csv")
         self.csv_folder = csv_folder or os.getenv(
             "CSV_FOLDER",
-            os.path.join(base_dir, f"CanaData_{datetime.today().strftime('%m-%d-%Y')}"),
+            os.path.join(base_dir, f"CanaData_{datetime.now(timezone.utc).strftime('%m-%d-%Y')}"),
         )
         self.no_filter = no_filter
         self.filters = []
@@ -301,7 +301,7 @@ class CanaParse:
                             p = item.get("price")
                             if p is not None:
                                 return float(p)
-                except Exception:
+                except (ValueError, TypeError):
                     pass
 
         # Check prices.gram next
@@ -318,7 +318,7 @@ class CanaParse:
                             p = item.get("price")
                             if p is not None:
                                 return float(p)
-                except Exception:
+                except (ValueError, TypeError):
                     pass
 
         # Fallback: check price.price and price.unit
@@ -391,8 +391,7 @@ class CanaParse:
             return False
 
         # 5. Strains
-        if f.strains:
-            if not any(strain.lower() in row_str for strain in f.strains):
+        if f.strains and not any(strain.lower() in row_str for strain in f.strains):
                 return False
 
         # 6. Stores
@@ -407,8 +406,7 @@ class CanaParse:
             return False
 
         # 8. Good Words (Required)
-        if f.good_words:
-            if not any(word.lower() in row_str for word in f.good_words):
+        if f.good_words and not any(word.lower() in row_str for word in f.good_words):
                 return False
 
         # 9. THC Floor
@@ -452,7 +450,7 @@ class CanaParse:
         """Format number as USD currency."""
         try:
             return f"${float(amount):,.2f}"
-        except Exception:
+        except (ValueError, TypeError):
             return str(amount)
 
     def as_percentage(self, amount):
@@ -461,7 +459,7 @@ class CanaParse:
             val = float(amount)
             if 0 <= val <= 100:
                 return f"{val:,.2f}%"
-        except Exception:
+        except (ValueError, TypeError):
             pass
         return ""
 
@@ -473,8 +471,7 @@ class CanaParse:
         with tag("html", lang="en"):
             with tag("head"):
                 self._add_html_head(doc)
-            with tag("body"):
-                with tag("div", klass="container-fluid main"):
+            with tag("body"), tag("div", klass="container-fluid main"):
                     self._generate_navbar(doc, tag, text)
                     # Global Search Bar
                     with tag("div", klass="search-container"):
@@ -497,7 +494,7 @@ class CanaParse:
         if len(raw_html) < 5 * 1024 * 1024:
             try:
                 return indent(raw_html)
-            except Exception:
+            except (ValueError, TypeError):
                 pass
         return raw_html
 
@@ -1106,10 +1103,13 @@ class CanaParse:
 
             with tag("div"), tag("ul", klass="navbar-nav"):
                 for f in self.filters:
-                    with tag("li"), tag(
-                        "a",
-                        klass="nav-link",
-                        href=f"#{f.name.replace(' ', '_').lower()}",
+                    with (
+                        tag("li"),
+                        tag(
+                            "a",
+                            klass="nav-link",
+                            href=f"#{f.name.replace(' ', '_').lower()}",
+                        ),
                     ):
                         text(f.name)
 
@@ -1117,7 +1117,7 @@ class CanaParse:
                 with tag("div", style="font-size: 0.8rem; color: var(--text-muted)"):
                     text(f"Source: {self.csv_file}")
                 with tag("div", style="font-size: 0.8rem; color: var(--accent)"):
-                    now = datetime.now().strftime("%b %d, %Y")
+                    now = datetime.now(timezone.utc).strftime("%b %d, %Y")
                     text(f"Updated: {now}")
 
     def _generate_filter_section(self, doc, tag, text, i, f):
@@ -1178,8 +1178,7 @@ class CanaParse:
                     if isinstance(store_info, dict)
                     else store_info
                 )
-                if not dispensary_name:
-                    if loc_idx >= 0 and len(row) > loc_idx:
+                if not dispensary_name and loc_idx >= 0 and len(row) > loc_idx:
                         loc_val = row[loc_idx]
                         if "/" in loc_val:
                             dispensary_name = (
@@ -1210,7 +1209,7 @@ class CanaParse:
                             loc_list = json.loads(loc_raw)
                             if loc_list:
                                 loc_val = str(loc_list[0])
-                        except Exception:
+                        except (ValueError, TypeError):
                             loc_val = (
                                 loc_raw.replace("[", "")
                                 .replace("]", "")
@@ -1302,7 +1301,7 @@ class CanaParse:
                     loc_list = json.loads(loc_raw)
                     if loc_list:
                         loc_val = str(loc_list[0])
-                except Exception:
+                except (ValueError, TypeError):
                     loc_val = (
                         loc_raw.replace("[", "")
                         .replace("]", "")
@@ -1459,7 +1458,7 @@ def getComparisonVal(op, val1, val2):
             return 1 if val1 > val2 else 0
         if op == "<":
             return 1 if 0 < val1 < val2 else 0
-    except Exception:
+    except (ValueError, TypeError):
         pass
     return 0
 

@@ -31,7 +31,7 @@ def check_url(url, description, headers=None):
             print("  [FAIL] Not Found.")
         else:
             print(f"  [FAIL] {resp.status_code}")
-    except Exception as e:
+    except (Exception, ValueError, TypeError) as e:
         print(f"  [ERROR] {e!s}")
     print("-" * 40)
     return False
