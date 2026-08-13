@@ -21,6 +21,12 @@
             --glow: rgba(0, 255, 163, 0.15);
         }
 
+        @media (prefers-reduced-motion: no-preference) {
+            html {
+                scroll-behavior: smooth;
+            }
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
