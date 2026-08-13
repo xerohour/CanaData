@@ -537,6 +537,12 @@ class CanaParse:
             --glass-border: rgba(255, 255, 255, 0.1);
         }
 
+        @media (prefers-reduced-motion: no-preference) {
+            html {
+                scroll-behavior: smooth;
+            }
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
