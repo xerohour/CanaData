@@ -56,7 +56,7 @@ class CacheManager:
             sorted_params = sorted(params.items())
             cache_string += "?" + "&".join(f"{k}={v}" for k, v in sorted_params)
 
-        return hashlib.md5(cache_string.encode()).hexdigest()
+        return hashlib.sha256(cache_string.encode()).hexdigest()
 
     def get(self, url: str, params: dict | None = None) -> Any | None:
         """Retrieve data from cache"""
