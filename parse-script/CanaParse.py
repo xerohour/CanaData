@@ -539,6 +539,10 @@ class CanaParse:
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        @media (prefers-reduced-motion: no-preference) {
+            html { scroll-behavior: smooth; }
+        }
+
         body {
             font-family: 'Outfit', 'Inter', sans-serif;
             background-color: var(--bg);
