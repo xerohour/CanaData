@@ -1,0 +1,18 @@
+Sat Aug 15 21:03:18 2026    optimized.prof
+
+         1106351 function calls (1078375 primitive calls) in 1.755 seconds
+
+   Ordered by: internal time
+   List reduced from 4338 to 10 due to restriction <10>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      692    0.125    0.000    0.125    0.000 {built-in method marshal.loads}
+     1750    0.070    0.000    0.070    0.000 {built-in method builtins.compile}
+    978/1    0.047    0.000    1.767    1.767 {built-in method builtins.exec}
+      609    0.045    0.000    0.050    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/re/_compiler.py:243(_optimize_charset)
+155368/155354    0.045    0.000    0.048    0.000 {built-in method builtins.isinstance}
+      692    0.043    0.000    0.169    0.000 <frozen importlib._bootstrap_external>:755(_compile_bytecode)
+1887/1862    0.042    0.000    0.875    0.000 {built-in method builtins.__build_class__}
+   100/72    0.039    0.000    0.102    0.001 {built-in method _imp.exec_dynamic}
+     1583    0.033    0.000    0.067    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pydantic/fields.py:228(__init__)
+     3393    0.030    0.000    0.030    0.000 {built-in method posix.stat}
