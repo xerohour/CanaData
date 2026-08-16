@@ -15,3 +15,6 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+## 2026-08-01 - Generated HTML Dashboard Accessibility
+**Learning:** The dynamically generated HTML dashboard (`CanaParse.py`) lacked a "skip to main content" link, making it difficult for keyboard and screen reader users to bypass the navigation.
+**Action:** Added a visually hidden `.skip-link` and ensured the main content container has `id="main-content"` and `tabindex="-1"` so programmatic focus works correctly.
