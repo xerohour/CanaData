@@ -24,7 +24,7 @@ def check_endpoint(name, url, headers=None):
             print(f"  [INFO] 404 Not Found (Endpoint may have changed) - {name}")
         else:
             print(f"  [WARN] {status} - {name}")
-    except Exception as e:
+    except (ValueError, TypeError, OSError) as e:
         print(f"  [ERROR] {e!s} - {name}")
     return False
 
