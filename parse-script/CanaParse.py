@@ -383,32 +383,34 @@ class CanaParse:
             if cat_val not in [c.lower() for c in f.categories]:
                 return False
 
-        # 3. Join row for word-based searches
-        row_str = " ".join([str(x) for x in row]).lower()
-
-        # 4. Brands
-        if f.brands and not any(brand.lower() in row_str for brand in f.brands):
-            return False
-
-        # 5. Strains
-        if f.strains:
-            if not any(strain.lower() in row_str for strain in f.strains):
-                return False
-
-        # 6. Stores
+        # 3. Stores (No need to join row strings)
         if f.stores:
             loc_id = str(row[0]) if len(row) > 0 else ""
             dispensary_name = self.listings_map.get(loc_id, "").lower()
             if not any(store.lower() in dispensary_name for store in f.stores):
                 return False
 
-        # 7. Bad Words (Exclusion)
-        if f.bad_words and any(word.lower() in row_str for word in f.bad_words):
-            return False
+        # 4. Text-based filtering (lazy init)
+        if f.brands or f.strains or f.bad_words or f.good_words:
+            # Join row lazily using a generator expression to save memory
+            row_str = " ".join(map(str, row)).lower()
 
-        # 8. Good Words (Required)
-        if f.good_words:
-            if not any(word.lower() in row_str for word in f.good_words):
+            # 5. Brands
+            if f.brands and not any(brand.lower() in row_str for brand in f.brands):
+                return False
+
+            # 6. Strains
+            if f.strains and not any(strain.lower() in row_str for strain in f.strains):
+                return False
+
+            # 7. Bad Words (Exclusion)
+            if f.bad_words and any(word.lower() in row_str for word in f.bad_words):
+                return False
+
+            # 8. Good Words (Required)
+            if f.good_words and not any(
+                word.lower() in row_str for word in f.good_words
+            ):
                 return False
 
         # 9. THC Floor
@@ -1106,10 +1108,13 @@ class CanaParse:
 
             with tag("div"), tag("ul", klass="navbar-nav"):
                 for f in self.filters:
-                    with tag("li"), tag(
-                        "a",
-                        klass="nav-link",
-                        href=f"#{f.name.replace(' ', '_').lower()}",
+                    with (
+                        tag("li"),
+                        tag(
+                            "a",
+                            klass="nav-link",
+                            href=f"#{f.name.replace(' ', '_').lower()}",
+                        ),
                     ):
                         text(f.name)
 
