@@ -21,6 +21,12 @@
             --glass-border: rgba(255, 255, 255, 0.1);
         }
 
+        @media (prefers-reduced-motion: no-preference) {
+            html {
+                scroll-behavior: smooth;
+            }
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
@@ -611,7 +617,7 @@
         </div>
         <div style="text-align: right">
           <div style="font-size: 0.8rem; color: var(--text-muted)">Source: colorado_results.csv</div>
-          <div style="font-size: 0.8rem; color: var(--accent)">Updated: Jul 29, 2026</div>
+          <div style="font-size: 0.8rem; color: var(--accent)">Updated: Aug 17, 2026</div>
         </div>
       </nav>
       <div class="search-container">
