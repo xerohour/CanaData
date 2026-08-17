@@ -4,6 +4,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
         <title>Weedmaps Discovery Report - Colorado</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,6 +20,12 @@
         --accent: #f59e0b;
         --glass: rgba(255, 255, 255, 0.05);
         --glass-border: rgba(255, 255, 255, 0.1);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        html {
+            scroll-behavior: smooth;
+        }
     }
 
     * {
@@ -162,6 +169,7 @@
         text-align: right;
         word-break: break-word;
         overflow-wrap: break-word;
+        flex: 1; /* ponytail: allow value to take remaining space and wrap */
     }
 
     .promo-section {
@@ -275,60 +283,19 @@
         <div class="container" id="main-content" tabindex="-1">
             <header>
                 <h1>Colorado Discovery</h1>
-                <p class="meta-summary">Found 490 matches in the region • Generated on Jun 28, 2026</p>
+                <p class="meta-summary">Found 488 matches in the region • Generated on Aug 17, 2026</p>
             </header>
 
             <div class="listing-grid">
     
                 <div class="card">
                     <div class="card-header">
-                        <img src="https://images.weedmaps.com/dispensaries/000/064/591/avatar/1656106999-df874a2f-5122-4d38-ab7e-3313020e6150.png" alt="Terps Dispensary Pueblo" class="avatar">
-                        <div class="listing-info">
-                            <h2>Terps Dispensary Pueblo</h2>
-                            <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.9 (6854)</span>
-                            <span class="badge badge-closed">Closed</span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <table class="data-table">
-                            <tr>
-                                <td class="label">Address</td>
-                                <td class="value">38 N. Silicon</td>
-                            </tr>
-                            <tr>
-                                <td class="label">City</td>
-                                <td class="value">Pueblo West</td>
-                            </tr>
-                            <tr>
-                                <td class="label">Hours Today</td>
-                                <td class="value">10:00am -  5:00pm</td>
-                            </tr>
-                            <tr>
-                                <td class="label">Phone</td>
-                                <td class="value">(719) 547-1850</td>
-                            </tr>
-                            <tr>
-                                <td class="label">Menu Items</td>
-                                <td class="value">471 items</td>
-                            </tr>
-                        </table>
-                        
-                    </div>
-                    <div class="footer-actions">
-                        <span style="font-size: 0.8rem; color: var(--text-muted)">recreational</span>
-                        <a href="https://weedmaps.com/dispensaries/terps-dispensary-pueblo" target="_blank" rel="noopener noreferrer" aria-label="View Terps Dispensary Pueblo on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
-                    </div>
-                </div>
-        
-                <div class="card">
-                    <div class="card-header">
                         <img src="https://images.weedmaps.com/dispensaries/000/303/228/avatar/1729618042-peak-black_background.jpg" alt="Peak MJ Sedgwick" class="avatar">
                         <div class="listing-info">
                             <h2>Peak MJ Sedgwick</h2>
                             <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.8 (181)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-rating">★ 4.8 (185)</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -343,7 +310,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Hours Today</td>
-                                <td class="value"> 8:00am -  7:00pm</td>
+                                <td class="value"> 8:00am -  8:00pm</td>
                             </tr>
                             <tr>
                                 <td class="label">Phone</td>
@@ -351,7 +318,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">702 items</td>
+                                <td class="value">744 items</td>
                             </tr>
                         </table>
                         
@@ -368,8 +335,8 @@
                         <div class="listing-info">
                             <h2>Confidential Cannabis - Broomfield</h2>
                             <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.8 (252)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-rating">★ 4.8 (260)</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -392,7 +359,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">785 items</td>
+                                <td class="value">657 items</td>
                             </tr>
                         </table>
                         
@@ -409,8 +376,8 @@
                         <div class="listing-info">
                             <h2>LOVA Downtown</h2>
                             <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.7 (587)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-rating">★ 4.7 (599)</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -433,7 +400,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">436 items</td>
+                                <td class="value">413 items</td>
                             </tr>
                         </table>
                         
@@ -450,8 +417,8 @@
                         <div class="listing-info">
                             <h2>The Trust Cannabis Company</h2>
                             <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.7 (590)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-rating">★ 4.7 (594)</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -466,7 +433,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Hours Today</td>
-                                <td class="value">10:00am -  9:45pm</td>
+                                <td class="value">10:00am -  9:45am</td>
                             </tr>
                             <tr>
                                 <td class="label">Phone</td>
@@ -474,13 +441,13 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">456 items</td>
+                                <td class="value">411 items</td>
                             </tr>
                         </table>
                         
             <div class="promo-section">
-                <div class="promo-title">✨ PROMO: NOBO20</div>
-                <div class="promo-body">Get 20% off all NOBO products with code NOBO20</div>
+                <div class="promo-title">✨ PROMO: 710LABS</div>
+                <div class="promo-body">FRIDAY DEALS ONLY - 20% Off 710 LABS</div>
             </div>
             
                     </div>
@@ -496,8 +463,8 @@
                         <div class="listing-info">
                             <h2>NuVue Pharma - Cortez</h2>
                             <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.9 (48)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-rating">★ 4.9 (49)</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -520,7 +487,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">254 items</td>
+                                <td class="value">281 items</td>
                             </tr>
                         </table>
                         
@@ -533,99 +500,12 @@
         
                 <div class="card">
                     <div class="card-header">
-                        <img src="https://images.weedmaps.com/dispensaries/000/006/853/avatar/1547664942-BOT_Logo_Round.png" alt="Breckenridge Organic Therapy" class="avatar">
-                        <div class="listing-info">
-                            <h2>Breckenridge Organic Therapy</h2>
-                            <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.7 (198)</span>
-                            <span class="badge badge-open">Open Now</span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <table class="data-table">
-                            <tr>
-                                <td class="label">Address</td>
-                                <td class="value">1900 Airport Rd, Suite A1</td>
-                            </tr>
-                            <tr>
-                                <td class="label">City</td>
-                                <td class="value">Breckenridge</td>
-                            </tr>
-                            <tr>
-                                <td class="label">Hours Today</td>
-                                <td class="value"> 9:30am -  9:30pm</td>
-                            </tr>
-                            <tr>
-                                <td class="label">Phone</td>
-                                <td class="value">(970) 453-0420</td>
-                            </tr>
-                            <tr>
-                                <td class="label">Menu Items</td>
-                                <td class="value">623 items</td>
-                            </tr>
-                        </table>
-                        
-                    </div>
-                    <div class="footer-actions">
-                        <span style="font-size: 0.8rem; color: var(--text-muted)">recreational</span>
-                        <a href="https://weedmaps.com/dispensaries/breckenridge-organic-therapy" target="_blank" rel="noopener noreferrer" aria-label="View Breckenridge Organic Therapy on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
-                    </div>
-                </div>
-        
-                <div class="card">
-                    <div class="card-header">
-                        <img src="https://images.weedmaps.com/dispensaries/000/051/458/avatar/1756846030-chronic_boutique_black_logo.jpg" alt="The Chronic Boutique - Pikes Peak" class="avatar">
-                        <div class="listing-info">
-                            <h2>The Chronic Boutique - Pikes Peak</h2>
-                            <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.6 (741)</span>
-                            <span class="badge badge-open">Open Now</span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <table class="data-table">
-                            <tr>
-                                <td class="label">Address</td>
-                                <td class="value">325 East Pikes Peak Avenue</td>
-                            </tr>
-                            <tr>
-                                <td class="label">City</td>
-                                <td class="value">Colorado Springs</td>
-                            </tr>
-                            <tr>
-                                <td class="label">Hours Today</td>
-                                <td class="value"> 8:00am -  8:00pm</td>
-                            </tr>
-                            <tr>
-                                <td class="label">Phone</td>
-                                <td class="value">(719) 203-5637</td>
-                            </tr>
-                            <tr>
-                                <td class="label">Menu Items</td>
-                                <td class="value">659 items</td>
-                            </tr>
-                        </table>
-                        
-            <div class="promo-section">
-                <div class="promo-title">✨ PROMO: 30WYLD</div>
-                <div class="promo-body">Get 30% off all WYLD products with code 30WYLD</div>
-            </div>
-            
-                    </div>
-                    <div class="footer-actions">
-                        <span style="font-size: 0.8rem; color: var(--text-muted)">hybrid</span>
-                        <a href="https://weedmaps.com/dispensaries/the-chronic-boutique" target="_blank" rel="noopener noreferrer" aria-label="View The Chronic Boutique - Pikes Peak on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
-                    </div>
-                </div>
-        
-                <div class="card">
-                    <div class="card-header">
                         <img src="https://images.weedmaps.com/dispensaries/000/367/128/avatar/1777641464-the_social_cannabis_logo.jpg" alt="Social Dispensary E Mississippi Ave" class="avatar">
                         <div class="listing-info">
                             <h2>Social Dispensary E Mississippi Ave</h2>
                             <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.9 (36)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-rating">★ 5.0 (41)</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -648,7 +528,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">476 items</td>
+                                <td class="value">540 items</td>
                             </tr>
                         </table>
                         
@@ -666,47 +546,93 @@
         
                 <div class="card">
                     <div class="card-header">
-                        <img src="https://images.weedmaps.com/dispensaries/000/032/646/avatar/1579637787-Trenchtown_Main.jpg" alt="Trenchtown Cannabis" class="avatar">
+                        <img src="https://images.weedmaps.com/dispensaries/000/006/853/avatar/1547664942-BOT_Logo_Round.png" alt="Breckenridge Organic Therapy" class="avatar">
                         <div class="listing-info">
-                            <h2>Trenchtown Cannabis</h2>
+                            <h2>Breckenridge Organic Therapy</h2>
                             <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.5 (534)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-rating">★ 4.7 (198)</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
                         <table class="data-table">
                             <tr>
                                 <td class="label">Address</td>
-                                <td class="value">734 Sheridan Blvd</td>
+                                <td class="value">1900 Airport Rd, Suite A1</td>
                             </tr>
                             <tr>
                                 <td class="label">City</td>
-                                <td class="value">Denver</td>
+                                <td class="value">Breckenridge</td>
                             </tr>
                             <tr>
                                 <td class="label">Hours Today</td>
-                                <td class="value"> 9:00am -  7:00pm</td>
+                                <td class="value"> 9:30am -  9:30pm</td>
                             </tr>
                             <tr>
                                 <td class="label">Phone</td>
-                                <td class="value">(303) 999-0788</td>
+                                <td class="value">(970) 453-0420</td>
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">271 items</td>
+                                <td class="value">637 items</td>
                             </tr>
                         </table>
                         
             <div class="promo-section">
-                <div class="promo-title">✨ PROMO: TRENCH10</div>
-                <div class="promo-body">New customers can get 10% off subtotal with code TRENCH10!</div>
+                <div class="promo-title">✨ PROMO: WAANAAUGUST</div>
+                <div class="promo-body">Get 30% off all Wana Edibles products with code WAANAAUGUST</div>
+            </div>
+            
+                    </div>
+                    <div class="footer-actions">
+                        <span style="font-size: 0.8rem; color: var(--text-muted)">recreational</span>
+                        <a href="https://weedmaps.com/dispensaries/breckenridge-organic-therapy" target="_blank" rel="noopener noreferrer" aria-label="View Breckenridge Organic Therapy on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                    </div>
+                </div>
+        
+                <div class="card">
+                    <div class="card-header">
+                        <img src="https://images.weedmaps.com/dispensaries/000/051/458/avatar/1756846030-chronic_boutique_black_logo.jpg" alt="The Chronic Boutique - Pikes Peak" class="avatar">
+                        <div class="listing-info">
+                            <h2>The Chronic Boutique - Pikes Peak</h2>
+                            <span class="badge badge-type">dispensary</span>
+                            <span class="badge badge-rating">★ 4.6 (759)</span>
+                            <span class="badge badge-closed">Closed</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <table class="data-table">
+                            <tr>
+                                <td class="label">Address</td>
+                                <td class="value">325 East Pikes Peak Avenue</td>
+                            </tr>
+                            <tr>
+                                <td class="label">City</td>
+                                <td class="value">Colorado Springs</td>
+                            </tr>
+                            <tr>
+                                <td class="label">Hours Today</td>
+                                <td class="value"> 8:00am -  8:45pm</td>
+                            </tr>
+                            <tr>
+                                <td class="label">Phone</td>
+                                <td class="value">(719) 203-5637</td>
+                            </tr>
+                            <tr>
+                                <td class="label">Menu Items</td>
+                                <td class="value">714 items</td>
+                            </tr>
+                        </table>
+                        
+            <div class="promo-section">
+                <div class="promo-title">✨ PROMO: 8GSROSIN85</div>
+                <div class="promo-body">8 select products for $85.00 with code 8GSROSIN85</div>
             </div>
             
                     </div>
                     <div class="footer-actions">
                         <span style="font-size: 0.8rem; color: var(--text-muted)">hybrid</span>
-                        <a href="https://weedmaps.com/dispensaries/trenchtown-marijuana-center-recreational-mmj-denver" target="_blank" rel="noopener noreferrer" aria-label="View Trenchtown Cannabis on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                        <a href="https://weedmaps.com/dispensaries/the-chronic-boutique" target="_blank" rel="noopener noreferrer" aria-label="View The Chronic Boutique - Pikes Peak on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
                     </div>
                 </div>
         
@@ -716,8 +642,8 @@
                         <div class="listing-info">
                             <h2>Green Tree Medicinals of Northglenn</h2>
                             <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.7 (51)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-rating">★ 4.7 (61)</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -740,7 +666,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">685 items</td>
+                                <td class="value">730 items</td>
                             </tr>
                         </table>
                         
@@ -757,8 +683,8 @@
                         <div class="listing-info">
                             <h2>A Cut Above - Denver</h2>
                             <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.4 (184)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-rating">★ 4.4 (183)</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -781,7 +707,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">212 items</td>
+                                <td class="value">194 items</td>
                             </tr>
                         </table>
                         
@@ -799,7 +725,7 @@
                             <h2>Nature&#x27;s Herbs &amp; Wellness - Garden City</h2>
                             <span class="badge badge-type">dispensary</span>
                             <span class="badge badge-rating">★ 4.2 (188)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -822,7 +748,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">482 items</td>
+                                <td class="value">530 items</td>
                             </tr>
                         </table>
                         
@@ -840,7 +766,7 @@
                             <h2>Dispensary 7884</h2>
                             <span class="badge badge-type">dispensary</span>
                             <span class="badge badge-rating">★ 4.8 (14)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -880,8 +806,8 @@
                         <div class="listing-info">
                             <h2>Flower Power Botanicals</h2>
                             <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.1 (51)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-rating">★ 4.1 (54)</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -904,7 +830,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">394 items</td>
+                                <td class="value">354 items</td>
                             </tr>
                         </table>
                         
@@ -926,8 +852,8 @@
                         <div class="listing-info">
                             <h2>Roots RX Cannabis Dispensary Basalt</h2>
                             <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 5.0 (2)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-rating">★ 5.0 (4)</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -950,7 +876,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">325 items</td>
+                                <td class="value">343 items</td>
                             </tr>
                         </table>
                         
@@ -968,7 +894,7 @@
                             <h2>Roots RX Cannabis Dispensary Aspen</h2>
                             <span class="badge badge-type">dispensary</span>
                             <span class="badge badge-rating">★ 5.0 (2)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -991,7 +917,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">453 items</td>
+                                <td class="value">434 items</td>
                             </tr>
                         </table>
                         
@@ -1004,11 +930,11 @@
         
                 <div class="card">
                     <div class="card-header">
-                        <img src="https://images.weedmaps.com/dispensaries/000/062/972/avatar/1649265520-maikoh_wolf_1kx1k.png" alt="Maikoh Holistics - Boulder" class="avatar">
+                        <img src="https://images.weedmaps.com/dispensaries/000/408/765/avatar/1783031667-amch_google_1to1.jpg" alt="AMCH Dumont" class="avatar">
                         <div class="listing-info">
-                            <h2>Maikoh Holistics - Boulder</h2>
+                            <h2>AMCH Dumont</h2>
                             <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.8 (1029)</span>
+                            <span class="badge badge-rating">★ 5.0 (1)</span>
                             <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
@@ -1016,35 +942,30 @@
                         <table class="data-table">
                             <tr>
                                 <td class="label">Address</td>
-                                <td class="value">2750 Glenwood Dr. Suite #8</td>
+                                <td class="value">909 County Rd #308</td>
                             </tr>
                             <tr>
                                 <td class="label">City</td>
-                                <td class="value">Boulder</td>
+                                <td class="value">Dumont</td>
                             </tr>
                             <tr>
                                 <td class="label">Hours Today</td>
-                                <td class="value">10:00am -  6:00pm</td>
+                                <td class="value">10:00am -  7:00pm</td>
                             </tr>
                             <tr>
                                 <td class="label">Phone</td>
-                                <td class="value">(720) 476-6805</td>
+                                <td class="value">(720) 939-2473</td>
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">379 items</td>
+                                <td class="value">356 items</td>
                             </tr>
                         </table>
                         
-            <div class="promo-section">
-                <div class="promo-title">✨ PROMO: 710LABS</div>
-                <div class="promo-body">20% Off 710 Labs Rosin, Vapes &amp; Doinks</div>
-            </div>
-            
                     </div>
                     <div class="footer-actions">
                         <span style="font-size: 0.8rem; color: var(--text-muted)">recreational</span>
-                        <a href="https://weedmaps.com/dispensaries/maikoh-holistics" target="_blank" rel="noopener noreferrer" aria-label="View Maikoh Holistics - Boulder on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                        <a href="https://weedmaps.com/dispensaries/amch-2" target="_blank" rel="noopener noreferrer" aria-label="View AMCH Dumont on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
                     </div>
                 </div>
         
@@ -1054,8 +975,8 @@
                         <div class="listing-info">
                             <h2>JARS Cannabis - Aurora Southlands</h2>
                             <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.9 (144)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-rating">★ 5.0 (148)</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -1078,7 +999,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">1062 items</td>
+                                <td class="value">1222 items</td>
                             </tr>
                         </table>
                         
@@ -1091,12 +1012,58 @@
         
                 <div class="card">
                     <div class="card-header">
+                        <img src="https://images.weedmaps.com/dispensaries/000/062/972/avatar/1649265520-maikoh_wolf_1kx1k.png" alt="Maikoh Holistics - Boulder" class="avatar">
+                        <div class="listing-info">
+                            <h2>Maikoh Holistics - Boulder</h2>
+                            <span class="badge badge-type">dispensary</span>
+                            <span class="badge badge-rating">★ 4.8 (1050)</span>
+                            <span class="badge badge-closed">Closed</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <table class="data-table">
+                            <tr>
+                                <td class="label">Address</td>
+                                <td class="value">2750 Glenwood Dr. Suite #8</td>
+                            </tr>
+                            <tr>
+                                <td class="label">City</td>
+                                <td class="value">Boulder</td>
+                            </tr>
+                            <tr>
+                                <td class="label">Hours Today</td>
+                                <td class="value">10:00am -  8:00pm</td>
+                            </tr>
+                            <tr>
+                                <td class="label">Phone</td>
+                                <td class="value">(720) 476-6805</td>
+                            </tr>
+                            <tr>
+                                <td class="label">Menu Items</td>
+                                <td class="value">406 items</td>
+                            </tr>
+                        </table>
+
+            <div class="promo-section">
+                <div class="promo-title">✨ PROMO: MAIKOH15</div>
+                <div class="promo-body">15% Off First Online Purchase! (1 TIME USE)</div>
+            </div>
+
+                    </div>
+                    <div class="footer-actions">
+                        <span style="font-size: 0.8rem; color: var(--text-muted)">recreational</span>
+                        <a href="https://weedmaps.com/dispensaries/maikoh-holistics" target="_blank" rel="noopener noreferrer" aria-label="View Maikoh Holistics - Boulder on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
                         <img src="https://images.weedmaps.com/dispensaries/000/054/528/avatar/1697487220-lightshade-logo-socialartboard_1.jpg" alt="Lightshade - Federal Heights" class="avatar">
                         <div class="listing-info">
                             <h2>Lightshade - Federal Heights</h2>
                             <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.8 (1160)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-rating">★ 4.8 (1166)</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -1119,7 +1086,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">647 items</td>
+                                <td class="value">658 items</td>
                             </tr>
                         </table>
                         
@@ -1142,7 +1109,7 @@
                             <h2>Nature&#x27;s Herbs &amp; Wellness - Sedgwick</h2>
                             <span class="badge badge-type">dispensary</span>
                             <span class="badge badge-rating">★ 4.8 (456)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -1165,7 +1132,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">401 items</td>
+                                <td class="value">390 items</td>
                             </tr>
                         </table>
                         
@@ -1182,8 +1149,8 @@
                         <div class="listing-info">
                             <h2>Reefer Madness</h2>
                             <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.7 (202)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-rating">★ 4.7 (219)</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -1206,7 +1173,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">1040 items</td>
+                                <td class="value">1119 items</td>
                             </tr>
                         </table>
                         
@@ -1223,8 +1190,8 @@
                         <div class="listing-info">
                             <h2>JARS Cannabis - Longmont</h2>
                             <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.8 (87)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-rating">★ 4.8 (94)</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -1247,7 +1214,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">627 items</td>
+                                <td class="value">818 items</td>
                             </tr>
                         </table>
                         
@@ -1264,8 +1231,8 @@
                         <div class="listing-info">
                             <h2>Social Dispensary - Golden</h2>
                             <span class="badge badge-type">dispensary</span>
-                            <span class="badge badge-rating">★ 4.8 (63)</span>
-                            <span class="badge badge-open">Open Now</span>
+                            <span class="badge badge-rating">★ 4.8 (67)</span>
+                            <span class="badge badge-closed">Closed</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -1288,7 +1255,7 @@
                             </tr>
                             <tr>
                                 <td class="label">Menu Items</td>
-                                <td class="value">946 items</td>
+                                <td class="value">1068 items</td>
                             </tr>
                         </table>
                         
@@ -1304,6 +1271,52 @@
                     </div>
                 </div>
         
+                <div class="card">
+                    <div class="card-header">
+                        <img src="https://images.weedmaps.com/dispensaries/000/030/462/avatar/1610577497-logo.jpg" alt="Herbs 4 You" class="avatar">
+                        <div class="listing-info">
+                            <h2>Herbs 4 You</h2>
+                            <span class="badge badge-type">dispensary</span>
+                            <span class="badge badge-rating">★ 4.5 (1019)</span>
+                            <span class="badge badge-closed">Closed</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <table class="data-table">
+                            <tr>
+                                <td class="label">Address</td>
+                                <td class="value">20 East 9th Avenue</td>
+                            </tr>
+                            <tr>
+                                <td class="label">City</td>
+                                <td class="value">Denver</td>
+                            </tr>
+                            <tr>
+                                <td class="label">Hours Today</td>
+                                <td class="value"> 9:00am -  8:45pm</td>
+                            </tr>
+                            <tr>
+                                <td class="label">Phone</td>
+                                <td class="value">(303) 830-9999</td>
+                            </tr>
+                            <tr>
+                                <td class="label">Menu Items</td>
+                                <td class="value">508 items</td>
+                            </tr>
+                        </table>
+
+            <div class="promo-section">
+                <div class="promo-title">✨ PROMO: NEWCUSTOMER10</div>
+                <div class="promo-body">Spend $100.00, get 10% off subtotal</div>
+            </div>
+
+                    </div>
+                    <div class="footer-actions">
+                        <span style="font-size: 0.8rem; color: var(--text-muted)">recreational</span>
+                        <a href="https://weedmaps.com/dispensaries/herbs4you-adult-use" target="_blank" rel="noopener noreferrer" aria-label="View Herbs 4 You on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                    </div>
+                </div>
+
             </div>
         </div>
     </body>
