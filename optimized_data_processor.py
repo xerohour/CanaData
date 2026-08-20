@@ -198,17 +198,21 @@ class OptimizedDataProcessor:
         # Ensure all columns are present and fill missing values
         df = df.fillna("None")
 
+        import numpy as np
+
         # Convert data types where possible
         for col in df.columns:
             # Try to convert to numeric where possible. Carefully constrain to avoid coercing string IDs.
+            lowered = col.lower()
             if (
-                "price" in col.lower()
-                or "amount" in col.lower()
-                or "thc" in col.lower()
+                "price" in lowered
+                or "amount" in lowered
+                or "thc" in lowered
             ):
                 original_col = df[col]
                 numeric_col = pd.to_numeric(original_col, errors="coerce")
-                df[col] = numeric_col.where(numeric_col.notna(), original_col)
+                # Optimization: use numpy where, which is faster than pandas where for series
+                df[col] = np.where(numeric_col.notna(), numeric_col, original_col)
 
         # Sort columns for consistency
         df = df.reindex(sorted(df.columns), axis=1)
