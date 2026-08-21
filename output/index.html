@@ -23,6 +23,29 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        @media (prefers-reduced-motion: no-preference) {
+            html {
+                scroll-behavior: smooth;
+            }
+        }
+
+        .skip-to-content {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary);
+            color: var(--bg);
+            padding: 8px;
+            z-index: 1000;
+            transition: top 0.2s;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .skip-to-content:focus {
+            top: 0;
+        }
+
         body {
             font-family: 'Outfit', 'Inter', sans-serif;
             background-color: var(--bg);
@@ -572,7 +595,8 @@
         </script>
   </head>
   <body>
-    <div class="container-fluid main">
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+    <div id="main-content" tabindex="-1" class="container-fluid main">
       <nav class="navbar">
         <div class="navbar-brand">CANADATA ANALYTICS</div>
         <div>
@@ -611,7 +635,7 @@
         </div>
         <div style="text-align: right">
           <div style="font-size: 0.8rem; color: var(--text-muted)">Source: colorado_results.csv</div>
-          <div style="font-size: 0.8rem; color: var(--accent)">Updated: Jul 29, 2026</div>
+          <div style="font-size: 0.8rem; color: var(--accent)">Updated: Aug 21, 2026</div>
         </div>
       </nav>
       <div class="search-container">
