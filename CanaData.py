@@ -865,11 +865,18 @@ class CanaData:
                 keys.append(k)
                 if isinstance(v, list):
                     # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
-                    if len(v) > 0:
+
+                    # PERFORMANCE OPTIMIZATION:
+                    # Implicit truthiness evaluation instead of len(v) > 0 saves method overhead
+                    if v:
                         for item in v:
                             if item:
                                 if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
+
+                                    # PERFORMANCE OPTIMIZATION:
+                                    # Avoid intermediate dict view object allocations by replacing
+                                    # len(item.keys()) < 1 with implicit truthiness evaluation
+                                    if not item:
                                         result[".".join(keys)] = "None"
                                     else:
                                         # Push the nested dict onto the stack
@@ -889,7 +896,11 @@ class CanaData:
                         keys.pop()
                 elif isinstance(v, dict):
                     # Handle nested dictionaries
-                    if len(v.keys()) < 1:
+
+                    # PERFORMANCE OPTIMIZATION:
+                    # Avoid intermediate dict view object allocations by replacing
+                    # len(v.keys()) < 1 with implicit truthiness evaluation
+                    if not v:
                         result[".".join(keys)] = "None"
                         keys.pop()
                     else:
