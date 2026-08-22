@@ -252,6 +252,20 @@
             }
         }
 
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--glass);
+            border-radius: 20px;
+            border: 1px dashed var(--glass-border);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
         .footer {
             text-align: center;
             color: var(--text-muted);
@@ -611,7 +625,7 @@
         </div>
         <div style="text-align: right">
           <div style="font-size: 0.8rem; color: var(--text-muted)">Source: colorado_results.csv</div>
-          <div style="font-size: 0.8rem; color: var(--accent)">Updated: Jul 29, 2026</div>
+          <div style="font-size: 0.8rem; color: var(--accent)">Updated: Aug 22, 2026</div>
         </div>
       </nav>
       <div class="search-container">
@@ -619,43 +633,83 @@
       </div>
       <div id="vape_pens_-_half_gram_&amp;_under">
         <h3>Vape Pens - Half Gram &amp; Under<span class="badge">0</span></h3>
-        <p style="color: var(--text-muted); padding: 1rem;">No results found for this filter.</p>
+        <div class="empty-state">
+          <div aria-hidden="true" class="empty-state-icon">🏜️</div>
+          <h4>No Results Found</h4>
+          <p style="color: var(--text-muted);">No products matched this filter's criteria.</p>
+        </div>
       </div>
       <div id="cheap_high_thc_concentrates_(non_vape)">
         <h3>Cheap High THC Concentrates (non vape)<span class="badge">0</span></h3>
-        <p style="color: var(--text-muted); padding: 1rem;">No results found for this filter.</p>
+        <div class="empty-state">
+          <div aria-hidden="true" class="empty-state-icon">🏜️</div>
+          <h4>No Results Found</h4>
+          <p style="color: var(--text-muted);">No products matched this filter's criteria.</p>
+        </div>
       </div>
       <div id="full_ounce">
         <h3>Full Ounce<span class="badge">0</span></h3>
-        <p style="color: var(--text-muted); padding: 1rem;">No results found for this filter.</p>
+        <div class="empty-state">
+          <div aria-hidden="true" class="empty-state-icon">🏜️</div>
+          <h4>No Results Found</h4>
+          <p style="color: var(--text-muted);">No products matched this filter's criteria.</p>
+        </div>
       </div>
       <div id="half_ounce">
         <h3>Half Ounce<span class="badge">0</span></h3>
-        <p style="color: var(--text-muted); padding: 1rem;">No results found for this filter.</p>
+        <div class="empty-state">
+          <div aria-hidden="true" class="empty-state-icon">🏜️</div>
+          <h4>No Results Found</h4>
+          <p style="color: var(--text-muted);">No products matched this filter's criteria.</p>
+        </div>
       </div>
       <div id="quarters">
         <h3>Quarters<span class="badge">0</span></h3>
-        <p style="color: var(--text-muted); padding: 1rem;">No results found for this filter.</p>
+        <div class="empty-state">
+          <div aria-hidden="true" class="empty-state-icon">🏜️</div>
+          <h4>No Results Found</h4>
+          <p style="color: var(--text-muted);">No products matched this filter's criteria.</p>
+        </div>
       </div>
       <div id="half_ounce_-_shake/baker's_stuff">
         <h3>Half Ounce - Shake/Baker's stuff<span class="badge">0</span></h3>
-        <p style="color: var(--text-muted); padding: 1rem;">No results found for this filter.</p>
+        <div class="empty-state">
+          <div aria-hidden="true" class="empty-state-icon">🏜️</div>
+          <h4>No Results Found</h4>
+          <p style="color: var(--text-muted);">No products matched this filter's criteria.</p>
+        </div>
       </div>
       <div id="value_eighths">
         <h3>Value Eighths<span class="badge">0</span></h3>
-        <p style="color: var(--text-muted); padding: 1rem;">No results found for this filter.</p>
+        <div class="empty-state">
+          <div aria-hidden="true" class="empty-state-icon">🏜️</div>
+          <h4>No Results Found</h4>
+          <p style="color: var(--text-muted);">No products matched this filter's criteria.</p>
+        </div>
       </div>
       <div id="gram_-_select_strains">
         <h3>Gram - Select Strains<span class="badge">0</span></h3>
-        <p style="color: var(--text-muted); padding: 1rem;">No results found for this filter.</p>
+        <div class="empty-state">
+          <div aria-hidden="true" class="empty-state-icon">🏜️</div>
+          <h4>No Results Found</h4>
+          <p style="color: var(--text-muted);">No products matched this filter's criteria.</p>
+        </div>
       </div>
       <div id="high_thc_-_grams">
         <h3>High THC - Grams<span class="badge">0</span></h3>
-        <p style="color: var(--text-muted); padding: 1rem;">No results found for this filter.</p>
+        <div class="empty-state">
+          <div aria-hidden="true" class="empty-state-icon">🏜️</div>
+          <h4>No Results Found</h4>
+          <p style="color: var(--text-muted);">No products matched this filter's criteria.</p>
+        </div>
       </div>
       <div id="high_terps_-_grams">
         <h3>High Terps - Grams<span class="badge">0</span></h3>
-        <p style="color: var(--text-muted); padding: 1rem;">No results found for this filter.</p>
+        <div class="empty-state">
+          <div aria-hidden="true" class="empty-state-icon">🏜️</div>
+          <h4>No Results Found</h4>
+          <p style="color: var(--text-muted);">No products matched this filter's criteria.</p>
+        </div>
       </div>
       <div class="footer">© 2026 CanaData Analytics • Generated with ❤️ and ☕</div>
     </div>
