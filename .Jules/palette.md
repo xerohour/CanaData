@@ -15,3 +15,6 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+## 2026-08-22 - HTML Report Filter Empty States
+**Learning:** The filtered tables in CanaParse.py previously rendered a plain text "<p>No results found for this filter.</p>" string when zero products matched a filter. Without visual styling or distinction from normal data rows, users struggle to identify empty categories at a glance.
+**Action:** Always wrap empty state messages in a dedicated `.empty-state` container styled with a distinct background (e.g. `var(--glass)`), dashed border, and a large decorative icon (with `aria-hidden="true"`) to provide clear visual feedback that a section was successfully processed but yielded no matches.
