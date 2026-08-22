@@ -140,9 +140,9 @@ class CanaData:
         # Caching configuration
         self.cache_enabled = cache_enabled
         if cache_enabled:
-            cache_ttl = int(os.getenv("CACHE_TTL", 3600))
+            cache_ttl = int(os.getenv("CACHE_TTL", "3600"))
             self.cache_manager = CacheManager(
-                memory_cache_size=int(os.getenv("MEMORY_CACHE_SIZE", 2000)),
+                memory_cache_size=int(os.getenv("MEMORY_CACHE_SIZE", "2000")),
                 memory_cache_ttl=cache_ttl,
                 disk_cache_ttl=cache_ttl * 6,  # Disk cache lasts longer
                 enable_disk_cache=os.getenv("ENABLE_DISK_CACHE", "true").lower()
@@ -240,7 +240,9 @@ class CanaData:
         ]
 
         try:
-            completed = subprocess.run(curl_cmd, capture_output=True, timeout=45)
+            completed = subprocess.run(
+                curl_cmd, capture_output=True, timeout=45, check=False
+            )
             output = (completed.stdout or b"").decode("utf-8", "replace")
             if "__STATUS__:" not in output:
                 logger.error("Curl output missing status marker")
@@ -270,9 +272,7 @@ class CanaData:
             logger.error(f"Curl fallback failed: {e}")
             return False
 
-    def getLocations(
-        self, lat: float | None = None, long: float | None = None
-    ) -> None:
+    def getLocations(self, lat: float | None = None, long: float | None = None) -> None:
         """
         Retrieve all dispensary/delivery locations for the current search slug.
         """
@@ -458,7 +458,7 @@ class CanaData:
     ) -> dict[str, Any] | None:
         """Fetch paginated menu items from discovery endpoint."""
         page = 1
-        page_size = int(os.getenv("MENU_PAGE_SIZE", 100))
+        page_size = int(os.getenv("MENU_PAGE_SIZE", "100"))
         all_items: list[dict[str, Any]] = []
         meta: dict[str, Any] = {}
 
@@ -800,21 +800,15 @@ class CanaData:
         listings = self.allMenuItems
 
         # This is where our flat datasets will reside once finished
-        flatDictList = []
-
-        # Loop through the Listings
-        for listing in listings:
-            # Loop through the menu item Dictionaries for each listings
-            for item in listings[listing]:
-                # Flatten the dataset for each item
-                flatData = self.flatten_dictionary(item)
-                # Add the flat dataset to our flatDictList
-                flatDictList.append(flatData)
+        # Use list comprehension for faster aggregation
+        flatDictList = [
+            self.flatten_dictionary(item)
+            for items in listings.values()
+            for item in items
+        ]
 
         # This set will collect all possible keys
-        all_keys_set = set()
-        for item in flatDictList:
-            all_keys_set.update(item.keys())
+        all_keys_set = set().union(*(d.keys() for d in flatDictList))
 
         all_keys = sorted(all_keys_set)
 
@@ -822,14 +816,9 @@ class CanaData:
         ready_list = []
 
         template_dict = dict.fromkeys(all_keys, "None")
-        # Loop through the flatDictList to update any missing keys
-        for item in flatDictList:
-            # Create a dictionary with all keys initialized to 'None'
-            flat_ordered_dict = template_dict.copy()
-            # Update with actual values
-            flat_ordered_dict.update(item)
 
-            ready_list.append(flat_ordered_dict)
+        # Use fast dictionary unpacking instead of explicit loop + copy + update
+        ready_list = [{**template_dict, **item} for item in flatDictList]
 
         # Replace our finished menu items list with our flat, ordered, dictionary list
         self.finishedMenuItems = ready_list
@@ -950,7 +939,7 @@ class CanaData:
             - Subsequent rows: dictionary values in same order
             - UTF-8 encoding for special characters
         """
-        today = datetime.today().strftime("%m-%d-%Y")
+        today = datetime.now().astimezone().strftime("%m-%d-%Y")
         # Variable on where to save the file
         home_dir = f"{path[0]}/CanaData_{today}"
 
