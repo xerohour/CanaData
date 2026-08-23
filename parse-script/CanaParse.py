@@ -474,23 +474,26 @@ class CanaParse:
             with tag("head"):
                 self._add_html_head(doc)
             with tag("body"):
+                with tag("a", href="#main-content", klass="skip-link"):
+                    text("Skip to main content")
                 with tag("div", klass="container-fluid main"):
                     self._generate_navbar(doc, tag, text)
-                    # Global Search Bar
-                    with tag("div", klass="search-container"):
-                        doc.stag(
-                            "input",
-                            (
-                                "aria-label",
-                                "Search products, brands, categories, or dispensaries",
-                            ),
-                            type="text",
-                            id="global-search",
-                            placeholder="🔍 Search products, brands, categories, or dispensaries...",
-                            klass="search-input",
-                        )
-                    for i, f in enumerate(self.filters):
-                        self._generate_filter_section(doc, tag, text, i, f)
+                    with tag("main", id="main-content", tabindex="-1"):
+                        # Global Search Bar
+                        with tag("div", klass="search-container"):
+                            doc.stag(
+                                "input",
+                                (
+                                    "aria-label",
+                                    "Search products, brands, categories, or dispensaries",
+                                ),
+                                type="text",
+                                id="global-search",
+                                placeholder="🔍 Search products, brands, categories, or dispensaries...",
+                                klass="search-input",
+                            )
+                        for i, f in enumerate(self.filters):
+                            self._generate_filter_section(doc, tag, text, i, f)
                     self._generate_footer(doc, tag, text)
 
         raw_html = doc.getvalue()
@@ -780,6 +783,34 @@ class CanaParse:
         *:focus-visible {
             outline: 2px solid var(--primary);
             outline-offset: 4px;
+        }
+
+        .skip-link {
+            position: absolute;
+            top: -100px;
+            left: 20px;
+            background: var(--primary);
+            color: var(--bg);
+            padding: 8px 16px;
+            border-radius: 8px;
+            z-index: 1000;
+            font-weight: 700;
+            text-decoration: none;
+            transition: top 0.2s;
+        }
+
+        .skip-link:focus {
+            top: 20px;
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            html {
+                scroll-behavior: smooth;
+            }
+        }
+
+        #main-content {
+            outline: none; /* Hide focus ring when skip link targets it */
         }
 
         /* Scrollbar */

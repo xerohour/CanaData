@@ -15,3 +15,6 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+## 2026-08-23 - Add Skip to Content Link
+**Learning:** When implementing skip-to-content links for accessibility improvements, the target container must specify `tabindex="-1"` (along with a matching `id`) to correctly direct keyboard focus without permanently adding the wrapper element to the tab order. Additionally, smooth scrolling to anchors (`scroll-behavior: smooth;`) should always be wrapped in a `@media (prefers-reduced-motion: no-preference)` query to respect users with vestibular disorders.
+**Action:** Always include `tabindex="-1"` on skip link targets and wrap smooth scrolling styles in `prefers-reduced-motion` media queries for accessibility.
