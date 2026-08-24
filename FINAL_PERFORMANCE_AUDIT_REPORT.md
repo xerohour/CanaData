@@ -23,15 +23,23 @@ Implemented `test_comprehensive_audit.py` to rigorously test system boundaries:
 Automated benchmarks were executed using `pytest-benchmark`.
 
 **Results:**
+- **Legacy Iterative Flattening (`test_processing_benchmark_legacy`):**
+  - **Mean Latency:** ~260 µs per batch.
+  - **Throughput:** ~3842.2 ops/sec.
+- **Optimized Data Processing (`test_processing_benchmark_optimized`):**
+  - **Mean Latency:** ~24.5 ms per batch.
+  - **Throughput:** ~40.7 ops/sec.
 - **Latency & Throughput (`test_audit_latency_throughput`):**
   - Processing a large, nested JSON batch (simulating heavy data load).
-  - **Mean Latency:** ~60.4 ms per batch.
-  - **Throughput:** ~16.5 batch operations per second.
-  - The optimized data processor effectively handles large payloads.
+  - **Mean Latency:** ~55.7 ms per batch.
+  - **Throughput:** ~17.9 ops/sec.
 - **Concurrency Overhead (`test_audit_high_concurrency`):**
   - 50 threads injecting 25,000 records.
-  - **Mean Latency:** ~73.3 ms.
-  - **Throughput:** ~13.6 ops/sec.
+  - **Mean Latency:** ~71.0 ms.
+  - **Throughput:** ~14.0 ops/sec.
+
+**Raw Data Findings:**
+Detailed profiling and benchmark data can be found in `new_cprofile_results.txt`, `new_audit_results.txt`, and the generated binary `optimized.prof` file. These raw data files contain exact call traces, memory footprints, and operations per second measurements used to inform this report.
 
 ## 4. Scalability Analytics & Optimization Projections
 
