@@ -1106,10 +1106,13 @@ class CanaParse:
 
             with tag("div"), tag("ul", klass="navbar-nav"):
                 for f in self.filters:
-                    with tag("li"), tag(
-                        "a",
-                        klass="nav-link",
-                        href=f"#{f.name.replace(' ', '_').lower()}",
+                    with (
+                        tag("li"),
+                        tag(
+                            "a",
+                            klass="nav-link",
+                            href=f"#{f.name.replace(' ', '_').lower()}",
+                        ),
                     ):
                         text(f.name)
 
