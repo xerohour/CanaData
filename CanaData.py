@@ -584,13 +584,9 @@ class CanaData:
             for category in categories:
                 for item in category.get("items", []):
                     item_copy = dict(item)
-                    item_copy.update(
-                        {
-                            "locations_found_at": [listing_url],
-                            "listing_id": listing_id,
-                            "listing_wmid": listing.get("wmid"),
-                        }
-                    )
+                    item_copy["locations_found_at"] = [listing_url]
+                    item_copy["listing_id"] = listing_id
+                    item_copy["listing_wmid"] = listing.get("wmid")
 
                     # Extract strain data if present
                     if "strain_data" in item_copy:
@@ -651,13 +647,9 @@ class CanaData:
                 continue
 
             item_copy = dict(item)
-            item_copy.update(
-                {
-                    "locations_found_at": [listing_url],
-                    "listing_id": listing_id,
-                    "listing_wmid": listing_wmid,
-                }
-            )
+            item_copy["locations_found_at"] = [listing_url]
+            item_copy["listing_id"] = listing_id
+            item_copy["listing_wmid"] = listing_wmid
 
             strain_data = item_copy.get("strain_data")
             if isinstance(strain_data, dict):
