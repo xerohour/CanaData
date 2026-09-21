@@ -32,6 +32,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+# Precompiled filename sanitizer (avoids recompiling the pattern on every call)
+_FILENAME_SANITIZE_RE = re.compile(r"[^a-zA-Z0-9_\-\.]")
+
+
 # Low and behold, the almighty CanaData
 class CanaData:
     """
@@ -911,7 +915,7 @@ class CanaData:
         """
         # Remove any character that is not alphanumeric, underscore, dash, or dot
         # This effectively removes slashes (preventing traversal) and other unsafe chars
-        return re.sub(r"[^a-zA-Z0-9_\-\.]", "", filename)
+        return _FILENAME_SANITIZE_RE.sub("", filename)
 
     # Function recieves a city name and sets to searchSlug
     def setCitySlug(self, search: str) -> None:
