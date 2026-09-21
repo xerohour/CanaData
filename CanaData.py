@@ -270,9 +270,7 @@ class CanaData:
             logger.error(f"Curl fallback failed: {e}")
             return False
 
-    def getLocations(
-        self, lat: float | None = None, long: float | None = None
-    ) -> None:
+    def getLocations(self, lat: float | None = None, long: float | None = None) -> None:
         """
         Retrieve all dispensary/delivery locations for the current search slug.
         """
