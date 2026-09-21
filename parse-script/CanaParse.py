@@ -92,6 +92,7 @@ class CanaParse:
         self.filtered_tables: list[list[list[Any]]] = []
         self.header_map = {}
         self.listings_map = {}
+        self._json_cache: dict[str, Any] = {}
 
         self.load_filters()
         self.load_listings_map()
@@ -254,6 +255,20 @@ class CanaParse:
         """Legacy helper, returns key itself for dynamic routing."""
         return key
 
+    def _parse_json_cached(self, raw_value: str) -> Any:
+        """Parse a JSON string, caching the result.
+
+        Price and location cells would otherwise be re-parsed for every
+        row/filter combination; the parse result depends only on the cell's
+        string content, so it is parsed once and cached.
+        """
+        try:
+            return self._json_cache[raw_value]
+        except KeyError:
+            parsed = json.loads(raw_value)
+            self._json_cache[raw_value] = parsed
+            return parsed
+
     def get_price_by_key(self, row, key):
         """
         Dynamically extract price for a key (e.g. 'prices.gram', 'prices.eighth') from the row.
@@ -292,7 +307,7 @@ class CanaParse:
             ounce_val = row[ounce_idx]
             if ounce_val and ounce_val != "nan" and ounce_val.startswith("["):
                 try:
-                    price_list = json.loads(ounce_val)
+                    price_list = self._parse_json_cached(ounce_val)
                     for item in price_list:
                         label = str(item.get("label", "")).lower()
                         units = str(item.get("units", "")).lower()
@@ -310,7 +325,7 @@ class CanaParse:
             gram_val = row[gram_idx]
             if gram_val and gram_val != "nan" and gram_val.startswith("["):
                 try:
-                    price_list = json.loads(gram_val)
+                    price_list = self._parse_json_cached(gram_val)
                     for item in price_list:
                         label = str(item.get("label", "")).lower()
                         units = str(item.get("units", "")).lower()
@@ -1231,7 +1246,7 @@ class CanaParse:
                     loc_raw = str(row[loc_idx])
                     if "[" in loc_raw:
                         try:
-                            loc_list = json.loads(loc_raw)
+                            loc_list = self._parse_json_cached(loc_raw)
                             if loc_list:
                                 loc_val = str(loc_list[0])
                         except Exception:
@@ -1323,7 +1338,7 @@ class CanaParse:
             loc_raw = str(row[loc_idx])
             if "[" in loc_raw:
                 try:
-                    loc_list = json.loads(loc_raw)
+                    loc_list = self._parse_json_cached(loc_raw)
                     if loc_list:
                         loc_val = str(loc_list[0])
                 except Exception:
