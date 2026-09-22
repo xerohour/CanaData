@@ -491,7 +491,12 @@ class CanaParse:
             with tag("body"):
                 with tag("a", href="#main-content", klass="skip-link"):
                     text("Skip to main content")
-                with tag("div", id="main-content", tabindex="-1", klass="container-fluid main"):
+                with tag(
+                    "div",
+                    id="main-content",
+                    tabindex="-1",
+                    klass="container-fluid main",
+                ):
                     self._generate_navbar(doc, tag, text)
                     # Global Search Bar
                     with tag("div", klass="search-container"):
@@ -1029,7 +1034,13 @@ class CanaParse:
                 if (totalRows === 0) {
                     container.find('.table-container').hide();
                     if (container.find('.no-match-msg').length === 0) {
-                        container.append('<p class="no-match-msg" style="color: var(--text-muted); padding: 1rem;">No matching items found in this section.</p>');
+                        container.append(`
+                            <div class="no-match-msg empty-state">
+                                <div class="empty-state-icon" aria-hidden="true">🏜️</div>
+                                <h2>No matching items found</h2>
+                                <p>Try adjusting your search criteria or clearing filters.</p>
+                            </div>
+                        `);
                     } else {
                         container.find('.no-match-msg').show();
                     }
@@ -1145,10 +1156,13 @@ class CanaParse:
 
             with tag("div"), tag("ul", klass="navbar-nav"):
                 for f in self.filters:
-                    with tag("li"), tag(
-                        "a",
-                        klass="nav-link",
-                        href=f"#{f.name.replace(' ', '_').lower()}",
+                    with (
+                        tag("li"),
+                        tag(
+                            "a",
+                            klass="nav-link",
+                            href=f"#{f.name.replace(' ', '_').lower()}",
+                        ),
                     ):
                         text(f.name)
 
@@ -1171,8 +1185,20 @@ class CanaParse:
                     text(str(len(results)))
 
             if not results:
-                with tag("p", style="color: var(--text-muted); padding: 1rem;"):
-                    text("No results found for this filter.")
+                with tag(
+                    "div",
+                    klass="no-match-msg empty-state",
+                ):
+                    with tag(
+                        "div",
+                        ("aria-hidden", "true"),
+                        klass="empty-state-icon",
+                    ):
+                        text("🏜️")
+                    with tag("h2"):
+                        text("No matching items found")
+                    with tag("p"):
+                        text("Try adjusting your search criteria or clearing filters.")
                 return
 
             # Write data to a script block for performant client-side rendering
