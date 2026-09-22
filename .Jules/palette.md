@@ -15,3 +15,6 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+## 2026-09-22 - HTML Report Empty State Accessibility and Styling
+**Learning:** Empty states in generated reports often lacked visual distinction and screen-reader-friendly decorative icons, which left users confused.
+**Action:** Implemented a distinct `.empty-state` container and added `aria-hidden="true"` to structural emojis in empty states in generated HTML components to keep screen reader flow clean.
