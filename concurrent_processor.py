@@ -30,9 +30,7 @@ def retry_with_backoff(max_retries=3, base_delay=1.0, max_delay=60.0):
                     jitter = random.uniform(0, 0.1 * delay)
                     time.sleep(delay + jitter)
 
-                    logger.warning(
-                        f"Retry {retries}/{max_retries} after error: {e!s}"
-                    )
+                    logger.warning(f"Retry {retries}/{max_retries} after error: {e!s}")
 
             return func(*args, **kwargs)
 
@@ -76,7 +74,7 @@ class ConcurrentMenuProcessor:
                 try:
                     result = future.result()
                     self.results[location["slug"]] = result
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     self.errors.append({"location": location, "error": str(exc)})
                     logger.error(
                         f"Location {location['slug']} generated an exception: {exc}"
