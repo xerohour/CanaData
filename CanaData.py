@@ -797,38 +797,29 @@ class CanaData:
 
         # This is where our flat datasets will reside once finished
         flatDictList = []
+        all_keys_set = set()
 
-        # Loop through the Listings
-        for listing in listings:
-            # Loop through the menu item Dictionaries for each listings
-            for item in listings[listing]:
+        # Micro-optimizations for loop overhead
+        update_keys = all_keys_set.update
+        append_dict = flatDictList.append
+
+        # Loop through the Listings and their items directly
+        for items_list in listings.values():
+            for item in items_list:
                 # Flatten the dataset for each item
                 flatData = self.flatten_dictionary(item)
                 # Add the flat dataset to our flatDictList
-                flatDictList.append(flatData)
-
-        # This set will collect all possible keys
-        all_keys_set = set()
-        for item in flatDictList:
-            all_keys_set.update(item.keys())
-
-        all_keys = sorted(all_keys_set)
+                append_dict(flatData)
+                # Keep track of keys seen
+                update_keys(flatData.keys())
 
         # This list will house all data after each key has been filled out
-        ready_list = []
-
-        template_dict = dict.fromkeys(all_keys, "None")
-        # Loop through the flatDictList to update any missing keys
-        for item in flatDictList:
-            # Create a dictionary with all keys initialized to 'None'
-            flat_ordered_dict = template_dict.copy()
-            # Update with actual values
-            flat_ordered_dict.update(item)
-
-            ready_list.append(flat_ordered_dict)
+        template_dict = dict.fromkeys(sorted(all_keys_set), "None")
 
         # Replace our finished menu items list with our flat, ordered, dictionary list
-        self.finishedMenuItems = ready_list
+        # We can use list comprehensions to efficiently copy the template and merge in the item.
+        # Python 3.9+ supports dictionary union operator `|`.
+        self.finishedMenuItems = [template_dict | item for item in flatDictList]
 
     def flatten_dictionary(self, d: dict[str, Any]) -> dict[str, str]:
         """
@@ -856,16 +847,21 @@ class CanaData:
         result = {}
         stack = [iter(d.items())]  # Stack contains iterators of dictionary items
         keys = []  # Tracks the current path in the dictionary (e.g., ['price', 'amount'])
+
+        # Pre-compute append and pop to avoid attribute lookup overhead
+        keys_append = keys.append
+        keys_pop = keys.pop
+
         while stack:
             for k, v in stack[-1]:
-                keys.append(k)
+                keys_append(k)
                 if isinstance(v, list):
                     # Handle lists: if it's a list of dicts, go deeper; if primitives, join them
                     if len(v) > 0:
                         for item in v:
                             if item:
                                 if isinstance(item, dict):
-                                    if len(item.keys()) < 1:
+                                    if not item:
                                         result[".".join(keys)] = "None"
                                     else:
                                         # Push the nested dict onto the stack
@@ -873,21 +869,21 @@ class CanaData:
                                 elif isinstance(item, list):
                                     # Fallback for nested lists (semi-unsupported)
                                     result[".".join(keys)] = ".".join(item)
-                                    keys.pop()
+                                    keys_pop()
                                 else:
                                     # Primitives in a list are joined by dot notation
                                     result[".".join(keys)] = ".".join(str(x) for x in v)
-                                    keys.pop()
+                                    keys_pop()
                                     break
                         break
                     else:
                         result[".".join(keys)] = "None"
-                        keys.pop()
+                        keys_pop()
                 elif isinstance(v, dict):
                     # Handle nested dictionaries
-                    if len(v.keys()) < 1:
+                    if not v:
                         result[".".join(keys)] = "None"
-                        keys.pop()
+                        keys_pop()
                     else:
                         # Push the nested dict onto the stack
                         stack.append(iter(v.items()))
@@ -895,11 +891,11 @@ class CanaData:
                 else:
                     # Leaf node: Store the value as a string
                     result[".".join(keys)] = str(v)
-                    keys.pop()
+                    keys_pop()
             else:
                 # Finished processing an iterator: pop the path segment and the iterator itself
                 if keys:
-                    keys.pop()
+                    keys_pop()
                 stack.pop()
         return result
 
