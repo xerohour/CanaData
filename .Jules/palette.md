@@ -15,3 +15,15 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+
+## 2026-09-23 - Add aria-labels to Pagination Buttons
+**Learning:** Generic text or icon-only buttons ("Previous" / "Next") in dynamically generated HTML elements within Python string templates (such as those generated via yattag or JS string concatenation) can be missed by standard accessibility audits.
+**Action:** When working on Python files generating HTML or JS that renders UI, actively review the string literal components for missing accessibility tags (like `aria-label`).
+
+## 2026-09-23 - Add aria-labels to Pagination Buttons
+**Learning:** Generic text or icon-only buttons ("Previous" / "Next") in dynamically generated HTML elements within Python string templates (such as those generated via yattag or JS string concatenation) can be missed by standard accessibility audits.
+**Action:** When working on Python files generating HTML or JS that renders UI, actively review the string literal components for missing accessibility tags (like `aria-label`).
+
+## 2026-09-23 - Add aria-labels to Pagination Buttons
+**Learning:** Generic text or icon-only buttons ("Previous" / "Next") in dynamically generated HTML elements within Python string templates (such as those generated via yattag or JS string concatenation) can be missed by standard accessibility audits.
+**Action:** When working on Python files generating HTML or JS that renders UI, actively review the string literal components for missing accessibility tags (like `aria-label`).
