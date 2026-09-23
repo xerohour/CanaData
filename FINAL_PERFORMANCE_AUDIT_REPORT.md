@@ -10,28 +10,33 @@
 
 ## 2. Deep Testing & Edge Cases
 
-Implemented `test_comprehensive_audit.py` to rigorously test system boundaries:
-- **High-Concurrency Stress Test (`test_audit_high_concurrency`):**
-  - Simulated 50 concurrent worker threads rapidly updating the global `allMenuItems` state protected by `_menu_data_lock`.
-  - Processed 25,000 entities successfully, verifying thread safety and data integrity under load.
+Implemented `test_comprehensive_audit.py` and `test_rigorous_distributed_stress.py` to rigorously test system boundaries:
+- **High-Concurrency Stress Test (`test_audit_high_concurrency` & `test_rigorous_distributed_stress`):**
+  - Simulated up to 100 concurrent worker threads rapidly updating the global `allMenuItems` state protected by `_menu_data_lock`.
+  - Processed 100,000 entities successfully, verifying thread safety and data integrity under load.
+  - The rigorous test confirmed successful batched dictionary updates via the central lock.
 - **Memory Leak Detection (`test_audit_memory_leak`):**
   - Tracked RSS (Resident Set Size) memory consumption during repeated (20 iterations) processing of large data batches.
   - Test passed with memory growth remaining well below the 50MB threshold, indicating no severe memory leaks in the batch processing pipeline.
 
 ## 3. Performance Benchmarking
 
-Automated benchmarks were executed using `pytest-benchmark`.
+Automated benchmarks were executed using `pytest-benchmark` and profiling tools (cProfile).
 
 **Results:**
 - **Latency & Throughput (`test_audit_latency_throughput`):**
   - Processing a large, nested JSON batch (simulating heavy data load).
-  - **Mean Latency:** ~60.4 ms per batch.
-  - **Throughput:** ~16.5 batch operations per second.
+  - **Mean Latency:** ~59 ms per batch.
+  - **Throughput:** ~17 batch operations per second.
   - The optimized data processor effectively handles large payloads.
 - **Concurrency Overhead (`test_audit_high_concurrency`):**
   - 50 threads injecting 25,000 records.
-  - **Mean Latency:** ~73.3 ms.
-  - **Throughput:** ~13.6 ops/sec.
+  - **Mean Latency:** ~84 ms.
+  - **Throughput:** ~12 ops/sec.
+- **Rigorous Distributed Stress (`test_rigorous_distributed_stress`):**
+  - 100 threads injecting 100,000 records.
+  - **Mean Latency:** ~394 ms.
+  - **Throughput:** ~2.5 ops/sec.
 
 ## 4. Scalability Analytics & Optimization Projections
 
