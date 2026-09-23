@@ -10,3 +10,7 @@
 ## 2026-08-25 - [Optimize dictionary merges in parsing loop]
 **Learning:** When appending or merging data into dictionaries within Python loops (such as during flattening), prefer direct loop key assignments (e.g., `for k, v in data.items(): result[k] = v`) over dictionary comprehensions passed to `.update()`. This avoids the overhead of allocating redundant intermediate dictionary objects.
 **Action:** Replaced `.update({...})` calls that dynamically build dictionaries during large loop processing with direct key assignments to save memory and processing time.
+
+## 2026-09-23 - Dictionary flattening and list mapping optimizations
+**Learning:** In CPython, when converting a large nested list of dictionaries into a standardized flattened layout, using a standard pre-allocated template dictionary and combining it sequentially via the dict union operator `|` within a list comprehension (`[template_dict | item for item in items]`) provides excellent readability and faster performance over manually calling `.copy()` and `.update()`. Also, localizing method bounds for hot loops (`append = list.append`) avoids dictionary lookup penalties during intense recursive data traversals.
+**Action:** When handling bulk dictionary merging or flattening, utilize localized function bounds for list operations and prefer the dictionary union operator in list comprehensions.
