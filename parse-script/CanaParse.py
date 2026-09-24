@@ -406,9 +406,8 @@ class CanaParse:
             return False
 
         # 5. Strains
-        if f.strains:
-            if not any(strain.lower() in row_str for strain in f.strains):
-                return False
+        if f.strains and not any(strain.lower() in row_str for strain in f.strains):
+            return False
 
         # 6. Stores
         if f.stores:
@@ -422,9 +421,8 @@ class CanaParse:
             return False
 
         # 8. Good Words (Required)
-        if f.good_words:
-            if not any(word.lower() in row_str for word in f.good_words):
-                return False
+        if f.good_words and not any(word.lower() in row_str for word in f.good_words):
+            return False
 
         # 9. THC Floor
         if f.thc_floor > 0:
@@ -467,7 +465,7 @@ class CanaParse:
         """Format number as USD currency."""
         try:
             return f"${float(amount):,.2f}"
-        except Exception:
+        except (ValueError, TypeError):
             return str(amount)
 
     def as_percentage(self, amount):
@@ -476,7 +474,7 @@ class CanaParse:
             val = float(amount)
             if 0 <= val <= 100:
                 return f"{val:,.2f}%"
-        except Exception:
+        except (ValueError, TypeError):
             pass
         return ""
 
@@ -514,7 +512,7 @@ class CanaParse:
         if len(raw_html) < 5 * 1024 * 1024:
             try:
                 return indent(raw_html)
-            except Exception:
+            except (ValueError, TypeError):
                 pass
         return raw_html
 
@@ -1156,7 +1154,7 @@ class CanaParse:
                 with tag("div", style="font-size: 0.8rem; color: var(--text-muted)"):
                     text(f"Source: {self.csv_file}")
                 with tag("div", style="font-size: 0.8rem; color: var(--accent)"):
-                    now = datetime.now().strftime("%b %d, %Y")
+                    now = datetime.now().astimezone().strftime("%b %d, %Y")
                     text(f"Updated: {now}")
 
     def _generate_filter_section(self, doc, tag, text, i, f):
@@ -1217,17 +1215,16 @@ class CanaParse:
                     if isinstance(store_info, dict)
                     else store_info
                 )
-                if not dispensary_name:
-                    if loc_idx >= 0 and len(row) > loc_idx:
-                        loc_val = row[loc_idx]
-                        if "/" in loc_val:
-                            dispensary_name = (
-                                loc_val.split("/")[-1]
-                                .replace('"', "")
-                                .replace("]", "")
-                                .replace("-", " ")
-                                .title()
-                            )
+                if not dispensary_name and loc_idx >= 0 and len(row) > loc_idx:
+                    loc_val = row[loc_idx]
+                    if "/" in loc_val:
+                        dispensary_name = (
+                            loc_val.split("/")[-1]
+                            .replace('"', "")
+                            .replace("]", "")
+                            .replace("-", " ")
+                            .title()
+                        )
 
                 store_city = (
                     store_info.get("city", "") if isinstance(store_info, dict) else ""
@@ -1249,7 +1246,7 @@ class CanaParse:
                             loc_list = self._parse_json_cached(loc_raw)
                             if loc_list:
                                 loc_val = str(loc_list[0])
-                        except Exception:
+                        except (ValueError, TypeError, ImportError):
                             loc_val = (
                                 loc_raw.replace("[", "")
                                 .replace("]", "")
@@ -1341,7 +1338,7 @@ class CanaParse:
                     loc_list = self._parse_json_cached(loc_raw)
                     if loc_list:
                         loc_val = str(loc_list[0])
-                except Exception:
+                except (ValueError, TypeError, ImportError):
                     loc_val = (
                         loc_raw.replace("[", "")
                         .replace("]", "")
@@ -1498,7 +1495,7 @@ def getComparisonVal(op, val1, val2):
             return 1 if val1 > val2 else 0
         if op == "<":
             return 1 if 0 < val1 < val2 else 0
-    except Exception:
+    except (ValueError, TypeError):
         pass
     return 0
 

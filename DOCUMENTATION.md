@@ -92,7 +92,7 @@ graph TD
 ### `self.locations`
 A list of simple dictionaries containing the bare essentials for fetching menus:
 ```python
-[{'slug': 'example-dispensary-1', 'type': 'dispensary'}, ...]
+[{"slug": "example-dispensary-1", "type": "dispensary"}, ...]
 ```
 
 ### `self.allMenuItems`

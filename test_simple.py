@@ -10,7 +10,7 @@ def check_simple(url):
             print("Success!")
         else:
             print(f"Failed: {resp.text[:100]}")
-    except Exception as e:
+    except (ValueError, TypeError, OSError) as e:
         print(f"Error: {e}")
 
 
@@ -39,7 +39,7 @@ def check_inspect(url):
                             break
         else:
             print(f"Failed: {resp.text[:100]}")
-    except Exception as e:
+    except (ValueError, TypeError, OSError) as e:
         print(f"Error: {e}")
 
 
