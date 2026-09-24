@@ -152,24 +152,25 @@ class OptimizedDataProcessor:
         stack = [iter(d.items())]
         keys = []
 
+        _dict = dict
+        _list = list
+
         while stack:
             for k, v in stack[-1]:
                 key = ".".join(keys + [k]) if keys else k
 
-                if isinstance(v, dict):
+                if isinstance(v, _dict):
                     # Push nested dict to stack
                     keys.append(k)
                     stack.append(iter(v.items()))
                     break
-                elif isinstance(v, list):
-                    if v and isinstance(v[0], dict):
+                elif isinstance(v, _list):
+                    if v and isinstance(v[0], _dict):
                         # Handle list of dicts by taking first item or joining
                         if len(v) == 1:
                             # Single item, flatten it
-                            nested_dict = {
-                                f"{k}.{sub_k}": sub_v for sub_k, sub_v in v[0].items()
-                            }
-                            result.update(nested_dict)
+                            for sub_k, sub_v in v[0].items():
+                                result[f"{k}.{sub_k}"] = sub_v
                         else:
                             # Multiple items, convert to JSON string
                             result[key] = json.dumps(v)
