@@ -11,3 +11,4 @@ pytest-benchmark
 psutil
 pytest-benchmark
 psutil
+memory_profiler
