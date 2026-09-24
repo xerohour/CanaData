@@ -47,6 +47,12 @@ def generate_html_report(data, region_name="Colorado"):
 
     # Modern CSS with Glasmorphism and Vibrant Colors
     css = """
+    @media (prefers-reduced-motion: no-preference) {
+        html {
+            scroll-behavior: smooth;
+        }
+    }
+
     :root {
         --primary: #00ffa3;
         --secondary: #00d4ff;
