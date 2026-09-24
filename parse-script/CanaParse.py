@@ -491,7 +491,12 @@ class CanaParse:
             with tag("body"):
                 with tag("a", href="#main-content", klass="skip-link"):
                     text("Skip to main content")
-                with tag("div", id="main-content", tabindex="-1", klass="container-fluid main"):
+                with tag(
+                    "div",
+                    id="main-content",
+                    tabindex="-1",
+                    klass="container-fluid main",
+                ):
                     self._generate_navbar(doc, tag, text)
                     # Global Search Bar
                     with tag("div", klass="search-container"):
@@ -1145,10 +1150,13 @@ class CanaParse:
 
             with tag("div"), tag("ul", klass="navbar-nav"):
                 for f in self.filters:
-                    with tag("li"), tag(
-                        "a",
-                        klass="nav-link",
-                        href=f"#{f.name.replace(' ', '_').lower()}",
+                    with (
+                        tag("li"),
+                        tag(
+                            "a",
+                            klass="nav-link",
+                            href=f"#{f.name.replace(' ', '_').lower()}",
+                        ),
                     ):
                         text(f.name)
 

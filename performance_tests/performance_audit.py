@@ -9,5 +9,6 @@ def run_basic_benchmark():
     end = time.time()
     print(f"Time taken: {end - start}")
 
+
 if __name__ == "__main__":
     run_basic_benchmark()
