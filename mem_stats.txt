@@ -1,0 +1,14 @@
+Filename: /app/memory_test.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+     5     94.7 MiB     94.7 MiB           1   @profile
+     6                                         def test_memory_leak():
+     7     94.7 MiB      0.0 MiB           1       scraper = CanaData(cache_enabled=False, optimize_processing=True, max_workers=5)
+     8     97.0 MiB      0.0 MiB           6       for _ in range(5):
+     9     97.0 MiB      0.0 MiB        5005           for i in range(1000):
+    10     97.0 MiB      0.4 MiB       10000               with scraper._menu_data_lock:
+    11     97.0 MiB      0.1 MiB        5000                   item = {"id": i, "name": f"Item {i}", "desc": "A long description to take up some memory"}
+    12     97.0 MiB      0.4 MiB        5000                   flattened = scraper.flatten_dictionary(item)
+    13     97.0 MiB      1.4 MiB        5000                   scraper.allMenuItems[f"batch_{_}_{i}"] = [flattened]
+    14     97.0 MiB      0.0 MiB           5           time.sleep(0.1)
