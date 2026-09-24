@@ -1059,9 +1059,9 @@ class CanaParse:
                 container.find('.pagination-controls').remove();
                 if (totalRows > pageSize) {
                     var controls = $('<div class="pagination-controls" style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border);"></div>');
-                    var prevBtn = $('<button class="btn btn-secondary" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Previous</button>');
-                    var nextBtn = $('<button class="btn btn-secondary" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Next</button>');
-                    var info = $('<span style="color: var(--text-muted); font-size: 0.9rem;">Showing ' + (start + 1) + '-' + Math.min(end, totalRows) + ' of ' + totalRows + '</span>');
+                    var prevBtn = $('<button class="btn btn-secondary" aria-label="Previous page" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Previous</button>');
+                    var nextBtn = $('<button class="btn btn-secondary" aria-label="Next page" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Next</button>');
+                    var info = $('<span aria-live="polite" style="color: var(--text-muted); font-size: 0.9rem;">Showing ' + (start + 1) + '-' + Math.min(end, totalRows) + ' of ' + totalRows + '</span>');
                     
                     if (page === 1) prevBtn.prop('disabled', true).css('opacity', 0.5);
                     if (page === totalPages) nextBtn.prop('disabled', true).css('opacity', 0.5);
@@ -1088,6 +1088,7 @@ class CanaParse:
                            .attr('tabindex', '0')
                            .attr('role', 'button')
                            .attr('aria-label', 'Sort by ' + text)
+                           .attr('aria-sort', 'none')
                            .append(' <span class="sort-icon" style="color: var(--text-muted); font-size: 0.8rem; margin-left: 4px;">↕</span>');
                 }
             });
@@ -1110,8 +1111,10 @@ class CanaParse:
                 
                 activeSort[sectionId] = { index: index, order: order };
                 
-                // Update icons in table headers
+                // Update icons and aria-sort in table headers
+                table.find('th').attr('aria-sort', 'none');
                 table.find('th .sort-icon').html('↕').css('color', 'var(--text-muted)');
+                $(this).attr('aria-sort', order === 'asc' ? 'ascending' : 'descending');
                 $(this).find('.sort-icon').html(order === 'asc' ? '▲' : '▼').css('color', 'var(--primary)');
                 
                 // Reset page to 1 on sort change
