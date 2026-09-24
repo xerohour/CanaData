@@ -15,3 +15,7 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+
+## 2024-08-04 - Dynamic Table Accessibility enhancements
+**Learning:** Adding dynamic aria-sort and aria-live properties significantly boosts the UX for screen reader users on interactive tables.
+**Action:** Always inject aria-sort (none/ascending/descending) on sortable table headers and add aria-live='polite' to dynamic status updates like pagination text and empty state messages.
