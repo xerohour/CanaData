@@ -15,3 +15,7 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+
+## 2026-08-08 - Added Skip Link to Index Portal
+**Learning:** The main portal page lacked a skip-to-content link, making it harder for keyboard users to bypass any future repetitive headers or navigate immediately to main sections. I also need to make sure the target has tabindex='-1'.
+**Action:** Added a .skip-link class and linked it to the portal container in index.html to improve keyboard accessibility.
