@@ -1,0 +1,61 @@
+2026-09-20 20:41:38,373 - CanaData - INFO - Using optimized data processing pipeline
+2026-09-20 20:41:38,373 - optimized_data_processor - INFO - Starting optimized data processing...
+2026-09-20 20:41:38,449 - optimized_data_processor - INFO - Processed 50 menu items
+2026-09-20 20:41:38,534 - CanaData - INFO - Using optimized data processing pipeline
+2026-09-20 20:41:38,535 - optimized_data_processor - INFO - Starting optimized data processing...
+2026-09-20 20:41:38,925 - optimized_data_processor - INFO - Processed 50 menu items
+Running CPU profiling benchmark...
+Organize into clean list (flattening & Pandas operations) took 0.0771s
+         66877 function calls (63093 primitive calls) in 0.078 seconds
+
+   Ordered by: cumulative time
+   List reduced from 708 to 30 due to restriction <30>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.078    0.078 /app/performance_tests/profiler.py:19(run_cpu_benchmark)
+        1    0.000    0.000    0.077    0.077 /app/CanaData.py:753(organize_into_clean_list)
+        1    0.000    0.000    0.076    0.076 /app/optimized_data_processor.py:20(process_menu_data)
+        1    0.000    0.000    0.031    0.031 /app/optimized_data_processor.py:191(_normalize_data)
+        1    0.000    0.000    0.028    0.028 /app/optimized_data_processor.py:46(_flatten_all_items)
+        1    0.000    0.000    0.018    0.018 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:2125(to_dict)
+        1    0.002    0.002    0.017    0.017 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/methods/to_dict.py:97(to_dict)
+        1    0.000    0.000    0.017    0.017 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:303(json_normalize)
+       16    0.000    0.000    0.015    0.001 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/generic.py:10142(where)
+       16    0.000    0.000    0.015    0.001 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/generic.py:9969(_where)
+       96    0.000    0.000    0.012    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/indexing.py:1192(__getitem__)
+      155    0.001    0.000    0.012    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/internals/managers.py:399(apply)
+        1    0.000    0.000    0.011    0.011 /app/optimized_data_processor.py:75(_handle_remaining_nesting)
+        1    0.000    0.000    0.010    0.010 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:1591(itertuples)
+       30    0.000    0.000    0.010    0.000 {method 'extend' of 'list' objects}
+       63    0.000    0.000    0.010    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:1660(<genexpr>)
+        1    0.000    0.000    0.010    0.010 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:702(__init__)
+       62    0.000    0.000    0.008    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/indexing.py:1710(_getitem_tuple)
+      154    0.000    0.000    0.008    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:4292(_ixs)
+16928/16734    0.005    0.000    0.007    0.000 {built-in method builtins.isinstance}
+     51/1    0.000    0.000    0.007    0.007 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:219(_simple_json_normalize)
+       50    0.001    0.000    0.007    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:194(_normalize_json_ordered)
+       94    0.000    0.000    0.006    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/indexing.py:1740(_getitem_axis)
+       26    0.000    0.000    0.006    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/series.py:6348(notna)
+       26    0.000    0.000    0.006    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/generic.py:8399(notna)
+       92    0.000    0.000    0.006    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:4337(__getitem__)
+       58    0.000    0.000    0.006    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/dtypes/missing.py:311(notna)
+       62    0.001    0.000    0.006    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/indexing.py:1058(_getitem_lowerdim)
+       16    0.000    0.000    0.006    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/internals/managers.py:468(where)
+        1    0.000    0.000    0.005    0.005 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/internals/construction.py:463(nested_data_to_arrays)
+
+
+
+Running Memory profiling benchmark...
+Filename: /app/performance_tests/profiler.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    29     98.5 MiB     98.5 MiB           1   @profile
+    30                                         def run_memory_benchmark():
+    31     98.5 MiB      0.0 MiB           1       scraper = CanaData(interactive_mode=False)
+    32                                             # duplicate for scale
+    33     98.5 MiB      0.0 MiB           1       items = mock_data.get('data', {}).get('products', []) * 10
+    34     98.5 MiB      0.0 MiB           1       scraper.allMenuItems['test-listing'] = items
+    35
+    36                                             # Process
+    37     98.8 MiB      0.2 MiB           1       scraper.organize_into_clean_list()
