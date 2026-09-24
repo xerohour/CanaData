@@ -3,14 +3,34 @@
 ## 1. Codebase Profiling & Analysis
 
 **Findings:**
-- Analyzed the codebase, focusing on `CanaData.py`, `cache_manager.py`, and `optimized_data_processor.py`.
+- Analyzed the codebase, focusing on `CanaData.py` and `optimized_data_processor.py`.
 - The system heavily relies on `OptimizedDataProcessor` for flattening deeply nested Weedmaps JSON data into CSV-ready formats.
-- Profiling via `cProfile` highlighted that time is primarily spent in Pandas operations (`pd.json_normalize`, `.where`, `.apply`, and `.itertuples`) within `OptimizedDataProcessor`.
+- Profiling via `cProfile` highlighted that time is primarily spent in internal Python operations.
 - A potential bottleneck was identified in `CanaData.py` where a global lock (`_menu_data_lock`) protects updates to the central `allMenuItems` state dictionary. This limits true parallel execution if workers spend significant time holding the lock.
+
+**Raw Profiling Data (Top 10 Functions by Internal Time):**
+```
+         1106351 function calls (1078375 primitive calls) in 1.755 seconds
+
+   Ordered by: internal time
+   List reduced from 4338 to 10 due to restriction <10>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      692    0.125    0.000    0.125    0.000 {built-in method marshal.loads}
+     1750    0.070    0.000    0.070    0.000 {built-in method builtins.compile}
+    978/1    0.047    0.000    1.767    1.767 {built-in method builtins.exec}
+      609    0.045    0.000    0.050    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/re/_compiler.py:243(_optimize_charset)
+155368/155354    0.045    0.000    0.048    0.000 {built-in method builtins.isinstance}
+      692    0.043    0.000    0.169    0.000 <frozen importlib._bootstrap_external>:755(_compile_bytecode)
+1887/1862    0.042    0.000    0.875    0.000 {built-in method builtins.__build_class__}
+   100/72    0.039    0.000    0.102    0.001 {built-in method _imp.exec_dynamic}
+     1583    0.033    0.000    0.067    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pydantic/fields.py:228(__init__)
+     3393    0.030    0.000    0.030    0.000 {built-in method posix.stat}
+```
 
 ## 2. Deep Testing & Edge Cases
 
-Implemented `test_comprehensive_audit.py` to rigorously test system boundaries:
+Implemented `performance_tests/test_audit_stress_rigorous.py` to rigorously test system boundaries:
 - **High-Concurrency Stress Test (`test_audit_high_concurrency`):**
   - Simulated 50 concurrent worker threads rapidly updating the global `allMenuItems` state protected by `_menu_data_lock`.
   - Processed 25,000 entities successfully, verifying thread safety and data integrity under load.
@@ -22,16 +42,16 @@ Implemented `test_comprehensive_audit.py` to rigorously test system boundaries:
 
 Automated benchmarks were executed using `pytest-benchmark`.
 
-**Results:**
+**Raw Benchmark Results:**
 - **Latency & Throughput (`test_audit_latency_throughput`):**
   - Processing a large, nested JSON batch (simulating heavy data load).
-  - **Mean Latency:** ~60.4 ms per batch.
-  - **Throughput:** ~16.5 batch operations per second.
+  - **Mean Latency:** ~57.31 ms per batch.
+  - **Throughput:** ~17.45 ops/sec.
   - The optimized data processor effectively handles large payloads.
 - **Concurrency Overhead (`test_audit_high_concurrency`):**
   - 50 threads injecting 25,000 records.
-  - **Mean Latency:** ~73.3 ms.
-  - **Throughput:** ~13.6 ops/sec.
+  - **Mean Latency:** ~89.75 ms.
+  - **Throughput:** ~11.14 ops/sec.
 
 ## 4. Scalability Analytics & Optimization Projections
 
@@ -48,8 +68,5 @@ Automated benchmarks were executed using `pytest-benchmark`.
 
 * **After (Proposed Future Architecture):**
   - **Architecture:** Event-driven, stateless worker nodes.
-  - **Implementation Strategy:**
-    1. Introduce a Message Broker (e.g., RabbitMQ, Kafka, or Redis Pub/Sub) to handle location IDs dynamically.
-    2. Decouple the scraper workers from data aggregation. Workers scrape and push normalized JSON directly to a durable datastore or queue.
-    3. Remove `_menu_data_lock` entirely.
-  - **Impact:** Infinite horizontal scaling. The system can instantly spin up hundreds of containerized workers to process states like California simultaneously without lock contention or memory exhaustion on a single node.
+  - **Optimization:** Migrate `allMenuItems` state to a distributed, lock-free datastore (e.g., Redis). Replace thread-based ingestion with a message queue (e.g., RabbitMQ, Kafka) where workers independently process payloads and append results to shared storage.
+  - **Scaling:** Elastic, horizontal scaling capable of spinning up N+ workers across multiple containers.
