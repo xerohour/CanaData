@@ -21,3 +21,8 @@
 **Vulnerability:** The HTML report generators (`generate_report.py` and `parse-script/CanaParse.py`) allowed `javascript:` URIs in `href` and `src` attributes by not validating the protocol of URLs.
 **Learning:** `html.escape` prevents XSS in text content, but it does not prevent malicious protocol execution within URL attributes (like `href` or `src`). A strict Content-Security-Policy (CSP) is also a necessary defense-in-depth measure.
 **Prevention:** Always validate that URLs start with safe protocols (`http://`, `https://`, `#`, `/`) before injecting them into `href` or `src` attributes, and enforce a strict CSP meta tag in the HTML head.
+
+## 2026-08-05 - XSS in Dynamic Table JSON Payload via javascript: URI
+**Vulnerability:** Even though the static HTML was previously secured against XSS from the external API data, `img_url` and `url` were included unescaped and unsanitized in the JSON payloads emitted to `data-section` scripts. During the client-side jQuery rendering, these were used directly as `href` attributes, opening the door for `javascript:` URI execution in the dynamic table.
+**Learning:** Securing server-side static HTML generation isn't enough when data is also piped into a JSON payload for client-side rendering. The exact same sanitization (URL validation, etc.) must be applied before emitting the JSON payload.
+**Prevention:** Apply identical validation rules (`_is_valid_url`) for both static rendering variables and those appended to JSON dictionaries to prevent XSS payloads executing on the client-side.
