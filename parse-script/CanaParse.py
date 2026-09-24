@@ -1088,7 +1088,7 @@ class CanaParse:
                            .attr('tabindex', '0')
                            .attr('role', 'button')
                            .attr('aria-label', 'Sort by ' + text)
-                           .append(' <span class="sort-icon" style="color: var(--text-muted); font-size: 0.8rem; margin-left: 4px;">↕</span>');
+                           .append(' <span class="sort-icon" aria-hidden="true" style="color: var(--text-muted); font-size: 0.8rem; margin-left: 4px;">↕</span>');
                 }
             });
 
