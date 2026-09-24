@@ -10,7 +10,22 @@ from CanaData import CanaData
 from optimized_data_processor import OptimizedDataProcessor
 
 
-def test_audit_high_concurrency(benchmark):
+def test_new_audit_latency_throughput(benchmark):
+    sample_file = os.path.join(os.path.dirname(__file__), "..", "sample_products.json")
+    with open(sample_file) as f:
+        data = json.load(f)
+
+    processor = OptimizedDataProcessor(max_workers=4)
+    menu_items = {"test_dispensary": data.get("data", {}).get("products", []) * 50}
+
+    def process_data():
+        return processor.process_menu_data(menu_items)
+
+    result = benchmark(process_data)
+    assert len(result) > 0
+
+
+def test_new_audit_high_concurrency(benchmark):
     def run_stress():
         scraper = CanaData(interactive_mode=False)
         scraper.allMenuItems = {}
@@ -41,34 +56,13 @@ def test_audit_high_concurrency(benchmark):
     assert result == 25000
 
 
-def test_audit_latency_throughput(benchmark):
-    sample_file = os.path.join(os.path.dirname(__file__), "..", "sample_products.json")
-    if not os.path.exists(sample_file):
-        data = {"data": {"products": [{"id": 1, "name": "test"}] * 100}}
-    else:
-        with open(sample_file) as f:
-            data = json.load(f)
-
-    processor = OptimizedDataProcessor(max_workers=4)
-    menu_items = {"test_dispensary": data.get("data", {}).get("products", []) * 50}
-
-    def process_data():
-        return processor.process_menu_data(menu_items)
-
-    result = benchmark(process_data)
-    assert len(result) > 0
-
-
-def test_audit_memory_leak():
+def test_new_audit_memory_leak():
     process = psutil.Process(os.getpid())
     initial_memory = process.memory_info().rss
 
     sample_file = os.path.join(os.path.dirname(__file__), "..", "sample_products.json")
-    if not os.path.exists(sample_file):
-        data = {"data": {"products": [{"id": 1, "name": "test"}] * 100}}
-    else:
-        with open(sample_file) as f:
-            data = json.load(f)
+    with open(sample_file) as f:
+        data = json.load(f)
 
     processor = OptimizedDataProcessor(max_workers=2)
     menu_items = {"test_dispensary": data.get("data", {}).get("products", []) * 50}
@@ -79,7 +73,6 @@ def test_audit_memory_leak():
     final_memory = process.memory_info().rss
     memory_growth = final_memory - initial_memory
 
-    # Assert memory growth is less than 50MB (arbitrary threshold for leak detection in this short test)
     assert memory_growth < 50 * 1024 * 1024, (
         f"Memory leak detected: grew by {memory_growth / (1024 * 1024):.2f} MB"
     )

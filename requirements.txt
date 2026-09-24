@@ -11,3 +11,8 @@ pytest-benchmark
 psutil
 pytest-benchmark
 psutil
+psutil
+pytest-benchmark
+pandas
+requests
+pytest
