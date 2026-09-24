@@ -15,3 +15,6 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+## 2026-09-24 - Screen Reader Table Sorting Experience
+**Learning:** Decorative sort icons (`↕`, `▲`, `▼`) appended to table headers are read aloud by screen readers alongside the header text, adding unnecessary noise when the header already has an `aria-label="Sort by..."`.
+**Action:** Always add `aria-hidden="true"` to dynamic sorting icons within interactive table headers to ensure a clean screen reader experience that relies on the `aria-label` instead of the visible symbols.
