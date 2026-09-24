@@ -15,3 +15,6 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+## 2026-08-09 - Accessible Smooth Scrolling
+**Learning:** Implementing smooth scrolling for anchor links needs to respect the user's system motion preferences to avoid triggering vestibular issues for those with sensitivity to motion.
+**Action:** Always wrap `scroll-behavior: smooth;` in a `@media (prefers-reduced-motion: no-preference)` query to ensure an accessible experience.
