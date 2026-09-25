@@ -15,3 +15,6 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+## 2026-10-27 - Search Empty State Screen Reader Accessibility
+**Learning:** When client-side filtering results in an empty state, the new empty state message is injected dynamically. Without `role="status"` and `aria-live="polite"`, screen readers do not announce that the table is now empty, leaving visually impaired users unaware of the search result change.
+**Action:** Always wrap dynamically injected "no results" messages in a live region (`role="status" aria-live="polite"`) to ensure assistive technologies announce state changes.
