@@ -501,7 +501,7 @@ class CanaParse:
                                 "aria-label",
                                 "Search products, brands, categories, or dispensaries",
                             ),
-                            type="text",
+                            type="search",
                             id="global-search",
                             placeholder="🔍 Search products, brands, categories, or dispensaries...",
                             klass="search-input",
@@ -1029,7 +1029,7 @@ class CanaParse:
                 if (totalRows === 0) {
                     container.find('.table-container').hide();
                     if (container.find('.no-match-msg').length === 0) {
-                        container.append('<p class="no-match-msg" style="color: var(--text-muted); padding: 1rem;">No matching items found in this section.</p>');
+                        container.append('<div class="no-match-msg" role="status" aria-live="polite" style="color: var(--text-muted); padding: 2rem; text-align: center; border: 1px dashed var(--glass-border); border-radius: 16px; background: var(--glass);"><div aria-hidden="true" style="font-size: 2.5rem; margin-bottom: 0.5rem;">🏜️</div><p style="margin: 0; font-size: 1.1rem;">No matching items found in this section.</p></div>');
                     } else {
                         container.find('.no-match-msg').show();
                     }
