@@ -24,5 +24,5 @@ try:
             print("'data' key not found.")
     else:
         print(f"Response: {req.text[:200]}")
-except Exception as e:
+except Exception as e:  # noqa: BLE001
     print(f"Error: {e}")
