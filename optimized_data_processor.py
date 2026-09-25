@@ -166,10 +166,8 @@ class OptimizedDataProcessor:
                         # Handle list of dicts by taking first item or joining
                         if len(v) == 1:
                             # Single item, flatten it
-                            nested_dict = {
-                                f"{k}.{sub_k}": sub_v for sub_k, sub_v in v[0].items()
-                            }
-                            result.update(nested_dict)
+                            for sub_k, sub_v in v[0].items():
+                                result[f"{key}.{sub_k}"] = sub_v
                         else:
                             # Multiple items, convert to JSON string
                             result[key] = json.dumps(v)
