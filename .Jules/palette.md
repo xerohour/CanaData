@@ -15,3 +15,6 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+## 2026-09-26 - [Add ARIA labels to Pagination and aria-live to Info]
+**Learning:** Pagination buttons ("Previous", "Next") rely on visual text alone, which may lack context when navigating with a screen reader. The text showing the current items ("Showing X-Y of Z") is updated dynamically without notifying screen readers.
+**Action:** Added `aria-label` to pagination buttons and `aria-live="polite"` to dynamic info text, and added `aria-disabled="true"` to disabled pagination buttons.
