@@ -125,9 +125,8 @@ class OptimizedDataProcessor:
             flattened_batches = [future.result() for future in futures]
 
         # Combine all batches
-        all_flattened = []
-        for batch in flattened_batches:
-            all_flattened.extend(batch)
+        # Using list comprehension with nested loops is faster than multiple .extend() calls
+        all_flattened = [item for batch in flattened_batches for item in batch]
 
         return pd.DataFrame(all_flattened)
 
@@ -135,11 +134,8 @@ class OptimizedDataProcessor:
         """
         Flatten a batch of items using the existing custom algorithm.
         """
-        flattened_items = []
-        for item in batch:
-            flattened = self._flatten_dictionary_custom(item)
-            flattened_items.append(flattened)
-        return flattened_items
+        # Use list comprehension for faster mapping
+        return [self._flatten_dictionary_custom(item) for item in batch]
 
     def _flatten_dictionary_custom(self, d: dict) -> dict:
         """
@@ -166,10 +162,8 @@ class OptimizedDataProcessor:
                         # Handle list of dicts by taking first item or joining
                         if len(v) == 1:
                             # Single item, flatten it
-                            nested_dict = {
-                                f"{k}.{sub_k}": sub_v for sub_k, sub_v in v[0].items()
-                            }
-                            result.update(nested_dict)
+                            for sub_k, sub_v in v[0].items():
+                                result[f"{k}.{sub_k}"] = sub_v
                         else:
                             # Multiple items, convert to JSON string
                             result[key] = json.dumps(v)
