@@ -1,0 +1,39 @@
+Processed 20000 items.
+Sun Sep 27 20:50:20 2026    cprof_stats.prof
+
+         1526390 function calls (1386267 primitive calls) in 1.057 seconds
+
+   Ordered by: cumulative time
+   List reduced from 577 to 30 due to restriction <30>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      3/1    0.000    0.000    1.057    1.057 {built-in method builtins.exec}
+        1    0.004    0.004    1.057    1.057 <string>:1(<module>)
+        1    0.029    0.029    1.053    1.053 run_profiling.py:11(profile_processor)
+        1    0.002    0.002    1.015    1.015 optimized_data_processor.py:20(process_menu_data)
+        1    0.018    0.018    0.594    0.594 optimized_data_processor.py:46(_flatten_all_items)
+        1    0.008    0.008    0.449    0.449 _normalize.py:303(json_normalize)
+  20001/1    0.023    0.000    0.397    0.397 _normalize.py:219(_simple_json_normalize)
+        1    0.000    0.000    0.376    0.376 frame.py:2125(to_dict)
+        1    0.108    0.108    0.375    0.375 to_dict.py:97(to_dict)
+    20000    0.095    0.000    0.372    0.000 _normalize.py:194(_normalize_json_ordered)
+140000/20000    0.170    0.000    0.230    0.000 _normalize.py:153(_normalize_json)
+   120000    0.114    0.000    0.143    0.000 cast.py:186(maybe_box_native)
+        1    0.021    0.021    0.126    0.126 optimized_data_processor.py:75(_handle_remaining_nesting)
+   100033    0.032    0.000    0.122    0.000 base.py:559(__iter__)
+601277/601257    0.106    0.000    0.107    0.000 {built-in method builtins.isinstance}
+    20000    0.009    0.000    0.094    0.000 __init__.py:183(dumps)
+   100041    0.077    0.000    0.090    0.000 _mixins.py:287(__getitem__)
+    20000    0.026    0.000    0.085    0.000 encoder.py:183(encode)
+    20000    0.046    0.000    0.046    0.000 encoder.py:205(iterencode)
+        1    0.000    0.000    0.044    0.044 optimized_data_processor.py:191(_normalize_data)
+        1    0.000    0.000    0.042    0.042 frame.py:702(__init__)
+        1    0.000    0.000    0.041    0.041 construction.py:463(nested_data_to_arrays)
+        1    0.000    0.000    0.041    0.041 construction.py:759(to_arrays)
+        1    0.018    0.018    0.038    0.038 construction.py:858(_list_of_dict_to_arrays)
+        1    0.030    0.030    0.031    0.031 numeric.py:50(to_numeric)
+   120004    0.029    0.000    0.029    0.000 {method 'items' of 'dict' objects}
+    60000    0.019    0.000    0.019    0.000 {method 'removeprefix' of 'str' objects}
+    20001    0.014    0.000    0.019    0.000 construction.py:886(<genexpr>)
+   100040    0.013    0.000    0.013    0.000 _mixins.py:107(_box_func)
+       11    0.000    0.000    0.010    0.001 managers.py:399(apply)
