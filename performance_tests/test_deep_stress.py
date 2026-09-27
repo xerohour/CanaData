@@ -3,7 +3,6 @@ import os
 import sys
 import threading
 import uuid
-from memory_profiler import profile
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from CanaData import CanaData

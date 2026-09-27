@@ -8,7 +8,7 @@ from CanaData import CanaData
 from optimized_data_processor import OptimizedDataProcessor
 
 def test_core_flatten_benchmark(benchmark):
-    scraper = CanaData()
+    scraper = CanaData(interactive_mode=False)
     sample_file = os.path.join(os.path.dirname(__file__), "..", "sample_products.json")
     with open(sample_file) as f:
         data = json.load(f)
