@@ -15,3 +15,6 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+## 2026-09-27 - Inline Noun Emojis
+**Learning:** Emojis used inline to replace nouns in a sentence (like ❤️ for "love" and ☕ for "coffee") break screen reader sentence flow if hidden with `aria-hidden="true"`. The sentence will read as incomplete (e.g., "Generated with and").
+**Action:** Instead of hiding inline noun emojis, wrap them in a span with `role="img"` and a descriptive `aria-label` (e.g., `aria-label="love"`) to provide semantic meaning and preserve sentence structure for screen readers.
