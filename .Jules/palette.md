@@ -15,3 +15,6 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+## 2026-09-28 - Dynamic Status and Disabled Elements
+**Learning:** When generating dynamic HTML that uses jQuery to update status text or disable buttons, purely visual changes (like CSS `opacity: 0.5` or `prop('disabled', true)` on synthetic buttons) are not fully communicated to screen readers.
+**Action:** Always add `aria-live="polite"` to dynamically updating status spans and explicitly set `aria-disabled="true"` alongside visual disabled states for custom pagination controls.
