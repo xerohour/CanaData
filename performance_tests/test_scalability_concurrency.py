@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import threading
+import uuid
 
 import psutil
 
@@ -10,7 +11,7 @@ from CanaData import CanaData
 from optimized_data_processor import OptimizedDataProcessor
 
 
-def test_audit_high_concurrency(benchmark):
+def test_scalability_high_concurrency(benchmark):
     def run_stress():
         scraper = CanaData(interactive_mode=False)
         scraper.allMenuItems = {}
@@ -18,7 +19,7 @@ def test_audit_high_concurrency(benchmark):
         def worker(worker_id):
             local_items = {}
             for i in range(500):
-                local_items[f"{worker_id}_{i}"] = [{'id': worker_id * 1000 + i, 'name': 'test'}]
+                local_items[f"{uuid.uuid4()}"] = [{'id': worker_id * 1000 + i, 'name': 'test'}]
 
             with scraper._menu_data_lock:
                 scraper.allMenuItems.update(local_items)
@@ -38,7 +39,7 @@ def test_audit_high_concurrency(benchmark):
     result = benchmark(run_stress)
     assert result == 25000
 
-def test_audit_latency_throughput(benchmark):
+def test_scalability_latency_throughput(benchmark):
     sample_file = os.path.join(os.path.dirname(__file__), '..', 'sample_products.json')
     if not os.path.exists(sample_file):
         data = {"data": {"products": [{"id": 1, "name": "test"}] * 100}}
@@ -55,7 +56,7 @@ def test_audit_latency_throughput(benchmark):
     result = benchmark(process_data)
     assert len(result) > 0
 
-def test_audit_memory_leak():
+def test_scalability_memory_leak():
     process = psutil.Process(os.getpid())
     initial_memory = process.memory_info().rss
 
