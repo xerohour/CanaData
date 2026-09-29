@@ -15,3 +15,6 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+## 2026-09-29 - [Improved Semantic Feedback for Dynamic Tables]
+**Learning:** In highly interactive client-side tables, visually changing pages or seeing an "empty state" is obvious to sighted users but completely silent to screen readers without `aria-live`. Furthermore, visual cues like disabled states need matching HTML semantics.
+**Action:** When modifying dynamically generated HTML (e.g., in `CanaParse.py` or `generate_report.py`), enhance accessibility by explicitly adding `aria-live="polite"` to dynamic status text (so screen readers announce updates), wrapping inline noun emojis in `<span role="img">` with `aria-label`, and adding `aria-disabled="true"` alongside CSS cues like `cursor: not-allowed` for disabled interactive elements.
