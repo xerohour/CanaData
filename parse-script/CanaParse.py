@@ -903,6 +903,13 @@ class CanaParse:
                 return parseFloat(val).toFixed(2) + "%";
             }
 
+            // Check if URL is safe
+            function isSafeUrl(url) {
+                if (!url) return false;
+                var s = String(url).trim();
+                return s.startsWith("http://") || s.startsWith("https://") || s.startsWith("#") || s.startsWith("/");
+            }
+
             // Render a single row
             function buildRow(item) {
                 var tr = $('<tr></tr>');
@@ -914,9 +921,10 @@ class CanaParse:
                 // Image
                 var imgTd = $('<td class="thumb" data-label="Image"></td>');
                 if (item.img_url && item.img_url !== "None" && item.img_url !== "nan") {
-                    var a = $('<a data-fancybox="gallery"></a>').attr('href', item.img_url).attr('aria-label', "View full image of " + (item.name || 'product'));
+                    var safeImgUrl = isSafeUrl(item.img_url) ? item.img_url : "https://images.weedmaps.com/static/avatar/dispensary.png";
+                    var a = $('<a data-fancybox="gallery"></a>').attr('href', safeImgUrl).attr('aria-label', "View full image of " + (item.name || 'product'));
                     var img = $('<img class="img-thumbnail">')
-                        .attr('src', item.img_url)
+                        .attr('src', safeImgUrl)
                         .attr('alt', item.name || 'product')
                         .on('error', function() { this.src = "https://images.weedmaps.com/static/avatar/dispensary.png"; });
                     imgTd.append(a.append(img));
@@ -927,8 +935,9 @@ class CanaParse:
                 
                 // Product Name & Brand
                 var prodTd = $('<td data-label="Product"></td>');
+                var safeUrl = isSafeUrl(item.url) ? item.url : '#';
                 var prodLink = $('<a target="_blank" style="font-weight: 600; display: block; margin-bottom: 4px;"></a>')
-                    .attr('href', item.url || '#').text(item.name || 'N/A');
+                    .attr('href', safeUrl).text(item.name || 'N/A');
                 prodTd.append(prodLink);
                 if (item.brand) {
                     var brandSpan = $('<span style="font-size: 0.8rem; color: var(--text-muted);"></span>').text(item.brand);
