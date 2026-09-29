@@ -125,9 +125,8 @@ class OptimizedDataProcessor:
             flattened_batches = [future.result() for future in futures]
 
         # Combine all batches
-        all_flattened = []
-        for batch in flattened_batches:
-            all_flattened.extend(batch)
+        # Using list comprehension is faster than appending/extending in a loop
+        all_flattened = [item for batch in flattened_batches for item in batch]
 
         return pd.DataFrame(all_flattened)
 
@@ -152,24 +151,28 @@ class OptimizedDataProcessor:
         stack = [iter(d.items())]
         keys = []
 
+        append_keys = keys.append
+        pop_keys = keys.pop
+        append_stack = stack.append
+        pop_stack = stack.pop
+
         while stack:
             for k, v in stack[-1]:
                 key = ".".join(keys + [k]) if keys else k
 
                 if isinstance(v, dict):
                     # Push nested dict to stack
-                    keys.append(k)
-                    stack.append(iter(v.items()))
+                    append_keys(k)
+                    append_stack(iter(v.items()))
                     break
                 elif isinstance(v, list):
                     if v and isinstance(v[0], dict):
                         # Handle list of dicts by taking first item or joining
                         if len(v) == 1:
                             # Single item, flatten it
-                            nested_dict = {
-                                f"{k}.{sub_k}": sub_v for sub_k, sub_v in v[0].items()
-                            }
-                            result.update(nested_dict)
+                            # Using direct assignment avoids dictionary allocation overhead in hot loop
+                            for sub_k, sub_v in v[0].items():
+                                result[f"{k}.{sub_k}"] = sub_v
                         else:
                             # Multiple items, convert to JSON string
                             result[key] = json.dumps(v)
@@ -183,8 +186,8 @@ class OptimizedDataProcessor:
             else:
                 # Pop from stack when iterator is exhausted
                 if len(stack) > 1:
-                    keys.pop()
-                stack.pop()
+                    pop_keys()
+                pop_stack()
 
         return result
 
@@ -199,16 +202,17 @@ class OptimizedDataProcessor:
         df = df.fillna("None")
 
         # Convert data types where possible
-        for col in df.columns:
-            # Try to convert to numeric where possible. Carefully constrain to avoid coercing string IDs.
-            if (
-                "price" in col.lower()
-                or "amount" in col.lower()
-                or "thc" in col.lower()
-            ):
-                original_col = df[col]
-                numeric_col = pd.to_numeric(original_col, errors="coerce")
-                df[col] = numeric_col.where(numeric_col.notna(), original_col)
+        # Identify columns to convert to numeric
+        cols_to_convert = [
+            col
+            for col in df.columns
+            if "price" in col.lower() or "amount" in col.lower() or "thc" in col.lower()
+        ]
+
+        for col in cols_to_convert:
+            original_col = df[col]
+            numeric_col = pd.to_numeric(original_col, errors="coerce")
+            df[col] = numeric_col.where(numeric_col.notna(), original_col)
 
         # Sort columns for consistency
         df = df.reindex(sorted(df.columns), axis=1)
