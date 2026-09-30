@@ -15,3 +15,7 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+
+## 2026-09-30 - Emoji Wrapping with Yattag
+**Learning:** Using `doc.stag()` to add attributes to elements with content (like emojis or text) creates self-closing tags and breaks HTML DOM nesting, swallowing subsequent content into the parent element in the accessibility tree.
+**Action:** When making emojis accessible using `yattag`, always wrap the textual content in a context manager (`with tag("span", ("aria-hidden", "true")): text("☕")`) instead of relying on sequential `stag` calls.
