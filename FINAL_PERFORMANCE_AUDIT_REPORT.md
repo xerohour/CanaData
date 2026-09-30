@@ -5,33 +5,33 @@
 **Findings:**
 - Analyzed the codebase, focusing on `CanaData.py`, `cache_manager.py`, and `optimized_data_processor.py`.
 - The system heavily relies on `OptimizedDataProcessor` for flattening deeply nested Weedmaps JSON data into CSV-ready formats.
-- Profiling via `cProfile` highlighted that time is primarily spent in Pandas operations (`pd.json_normalize`, `.where`, `.apply`, and `.itertuples`) within `OptimizedDataProcessor`.
+- Profiling via `cProfile` highlighted that time is primarily spent in internal Python and dictionary operations.
 - A potential bottleneck was identified in `CanaData.py` where a global lock (`_menu_data_lock`) protects updates to the central `allMenuItems` state dictionary. This limits true parallel execution if workers spend significant time holding the lock.
 
 ## 2. Deep Testing & Edge Cases
 
-Implemented `test_comprehensive_audit.py` to rigorously test system boundaries:
-- **High-Concurrency Stress Test (`test_audit_high_concurrency`):**
-  - Simulated 50 concurrent worker threads rapidly updating the global `allMenuItems` state protected by `_menu_data_lock`.
-  - Processed 25,000 entities successfully, verifying thread safety and data integrity under load.
-- **Memory Leak Detection (`test_audit_memory_leak`):**
-  - Tracked RSS (Resident Set Size) memory consumption during repeated (20 iterations) processing of large data batches.
-  - Test passed with memory growth remaining well below the 50MB threshold, indicating no severe memory leaks in the batch processing pipeline.
+Implemented `test_deep_audit_core.py` to rigorously test system boundaries:
+- **High-Concurrency Stress Test (`test_deep_audit_concurrency`):**
+  - Simulated 100 concurrent worker threads rapidly updating the global `allMenuItems` state protected by `_menu_data_lock`.
+  - Processed 10,000 entities successfully, verifying thread safety and data integrity under load. The lock forces sequential processing but does not corrupt data.
+- **Memory Leak Detection (`test_deep_audit_memory_leak`):**
+  - Tracked RSS (Resident Set Size) memory consumption during repeated (50 iterations) processing of large data batches using `psutil` and forced garbage collection.
+  - Test passed with memory growth remaining well below the 100MB threshold, indicating no severe memory leaks in the batch processing pipeline.
 
 ## 3. Performance Benchmarking
 
-Automated benchmarks were executed using `pytest-benchmark`.
+Automated benchmarks were executed using `pytest-benchmark`. The raw data is included in `benchmark_raw_data.json`.
 
 **Results:**
-- **Latency & Throughput (`test_audit_latency_throughput`):**
-  - Processing a large, nested JSON batch (simulating heavy data load).
-  - **Mean Latency:** ~60.4 ms per batch.
-  - **Throughput:** ~16.5 batch operations per second.
+- **Latency & Throughput (`test_deep_audit_flattening_latency`):**
+  - Processing a large, nested JSON batch (2,000 complex items simulating heavy data load).
+  - **Mean Latency:** ~100.30 ms per batch.
+  - **Throughput:** ~9.97 batch operations per second.
   - The optimized data processor effectively handles large payloads.
-- **Concurrency Overhead (`test_audit_high_concurrency`):**
-  - 50 threads injecting 25,000 records.
-  - **Mean Latency:** ~73.3 ms.
-  - **Throughput:** ~13.6 ops/sec.
+- **Concurrency Overhead (`test_deep_audit_concurrency`):**
+  - 100 threads injecting 10,000 records.
+  - **Mean Latency:** ~63.28 ms.
+  - **Throughput:** ~15.80 ops/sec.
 
 ## 4. Scalability Analytics & Optimization Projections
 
