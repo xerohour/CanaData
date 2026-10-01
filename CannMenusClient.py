@@ -64,7 +64,7 @@ class CannMenusClient:
             response = requests.get(url, headers=self.headers, timeout=30)
             response.raise_for_status()
             return response.json().get("data", [])
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Error fetching retailers: {e!s}")
             return []
 
@@ -86,7 +86,7 @@ class CannMenusClient:
             response.raise_for_status()
             # Returns already flattened/normalized menu items
             return response.json().get("data", [])
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Error fetching menu: {e!s}")
             return []
 
