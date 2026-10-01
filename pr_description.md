@@ -1,0 +1,4 @@
+💡 What: Added `aria-live="polite"` to the dynamic pagination status text (e.g., "Showing 1-10 of 100") in the generated HTML table views, and added `aria-disabled="true"` alongside `cursor: not-allowed` for disabled pagination buttons.
+🎯 Why: Screen readers previously would not announce when the pagination page changed, and disabled buttons did not explicitly convey their disabled state to assistive technologies, making table navigation confusing for some users.
+📸 Before/After: Visual changes include adding a "not-allowed" cursor on disabled pagination buttons. Structural changes enhance the HTML markup with screen-reader friendly ARIA attributes for pagination.
+♿ Accessibility: Improved keyboard and screen-reader accessibility for navigating dynamically generated tabular reports.
