@@ -274,9 +274,7 @@ class CanaData:
             logger.error(f"Curl fallback failed: {e}")
             return False
 
-    def getLocations(
-        self, lat: float | None = None, long: float | None = None
-    ) -> None:
+    def getLocations(self, lat: float | None = None, long: float | None = None) -> None:
         """
         Retrieve all dispensary/delivery locations for the current search slug.
         """
@@ -814,18 +812,11 @@ class CanaData:
 
         all_keys = sorted(all_keys_set)
 
-        # This list will house all data after each key has been filled out
-        ready_list = []
-
         template_dict = dict.fromkeys(all_keys, "None")
-        # Loop through the flatDictList to update any missing keys
-        for item in flatDictList:
-            # Create a dictionary with all keys initialized to 'None'
-            flat_ordered_dict = template_dict.copy()
-            # Update with actual values
-            flat_ordered_dict.update(item)
 
-            ready_list.append(flat_ordered_dict)
+        # This list will house all data after each key has been filled out
+        # Optimized to use dictionary union operator instead of copy() and update()
+        ready_list = [template_dict | item for item in flatDictList]
 
         # Replace our finished menu items list with our flat, ordered, dictionary list
         self.finishedMenuItems = ready_list
