@@ -1,0 +1,23 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+benchmark: 5.3.0 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: /app
+plugins: mock-3.16.0, benchmark-5.3.0
+collected 2 items
+
+performance_tests/test_deep_scaling.py ..                                [100%]
+Wrote benchmark data in: deep_scaling_benchmark.json
+
+
+
+------------------------------------------------------------------------------------------ benchmark: 2 tests -----------------------------------------------------------------------------------------
+Name (time in ms)                      Min                 Max                Mean             StdDev              Median                IQR            Outliers      OPS            Rounds  Iterations
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+test_failure_mode_distributed      11.9253 (1.0)       64.9016 (1.0)       15.6276 (1.0)       8.3992 (1.0)       13.5820 (1.0)       1.2387 (1.0)          2;14  63.9894 (1.0)          71           1
+test_deep_scaling_stress          310.7213 (26.06)    394.4840 (6.08)     343.5307 (21.98)    34.9138 (4.16)     335.9496 (24.73)    55.9577 (45.17)         1;0   2.9109 (0.05)          5           1
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Legend:
+  Outliers: 1 Standard Deviation from Mean; 1.5 IQR (InterQuartile Range) from 1st Quartile and 3rd Quartile.
+  OPS: Operations Per Second, computed as 1 / Mean
+============================== 2 passed in 5.24s ===============================
