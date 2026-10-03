@@ -1,0 +1,4 @@
+💡 What: Replaced purely decorative text emojis in the footer with accessible emoji representations wrapped in `<span>` tags with `role="img"` and descriptive `aria-label` attributes.
+🎯 Why: Emojis used in text (like ❤️ and ☕) should be accessible to screen readers so they announce their intended meaning rather than remaining silent or reading out confusing descriptions.
+📸 Before/After: Visual appearance remains the same, but structural HTML now supports proper screen reader flow.
+♿ Accessibility: The emojis are properly labeled using ARIA roles (`role="img"`) and accessible labels (`aria-label="love"` and `aria-label="coffee"`), enhancing the experience for users who depend on screen readers.
