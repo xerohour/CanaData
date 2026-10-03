@@ -1474,7 +1474,12 @@ class CanaParse:
     def _generate_footer(self, doc, tag, text):
         """Add footer boilerplate."""
         with tag("div", klass="footer"):
-            text("© 2026 CanaData Analytics • Generated with ❤️ and ☕")
+            text("© 2026 CanaData Analytics • Generated with ")
+            with tag("span", ("aria-label", "love"), role="img"):
+                text("❤️")
+            text(" and ")
+            with tag("span", ("aria-label", "coffee"), role="img"):
+                text("☕")
 
     def save_html(self, output_path="output/index.html"):
         """Save generated HTML to file."""
