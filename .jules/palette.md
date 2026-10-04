@@ -1,0 +1,3 @@
+## 2026-10-04 - Accessible Pagination & Emojis in CanaParse
+**Learning:** When generating dynamic HTML (e.g. `CanaParse.py` rendering jQuery logic), adding `aria-live="polite"` is crucial for pagination status updates so screen readers catch the text changes. Purely decorative elements (like sorting arrows `↕`) must have `aria-hidden="true"`, while meaningful inline emojis (❤️, ☕) should be wrapped with `role="img"` and `aria-label`.
+**Action:** Always verify if dynamically generated strings containing state variables or emojis are properly decorated with accessibility attributes before injection, especially in server-side generated scripts or inline JS.
