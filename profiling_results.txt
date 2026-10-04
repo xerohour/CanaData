@@ -1,0 +1,70 @@
+Running flattening benchmark...
+         2257 function calls in 0.002 seconds
+
+   Ordered by: cumulative time
+   List reduced from 71 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.002    0.002 /app/profiler_script.py:15(run_flatten_benchmark)
+        5    0.001    0.000    0.002    0.000 /app/CanaData.py:833(flatten_dictionary)
+        1    0.000    0.000    0.001    0.001 /app/CanaData.py:74(__init__)
+        1    0.000    0.000    0.000    0.000 /app/cached_api_client.py:15(__init__)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/sessions.py:442(__init__)
+        1    0.000    0.000    0.000    0.000 /app/cache_manager.py:21(__init__)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:1306(mkdir)
+        1    0.000    0.000    0.000    0.000 {built-in method posix.mkdir}
+      739    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/utils.py:951(default_headers)
+      317    0.000    0.000    0.000    0.000 {method 'join' of 'str' objects}
+      420    0.000    0.000    0.000    0.000 {method 'pop' of 'list' objects}
+      416    0.000    0.000    0.000    0.000 {method 'append' of 'list' objects}
+        2    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/adapters.py:201(__init__)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/structures.py:49(__init__)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:447(__fspath__)
+        1    0.000    0.000    0.000    0.000 <frozen _collections_abc>:974(update)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:437(__str__)
+        8    0.000    0.000    0.000    0.000 <frozen os>:808(getenv)
+        8    0.000    0.000    0.000    0.000 <frozen _collections_abc>:804(get)
+
+
+
+Running optimized processing benchmark...
+         14012 function calls (13541 primitive calls) in 0.022 seconds
+
+   Ordered by: cumulative time
+   List reduced from 370 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.022    0.022 /app/profiler_script.py:20(run_optimized_benchmark)
+        1    0.000    0.000    0.013    0.013 /app/optimized_data_processor.py:75(_handle_remaining_nesting)
+        1    0.000    0.000    0.009    0.009 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:303(json_normalize)
+        1    0.000    0.000    0.008    0.008 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:702(__init__)
+       75    0.000    0.000    0.006    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:4337(__getitem__)
+        1    0.000    0.000    0.005    0.005 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/internals/construction.py:96(arrays_to_mgr)
+       75    0.000    0.000    0.005    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:4968(_get_item)
+       75    0.000    0.000    0.004    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:4292(_ixs)
+       10    0.000    0.000    0.004    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/generic.py:12401(first_valid_index)
+       10    0.000    0.000    0.004    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/generic.py:12381(_find_valid_index)
+       10    0.000    0.000    0.004    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/series.py:6348(notna)
+       10    0.000    0.000    0.004    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/generic.py:8399(notna)
+       10    0.000    0.000    0.003    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/dtypes/missing.py:311(notna)
+        1    0.000    0.000    0.003    0.003 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/internals/construction.py:463(nested_data_to_arrays)
+        1    0.000    0.000    0.003    0.003 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/internals/construction.py:759(to_arrays)
+       74    0.001    0.000    0.003    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/construction.py:531(sanitize_array)
+        1    0.000    0.000    0.003    0.003 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/internals/construction.py:553(_homogenize)
+        1    0.000    0.000    0.003    0.003 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/internals/managers.py:2332(create_block_manager_from_column_arrays)
+       10    0.000    0.000    0.002    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/dtypes/missing.py:97(isna)
+       10    0.000    0.000    0.002    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/dtypes/missing.py:180(_isna)
+
+
+
+Running memory benchmark...
+Filename: /app/profiler_script.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    25     97.8 MiB     97.8 MiB           1   @profile
+    26                                         def run_memory_benchmark():
+    27     97.8 MiB      0.0 MiB           1       scraper = CanaData(interactive_mode=False)
+    28     97.8 MiB      0.0 MiB           1       scraper.allMenuItems['test-listing'] = items * 10
+    29     98.8 MiB      1.0 MiB           1       scraper.organize_into_clean_list()
