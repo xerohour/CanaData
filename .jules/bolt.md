@@ -10,3 +10,6 @@
 ## 2026-08-25 - [Optimize dictionary merges in parsing loop]
 **Learning:** When appending or merging data into dictionaries within Python loops (such as during flattening), prefer direct loop key assignments (e.g., `for k, v in data.items(): result[k] = v`) over dictionary comprehensions passed to `.update()`. This avoids the overhead of allocating redundant intermediate dictionary objects.
 **Action:** Replaced `.update({...})` calls that dynamically build dictionaries during large loop processing with direct key assignments to save memory and processing time.
+## 2026-08-25 - Prevent intermediate dictionary allocations in recursive hot paths
+**Learning:** In Python, using a dictionary comprehension merely to allocate a temporary dictionary so it can be passed to `.update()` inside a hot recursive loop (like dictionary flattening) causes measurable performance degradation due to redundant memory allocation.
+**Action:** Replace `target.update({k: v for k, v in data.items()})` patterns with direct key assignments (`for k, v in data.items(): target[k] = v`) to avoid allocating intermediate dictionary objects.
