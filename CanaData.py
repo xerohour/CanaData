@@ -819,13 +819,8 @@ class CanaData:
 
         template_dict = dict.fromkeys(all_keys, "None")
         # Loop through the flatDictList to update any missing keys
-        for item in flatDictList:
-            # Create a dictionary with all keys initialized to 'None'
-            flat_ordered_dict = template_dict.copy()
-            # Update with actual values
-            flat_ordered_dict.update(item)
-
-            ready_list.append(flat_ordered_dict)
+        # Optimized with union operator for performance
+        ready_list = [template_dict | item for item in flatDictList]
 
         # Replace our finished menu items list with our flat, ordered, dictionary list
         self.finishedMenuItems = ready_list
