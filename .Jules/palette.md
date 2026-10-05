@@ -15,3 +15,6 @@
 ## 2026-07-29 - [Added Keyboard Navigation and Focus Visible to Table Headers]
 **Learning:** Table headers used for sorting need explicit focus indicators and keyboard event handling to be accessible to keyboard users.
 **Action:** Always add tabindex="0", role="button", and keydown event listeners (for Enter and Space keys) to interactive table headers, along with a *:focus-visible style for clear visual focus.
+## 2026-10-05 - Dynamic HTML Accessibility
+**Learning:** Dynamic text updates (like pagination) are ignored by screen readers without aria-live. Relying solely on the `disabled` property in JavaScript-generated buttons can omit semantic and visual cues for unsupported users.
+**Action:** Always add `aria-live="polite"` to dynamic status counters. When programmatically disabling buttons, add `aria-disabled="true"` and `cursor: not-allowed` alongside standard property disabling for robust fallback.

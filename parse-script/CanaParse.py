@@ -491,7 +491,12 @@ class CanaParse:
             with tag("body"):
                 with tag("a", href="#main-content", klass="skip-link"):
                     text("Skip to main content")
-                with tag("div", id="main-content", tabindex="-1", klass="container-fluid main"):
+                with tag(
+                    "div",
+                    id="main-content",
+                    tabindex="-1",
+                    klass="container-fluid main",
+                ):
                     self._generate_navbar(doc, tag, text)
                     # Global Search Bar
                     with tag("div", klass="search-container"):
@@ -1061,10 +1066,10 @@ class CanaParse:
                     var controls = $('<div class="pagination-controls" style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border);"></div>');
                     var prevBtn = $('<button class="btn btn-secondary" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Previous</button>');
                     var nextBtn = $('<button class="btn btn-secondary" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Next</button>');
-                    var info = $('<span style="color: var(--text-muted); font-size: 0.9rem;">Showing ' + (start + 1) + '-' + Math.min(end, totalRows) + ' of ' + totalRows + '</span>');
+                    var info = $('<span aria-live="polite" style="color: var(--text-muted); font-size: 0.9rem;">Showing ' + (start + 1) + '-' + Math.min(end, totalRows) + ' of ' + totalRows + '</span>');
                     
-                    if (page === 1) prevBtn.prop('disabled', true).css('opacity', 0.5);
-                    if (page === totalPages) nextBtn.prop('disabled', true).css('opacity', 0.5);
+                    if (page === 1) prevBtn.prop('disabled', true).attr('aria-disabled', 'true').css({'opacity': 0.5, 'cursor': 'not-allowed'});
+                    if (page === totalPages) nextBtn.prop('disabled', true).attr('aria-disabled', 'true').css({'opacity': 0.5, 'cursor': 'not-allowed'});
                     
                     prevBtn.on('click', function() {
                         currentPages[id]--;
@@ -1145,10 +1150,13 @@ class CanaParse:
 
             with tag("div"), tag("ul", klass="navbar-nav"):
                 for f in self.filters:
-                    with tag("li"), tag(
-                        "a",
-                        klass="nav-link",
-                        href=f"#{f.name.replace(' ', '_').lower()}",
+                    with (
+                        tag("li"),
+                        tag(
+                            "a",
+                            klass="nav-link",
+                            href=f"#{f.name.replace(' ', '_').lower()}",
+                        ),
                     ):
                         text(f.name)
 
@@ -1474,7 +1482,12 @@ class CanaParse:
     def _generate_footer(self, doc, tag, text):
         """Add footer boilerplate."""
         with tag("div", klass="footer"):
-            text("© 2026 CanaData Analytics • Generated with ❤️ and ☕")
+            text("© 2026 CanaData Analytics • Generated with ")
+            with tag("span", ("aria-label", "love"), role="img"):
+                text("❤️")
+            text(" and ")
+            with tag("span", ("aria-label", "coffee"), role="img"):
+                text("☕")
 
     def save_html(self, output_path="output/index.html"):
         """Save generated HTML to file."""
