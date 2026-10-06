@@ -31,7 +31,7 @@ def check_endpoint(name, url):
             return data
         else:
             print(f"Response: {response.text[:200]}...")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Error: {e}")
     return None
 
