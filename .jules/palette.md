@@ -1,0 +1,3 @@
+## 2024-05-20 - Inline Emoji Accessibility in Python HTML Generators
+**Learning:** When using emojis as inline nouns within generated HTML text (e.g., 'Generated with ❤️ and ☕' in yattag), screen readers may mispronounce or skip them if they lack proper semantics. Hiding them with `aria-hidden=true` breaks the sentence flow.
+**Action:** Always wrap inline noun emojis in a `<span role="img" aria-label="...">` rather than hiding them or leaving them raw, ensuring screen reader flow is preserved. In `yattag`, positional attribute tuples like `("aria-label", "value")` must precede keyword arguments like `role="img"`.
