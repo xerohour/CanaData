@@ -1,0 +1,3 @@
+## 2026-10-07 - Dynamic DOM Accessibility & Decorative Emojis
+**Learning:** Purely decorative emojis in empty states need `<span aria-hidden="true">` to prevent screen reader noise. When using client-side JavaScript to mutate tables dynamically (filtering/sorting/pagination), screen readers do not automatically announce the state changes or results, and visual `disabled` buttons still remain keyboard-navigable without `aria-disabled="true"`.
+**Action:** Always inject an `aria-live="polite"` region to announce dynamic JavaScript search/sort results, wrap purely visual decorative emojis in `aria-hidden="true"`, and apply `aria-disabled="true"` to visually disabled interactive elements so they are correctly communicated to assistive technologies.

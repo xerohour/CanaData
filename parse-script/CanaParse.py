@@ -878,6 +878,12 @@ class CanaParse:
             var pageSize = 50;
             var currentPages = {};
 
+            // Inject live region for screen readers
+            $('body').append('<div aria-live="polite" aria-atomic="true" class="sr-only" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;"></div>');
+            function announce(msg) {
+                $('.sr-only').text(msg);
+            }
+
             // Parse data from script tags
             $('script[id^="data-"]').each(function() {
                 var id = $(this).attr('id').replace('data-', '');
@@ -1029,11 +1035,12 @@ class CanaParse:
                 if (totalRows === 0) {
                     container.find('.table-container').hide();
                     if (container.find('.no-match-msg').length === 0) {
-                        container.append('<p class="no-match-msg" style="color: var(--text-muted); padding: 1rem;">No matching items found in this section.</p>');
+                        container.append('<p class="no-match-msg" aria-live="polite" style="color: var(--text-muted); padding: 1rem;">No matching items found in this section.</p>');
                     } else {
                         container.find('.no-match-msg').show();
                     }
                     container.find('.pagination-controls').remove();
+                    announce("No results found in " + container.find('h3').text().replace(/[0-9]+$/, '').trim());
                     return;
                 }
                 
@@ -1063,8 +1070,8 @@ class CanaParse:
                     var nextBtn = $('<button class="btn btn-secondary" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Next</button>');
                     var info = $('<span style="color: var(--text-muted); font-size: 0.9rem;">Showing ' + (start + 1) + '-' + Math.min(end, totalRows) + ' of ' + totalRows + '</span>');
                     
-                    if (page === 1) prevBtn.prop('disabled', true).css('opacity', 0.5);
-                    if (page === totalPages) nextBtn.prop('disabled', true).css('opacity', 0.5);
+                    if (page === 1) prevBtn.prop('disabled', true).attr('aria-disabled', 'true').css({'opacity': 0.5, 'cursor': 'not-allowed'});
+                    if (page === totalPages) nextBtn.prop('disabled', true).attr('aria-disabled', 'true').css({'opacity': 0.5, 'cursor': 'not-allowed'});
                     
                     prevBtn.on('click', function() {
                         currentPages[id]--;
@@ -1117,6 +1124,7 @@ class CanaParse:
                 // Reset page to 1 on sort change
                 currentPages[sectionId] = 1;
                 renderSection(sectionId);
+                announce("Sorted by " + text + " in " + (order === 'asc' ? 'ascending' : 'descending') + " order");
             });
 
             // Global search
