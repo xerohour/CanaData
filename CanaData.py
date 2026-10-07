@@ -808,27 +808,16 @@ class CanaData:
                 flatDictList.append(flatData)
 
         # This set will collect all possible keys
-        all_keys_set = set()
-        for item in flatDictList:
-            all_keys_set.update(item.keys())
+        # using optimized memory pattern over iterative update()
+        all_keys_set = set().union(*(item.keys() for item in flatDictList)) if flatDictList else set()
 
         all_keys = sorted(all_keys_set)
 
-        # This list will house all data after each key has been filled out
-        ready_list = []
-
         template_dict = dict.fromkeys(all_keys, "None")
-        # Loop through the flatDictList to update any missing keys
-        for item in flatDictList:
-            # Create a dictionary with all keys initialized to 'None'
-            flat_ordered_dict = template_dict.copy()
-            # Update with actual values
-            flat_ordered_dict.update(item)
-
-            ready_list.append(flat_ordered_dict)
 
         # Replace our finished menu items list with our flat, ordered, dictionary list
-        self.finishedMenuItems = ready_list
+        # using Python dictionary union operator over iterative .copy() and .update()
+        self.finishedMenuItems = [template_dict | item for item in flatDictList]
 
     def flatten_dictionary(self, d: dict[str, Any]) -> dict[str, str]:
         """
