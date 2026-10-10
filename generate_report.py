@@ -337,7 +337,9 @@ def generate_html_report(data, region_name="Colorado"):
         # Security: Escape region_name to prevent XSS from unescaped user-provided strings.
         html_content += f"""
                 <div class="empty-state">
-                    <div class="empty-state-icon" aria-hidden="true">🏜️</div>
+                    <div class="empty-state-icon" aria-hidden="true">
+                        <span aria-hidden="true">🏜️</span>
+                    </div>
                     <h2>No Listings Found</h2>
                     <p>We couldn't find any cannabis listings matching your criteria in {html.escape(str(region_name))}.</p>
                     <p class="helper-text">Try adjusting your search filters or exploring a different region.</p>
@@ -363,7 +365,7 @@ def generate_html_report(data, region_name="Colorado"):
             # Security: Sanitize optional nested API fields to prevent XSS
             promo_html = f"""
             <div class="promo-section">
-                <div class="promo-title">✨ PROMO: {html.escape(str(promo.get("code", "Special Offer")))}</div>
+                <div class="promo-title"><span aria-hidden="true">✨</span> PROMO: {html.escape(str(promo.get("code", "Special Offer")))}</div>
                 <div class="promo-body">{html.escape(str(promo.get("title", "Check website for details")))}</div>
             </div>
             """

@@ -1,0 +1,3 @@
+## 2024-10-10 - HTML Generation Accessibility Improvements
+**Learning:** Dynamically generated HTML components often neglect screen reader accessibility for interactive features like pagination updates, and decorative emojis can cause annoying vocalizations if not properly hidden or labeled.
+**Action:** Consistently apply `aria-live="polite"` to dynamic text updates, `aria-disabled="true"` with `cursor: not-allowed` to disabled buttons, `aria-hidden="true"` to decorative emojis, and `role="img"` with `aria-label` to inline emojis replacing words.
