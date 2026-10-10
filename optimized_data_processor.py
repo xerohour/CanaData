@@ -48,9 +48,9 @@ class OptimizedDataProcessor:
         Flatten all menu items using pandas json_normalize for efficiency.
         """
         # Collect all items with location info
-        # Using list comprehension for initialization performance
+        # Using list comprehension and dict union for initialization performance
         items_with_location = [
-            {**item, "_location_id": location_id}
+            item | {"_location_id": location_id}
             for location_id, items in all_menu_items.items()
             for item in items
         ]
@@ -166,10 +166,9 @@ class OptimizedDataProcessor:
                         # Handle list of dicts by taking first item or joining
                         if len(v) == 1:
                             # Single item, flatten it
-                            nested_dict = {
-                                f"{k}.{sub_k}": sub_v for sub_k, sub_v in v[0].items()
-                            }
-                            result.update(nested_dict)
+                            # Optimized: direct loop assignment is faster than building an intermediate dictionary and calling .update()
+                            for sub_k, sub_v in v[0].items():
+                                result[f"{k}.{sub_k}"] = sub_v
                         else:
                             # Multiple items, convert to JSON string
                             result[key] = json.dumps(v)
