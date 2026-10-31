@@ -1,0 +1,36 @@
+         663038 function calls (584210 primitive calls) in 0.610 seconds
+
+   Ordered by: cumulative time
+   List reduced from 669 to 30 due to restriction <30>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.003    0.003    0.610    0.610 /app/profile_system.py:12(profile_target)
+        5    0.000    0.000    0.606    0.121 /app/optimized_data_processor.py:20(process_menu_data)
+        5    0.001    0.000    0.253    0.051 /app/optimized_data_processor.py:46(_flatten_all_items)
+        5    0.002    0.000    0.186    0.037 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:303(json_normalize)
+        5    0.000    0.000    0.182    0.036 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:2125(to_dict)
+        5    0.043    0.009    0.181    0.036 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/methods/to_dict.py:97(to_dict)
+        5    0.002    0.000    0.170    0.034 /app/optimized_data_processor.py:191(_normalize_data)
+   1255/5    0.002    0.000    0.129    0.026 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:219(_simple_json_normalize)
+     1250    0.018    0.000    0.127    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:194(_normalize_json_ordered)
+75000/1250    0.083    0.000    0.101    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:153(_normalize_json)
+       80    0.000    0.000    0.075    0.001 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/generic.py:10142(where)
+       80    0.002    0.000    0.075    0.001 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/generic.py:9969(_where)
+        5    0.005    0.001    0.065    0.013 /app/optimized_data_processor.py:75(_handle_remaining_nesting)
+      775    0.007    0.000    0.060    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/internals/managers.py:399(apply)
+222519/221549    0.048    0.000    0.059    0.000 {built-in method builtins.isinstance}
+      480    0.002    0.000    0.057    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/indexing.py:1192(__getitem__)
+        5    0.000    0.000    0.054    0.011 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:702(__init__)
+    45000    0.040    0.000    0.051    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/dtypes/cast.py:186(maybe_box_native)
+        5    0.000    0.000    0.049    0.010 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:1591(itertuples)
+      150    0.000    0.000    0.047    0.000 {method 'extend' of 'list' objects}
+      315    0.001    0.000    0.047    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:1660(<genexpr>)
+      310    0.001    0.000    0.038    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/indexing.py:1710(_getitem_tuple)
+      770    0.001    0.000    0.038    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:4292(_ixs)
+    30440    0.009    0.000    0.036    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/arrays/base.py:559(__iter__)
+        5    0.000    0.000    0.031    0.006 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/internals/construction.py:463(nested_data_to_arrays)
+        5    0.000    0.000    0.031    0.006 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/internals/construction.py:759(to_arrays)
+      470    0.002    0.000    0.031    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/indexing.py:1740(_getitem_axis)
+       80    0.020    0.000    0.030    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/tools/numeric.py:50(to_numeric)
+      460    0.003    0.000    0.030    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:4337(__getitem__)
+    31100    0.026    0.000    0.029    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/arrays/_mixins.py:287(__getitem__)
