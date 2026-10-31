@@ -489,7 +489,12 @@ class CanaParse:
             with tag("body"):
                 with tag("a", href="#main-content", klass="skip-link"):
                     text("Skip to main content")
-                with tag("div", id="main-content", tabindex="-1", klass="container-fluid main"):
+                with tag(
+                    "div",
+                    id="main-content",
+                    tabindex="-1",
+                    klass="container-fluid main",
+                ):
                     self._generate_navbar(doc, tag, text)
                     # Global Search Bar
                     with tag("div", klass="search-container"):
