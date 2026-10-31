@@ -10,7 +10,7 @@ Based on the existing `CanaData.py` implementation, the project currently uses:
 - **Current Usage**:
   ```python
   # Line 16 in CanaData.py
-  self.baseUrl = 'https://api-g.weedmaps.com/discovery/v1/listings'
+  self.baseUrl = "https://api-g.weedmaps.com/discovery/v1/listings"
   ```
 
 ### Web API (Public/Undocumented)
@@ -19,7 +19,7 @@ Based on the existing `CanaData.py` implementation, the project currently uses:
 - **Current Usage**:
   ```python
   # Line 162 in CanaData.py
-  url = f'https://weedmaps.com/api/web/v1/listings/{location["slug"]}/menu?type={location["type"]}'
+  url = f"https://weedmaps.com/api/web/v1/listings/{location['slug']}/menu?type={location['type']}"
   ```
 
 ---
@@ -137,11 +137,11 @@ To avoid these errors and future-proof the script, the following changes should 
 1. **Add Minimal Browser Headers**:
    ```python
    headers = {
-       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-       'Accept': 'application/json, text/plain, */*',
-       'Accept-Language': 'en-US,en;q=0.9',
-       'Origin': 'https://weedmaps.com',
-       'Referer': 'https://weedmaps.com/'
+       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+       "Accept": "application/json, text/plain, */*",
+       "Accept-Language": "en-US,en;q=0.9",
+       "Origin": "https://weedmaps.com",
+       "Referer": "https://weedmaps.com/",
    }
    req = requests.get(url, headers=headers)
    ```
@@ -302,33 +302,34 @@ Available on RapidAPI:
 import time
 from random import uniform
 
+
 # Add delay between requests
 def do_request_with_backoff(self, url, max_retries=3):
     for attempt in range(max_retries):
         try:
             # Random delay between 1-3 seconds
             time.sleep(uniform(1.0, 3.0))
-            
+
             req = requests.get(url, timeout=30)
-            
+
             if req.status_code == 200:
                 return req.json()
             elif req.status_code == 429:  # Rate limited
-                wait_time = 2 ** attempt  # Exponential backoff
+                wait_time = 2**attempt  # Exponential backoff
                 print(f"Rate limited. Waiting {wait_time} seconds...")
                 time.sleep(wait_time)
                 continue
             else:
                 print(f"Error {req.status_code}: {req.text}")
                 return False
-                
+
         except Exception as e:
             print(f"Request failed: {e}")
             if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
                 continue
             return False
-    
+
     return False
 ```
 

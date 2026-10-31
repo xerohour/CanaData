@@ -30,9 +30,7 @@ def retry_with_backoff(max_retries=3, base_delay=1.0, max_delay=60.0):
                     jitter = random.uniform(0, 0.1 * delay)
                     time.sleep(delay + jitter)
 
-                    logger.warning(
-                        f"Retry {retries}/{max_retries} after error: {e!s}"
-                    )
+                    logger.warning(f"Retry {retries}/{max_retries} after error: {e!s}")
 
             return func(*args, **kwargs)
 
