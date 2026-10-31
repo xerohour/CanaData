@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "C:\Users\xerohour\Documents\GitHub\CanaData\test_endpoints.py", line 1, in <module>
-    import requests
-ModuleNotFoundError: No module named 'requests'
