@@ -459,7 +459,7 @@ class CanaDataGUI:
         self.log_text.configure(state=tk.DISABLED)
 
     def _default_output_dir(self) -> Path:
-        folder = f"CanaData_{datetime.now().strftime('%m-%d-%Y')}"
+        folder = f"CanaData_{datetime.now().astimezone().strftime('%m-%d-%Y')}"
         return ROOT / folder
 
     def open_output_folder(self) -> None:
