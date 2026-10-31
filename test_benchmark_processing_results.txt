@@ -1,0 +1,23 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /home/jules/.pyenv/versions/3.12.13/bin/python
+cachedir: .pytest_cache
+benchmark: 5.2.3 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: /app
+plugins: benchmark-5.2.3
+collecting ... collected 2 items
+
+performance_tests/test_benchmark_processing.py::test_processing_benchmark_optimized PASSED [ 50%]
+performance_tests/test_benchmark_processing.py::test_processing_benchmark_legacy PASSED [100%]
+
+
+-------------------------------------------------------------------------------------------------------- benchmark: 2 tests -------------------------------------------------------------------------------------------------------
+Name (time in us)                               Min                    Max                   Mean                 StdDev                 Median                   IQR            Outliers         OPS            Rounds  Iterations
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+test_processing_benchmark_legacy           236.0040 (1.0)         960.8260 (1.0)         273.2748 (1.0)          62.0399 (1.0)         248.4560 (1.0)         41.2680 (1.0)       182;161  3,659.3200 (1.0)        2434           1
+test_processing_benchmark_optimized     26,580.0020 (112.63)   88,851.5320 (92.47)    29,870.6179 (109.31)   10,721.7845 (172.82)   27,372.3100 (110.17)   2,248.8972 (54.49)         1;2     33.4777 (0.01)         33           1
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Legend:
+  Outliers: 1 Standard Deviation from Mean; 1.5 IQR (InterQuartile Range) from 1st Quartile and 3rd Quartile.
+  OPS: Operations Per Second, computed as 1 / Mean
+============================== 2 passed in 4.03s ===============================
