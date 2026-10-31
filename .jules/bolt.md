@@ -10,3 +10,7 @@
 ## 2026-08-25 - [Optimize dictionary merges in parsing loop]
 **Learning:** When appending or merging data into dictionaries within Python loops (such as during flattening), prefer direct loop key assignments (e.g., `for k, v in data.items(): result[k] = v`) over dictionary comprehensions passed to `.update()`. This avoids the overhead of allocating redundant intermediate dictionary objects.
 **Action:** Replaced `.update({...})` calls that dynamically build dictionaries during large loop processing with direct key assignments to save memory and processing time.
+
+## 2024-04-17 - Connection Pooling via requests.Session
+**Learning:** The application was making numerous sequential API calls using `requests.get()`, which opens a new TCP connection and performs SSL handshake for every single request. In high-volume scraping, this overhead becomes a significant bottleneck.
+**Action:** Use `requests.Session()` to enable connection pooling. This reuses the underlying TCP connections, significantly reducing overhead for repeated API calls to the same host.
