@@ -21,3 +21,7 @@
 **Vulnerability:** The HTML report generators (`generate_report.py` and `parse-script/CanaParse.py`) allowed `javascript:` URIs in `href` and `src` attributes by not validating the protocol of URLs.
 **Learning:** `html.escape` prevents XSS in text content, but it does not prevent malicious protocol execution within URL attributes (like `href` or `src`). A strict Content-Security-Policy (CSP) is also a necessary defense-in-depth measure.
 **Prevention:** Always validate that URLs start with safe protocols (`http://`, `https://`, `#`, `/`) before injecting them into `href` or `src` attributes, and enforce a strict CSP meta tag in the HTML head.
+## 2026-06-29 - CSV Injection (Formula Injection) in Data Export
+**Vulnerability:** Unsanitized user-generated strings (e.g., dispensary names, product names) were written directly to CSV files in `CanaData.py`. An attacker could prepend `=`, `+`, `-`, or `@` to execute arbitrary formulas or commands when the CSV is opened in spreadsheet software like Excel.
+**Learning:** Data exported to CSV must be treated as untrusted input rendered in a new context (the spreadsheet software), making it susceptible to CSV/Formula Injection.
+**Prevention:** Always sanitize CSV outputs by iterating through fields and prepending a single quote (`'`) to strings starting with dangerous formula characters (`=`, `+`, `-`, `@`, `\t`, `\n`).
