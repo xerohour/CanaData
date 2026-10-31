@@ -175,6 +175,12 @@
             outline-offset: 4px;
         }
 
+        @media (prefers-reduced-motion: no-preference) {
+            html {
+                scroll-behavior: smooth;
+            }
+        }
+
         .badge {
             background: rgba(245, 158, 11, 0.15);
             color: var(--accent);
