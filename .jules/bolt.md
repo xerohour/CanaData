@@ -14,3 +14,7 @@
 ## 2024-04-17 - Connection Pooling via requests.Session
 **Learning:** The application was making numerous sequential API calls using `requests.get()`, which opens a new TCP connection and performs SSL handshake for every single request. In high-volume scraping, this overhead becomes a significant bottleneck.
 **Action:** Use `requests.Session()` to enable connection pooling. This reuses the underlying TCP connections, significantly reducing overhead for repeated API calls to the same host.
+
+## 2026-11-02 - [Optimize flattening using pure Python dictionaries instead of Pandas DataFrames]
+**Learning:** Initializing pandas DataFrames and using `pd.json_normalize` followed by `to_dict('records')` introduces heavy allocation overhead for flattening lists of complex nested dictionaries, making it over 2x slower than manually traversing and flattening the dictionaries entirely natively in Python.
+**Action:** Removed pandas entirely from the nested dictionary flattening logic in `OptimizedDataProcessor`. Replaced the dataframe lifecycle with a pure Python implementation using loop key assignments for superior performance and reduced memory allocation.
