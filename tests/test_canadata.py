@@ -75,7 +75,17 @@ def test_process_menu_json_thread_safe_counts_and_collections():
             executor.submit(cana.process_menu_json, payload) for payload in payloads
         ]
         for future in concurrent.futures.as_completed(futures):
-            future.result()
+            result = future.result()
+            if result:
+                listing_id = result.get('listing_id')
+                cana.allMenuItems[listing_id] = result.get('local_menu_items', [])
+                if result.get('is_empty_menu'):
+                    cana.emptyMenus[listing_id] = result.get('listing_copy')
+                for slug, strain in result.get('local_extracted_strains', {}).items():
+                    if slug not in cana.extractedStrains:
+                        cana.extractedStrains[slug] = strain
+                cana.menuItemsFound += result.get('menu_items_count', 0)
+                cana.totalLocations.append(result.get('listing_copy'))
 
     assert len(cana.allMenuItems) == total_payloads
     assert len(cana.totalLocations) == total_payloads
@@ -101,7 +111,17 @@ def test_process_menu_json_thread_safe_deduplicates_extracted_strains():
             executor.submit(cana.process_menu_json, payload) for payload in payloads
         ]
         for future in concurrent.futures.as_completed(futures):
-            future.result()
+            result = future.result()
+            if result:
+                listing_id = result.get('listing_id')
+                cana.allMenuItems[listing_id] = result.get('local_menu_items', [])
+                if result.get('is_empty_menu'):
+                    cana.emptyMenus[listing_id] = result.get('listing_copy')
+                for slug, strain in result.get('local_extracted_strains', {}).items():
+                    if slug not in cana.extractedStrains:
+                        cana.extractedStrains[slug] = strain
+                cana.menuItemsFound += result.get('menu_items_count', 0)
+                cana.totalLocations.append(result.get('listing_copy'))
 
     assert "same-strain" in cana.extractedStrains
     assert len(cana.extractedStrains) == 1

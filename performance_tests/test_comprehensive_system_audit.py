@@ -2,12 +2,13 @@ import json
 import os
 import sys
 import threading
-import pytest
+
 import psutil
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from CanaData import CanaData
 from optimized_data_processor import OptimizedDataProcessor
+
 
 def get_sample_data():
     sample_file = os.path.join(os.path.dirname(__file__), '..', 'sample_products.json')

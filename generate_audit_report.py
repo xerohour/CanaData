@@ -1,5 +1,6 @@
 import json
 
+
 def generate():
     with open('audit_bench.json') as f:
         bench_data = json.load(f)

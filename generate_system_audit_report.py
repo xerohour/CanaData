@@ -2,6 +2,7 @@ import json
 import os
 from datetime import datetime
 
+
 def generate_report():
     print("Generating comprehensive system audit report...")
 
