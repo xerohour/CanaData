@@ -490,7 +490,7 @@ class CanaParse:
                 with tag("a", href="#main-content", klass="skip-link"):
                     text("Skip to main content")
                 with tag(
-                    "div",
+                    "main",
                     id="main-content",
                     tabindex="-1",
                     klass="container-fluid main",
@@ -955,7 +955,8 @@ class CanaParse:
                     var a = $('<a data-fancybox="gallery"></a>').attr('href', item.img_url).attr('aria-label', "View full image of " + (item.name || 'product'));
                     var img = $('<img class="img-thumbnail">')
                         .attr('src', item.img_url)
-                        .attr('alt', item.name || 'product')
+                        .attr('alt', '')
+                        .attr('aria-hidden', 'true')
                         .on('error', function() { this.src = "https://images.weedmaps.com/static/avatar/dispensary.png"; });
                     imgTd.append(a.append(img));
                 } else {
@@ -1128,7 +1129,7 @@ class CanaParse:
                            .attr('role', 'button')
                            .attr('aria-sort', 'none')
                            .attr('aria-label', 'Sort by ' + text)
-                           .append(' <span class="sort-icon" style="color: var(--text-muted); font-size: 0.8rem; margin-left: 4px;">↕</span>');
+                           .append(' <span class="sort-icon" aria-hidden="true" style="color: var(--text-muted); font-size: 0.8rem; margin-left: 4px;">↕</span>');
                 }
             });
 
