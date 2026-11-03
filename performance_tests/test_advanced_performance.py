@@ -18,7 +18,8 @@ def test_large_nesting_performance(benchmark):
     df = pd.concat([df] * 50, ignore_index=True)
 
     def process_data():
-        return processor._handle_remaining_nesting(df.copy())
+        products = data.get("data", {}).get("products", []) * 50
+        return processor.process_menu_data({"loc": products})
 
     result = benchmark(process_data)
     assert len(result) > 0
