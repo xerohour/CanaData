@@ -85,7 +85,13 @@ def test_extract_strains_from_menu(cana):
     }
 
     # Process the mock menu
-    cana.process_menu_json(mock_menu_json)
+    result = cana.process_menu_json(mock_menu_json)
+
+    # The refactored process_menu_json returns a dict, so we must manually update the cana instance to simulate _fetch_and_process_menu's batch update
+    if result:
+        for slug, strain in result.get('local_extracted_strains', {}).items():
+            if slug not in cana.extractedStrains:
+                cana.extractedStrains[slug] = strain
 
     # Verify extraction
     assert "og-kush" in cana.extractedStrains

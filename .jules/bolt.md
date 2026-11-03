@@ -14,3 +14,7 @@
 ## 2024-04-17 - Connection Pooling via requests.Session
 **Learning:** The application was making numerous sequential API calls using `requests.get()`, which opens a new TCP connection and performs SSL handshake for every single request. In high-volume scraping, this overhead becomes a significant bottleneck.
 **Action:** Use `requests.Session()` to enable connection pooling. This reuses the underlying TCP connections, significantly reducing overhead for repeated API calls to the same host.
+
+## 2026-11-02 - Remove Global Lock Contention in Menu Item Processing
+**Learning:** Using a global threading lock (`_menu_data_lock`) to append items to a shared list when running highly concurrent requests (like ThreadPoolExecutor in `CanaData.py`) completely eliminates the benefits of multiprocessing, forcing the application into sequential behavior at the collection step.
+**Action:** When gathering high-volume network responses concurrently, local processing functions should return their data back to the dispatcher instead of mutating shared state. The dispatcher can then accumulate or batch the returned values (e.g., using `concurrent.futures.as_completed`) without contention, drastically reducing execution latency.

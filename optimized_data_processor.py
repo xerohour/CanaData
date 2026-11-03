@@ -86,7 +86,12 @@ class OptimizedDataProcessor:
                 if first_idx is not None:
                     val = df[col].loc[first_idx]
                     if isinstance(val, pd.Series):
-                        val = val.dropna().iloc[0]
+                        # Avoid full dropna() operation on Series by using first_valid_index again
+                        series_first_idx = val.first_valid_index()
+                        if series_first_idx is not None:
+                            val = val.loc[series_first_idx]
+                        else:
+                            continue
                     if isinstance(val, (dict, list)):
                         nested_columns.append(col)
 
@@ -215,6 +220,8 @@ class OptimizedDataProcessor:
                 df[col] = numeric_col.where(numeric_col.notna(), original_col)
 
         # Sort columns for consistency
-        df = df.reindex(sorted(df.columns), axis=1)
+        # Avoid .reindex() which is slow on large dataframes
+        sorted_cols = sorted(df.columns)
+        df = df[sorted_cols]
 
         return df

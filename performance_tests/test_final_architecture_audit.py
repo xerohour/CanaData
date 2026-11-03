@@ -2,11 +2,13 @@ import json
 import os
 import sys
 import threading
+
 import psutil
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from CanaData import CanaData
 from optimized_data_processor import OptimizedDataProcessor
+
 
 def test_audit_latency_throughput(benchmark):
     # Benchmark to measure latency and throughput of the data processing

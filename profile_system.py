@@ -1,13 +1,13 @@
 import cProfile
-import pstats
 import io
 import json
 import os
+import pstats
 import sys
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-from CanaData import CanaData
 from optimized_data_processor import OptimizedDataProcessor
+
 
 def profile_target():
     print("Profiling optimized data processor...")

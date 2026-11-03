@@ -2,13 +2,13 @@ import json
 import os
 import sys
 import threading
-import time
+
 import psutil
-import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from CanaData import CanaData
 from optimized_data_processor import OptimizedDataProcessor
+
 
 def test_audit_memory_leak_container():
     """Test memory leak over repeated data processing."""

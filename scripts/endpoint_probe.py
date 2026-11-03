@@ -1,7 +1,7 @@
 import argparse
 import json
 import subprocess
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 DEFAULT_HEADERS: list[str] = [
@@ -125,7 +125,7 @@ def main() -> None:
         checks.append(result)
 
     report = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "total_checks": len(checks),
         "ok_checks": sum(1 for c in checks if c.get("ok")),
         "checks": checks,

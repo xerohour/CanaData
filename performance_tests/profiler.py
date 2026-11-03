@@ -7,9 +7,9 @@ import sys
 import time
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from CanaData import CanaData
-from optimized_data_processor import OptimizedDataProcessor
 from memory_profiler import profile
+
+from CanaData import CanaData
 
 # Setup mock data for performance testing
 mock_data = []

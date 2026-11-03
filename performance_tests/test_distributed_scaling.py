@@ -1,12 +1,8 @@
-import json
 import os
 import sys
 import threading
-import time
-import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from CanaData import CanaData
 
 def test_scaling_mock_message_queue(benchmark):
     """

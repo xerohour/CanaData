@@ -380,7 +380,17 @@ class CanaData:
             logger.info(
                 f"Processing menu ({i + 1}/{len(self.locations)}) --> {location_slug}"
             )
-            self._fetch_and_process_menu(location)
+            result = self._fetch_and_process_menu(location)
+            if result:
+                listing_id = result.get("listing_id")
+                self.allMenuItems[listing_id] = result.get("local_menu_items", [])
+                if result.get("is_empty_menu"):
+                    self.emptyMenus[listing_id] = result.get("listing_copy")
+                for slug, strain in result.get("local_extracted_strains", {}).items():
+                    if slug not in self.extractedStrains:
+                        self.extractedStrains[slug] = strain
+                self.menuItemsFound += result.get("menu_items_count", 0)
+                self.totalLocations.append(result.get("listing_copy"))
 
         logger.info("Finished gathering menus. Organizing for export...")
         self.organize_into_clean_list()
@@ -402,10 +412,25 @@ class CanaData:
             return self._fetch_and_process_menu(location)
 
         # Process all locations concurrently
-        processor.process_locations(self.locations, process_location_menu)
+        results = processor.process_locations(self.locations, process_location_menu)
 
-        # Update instance variables with results
-        # The _fetch_and_process_menu method already updates self.allMenuItems
+        # Batch update instance variables without lock contention
+        for location_slug, result in results.items():
+            if result:
+                listing_id = result.get("listing_id")
+
+                self.allMenuItems[listing_id] = result.get("local_menu_items", [])
+
+                if result.get("is_empty_menu"):
+                    self.emptyMenus[listing_id] = result.get("listing_copy")
+
+                for slug, strain in result.get("local_extracted_strains", {}).items():
+                    if slug not in self.extractedStrains:
+                        self.extractedStrains[slug] = strain
+
+                self.menuItemsFound += result.get("menu_items_count", 0)
+                self.totalLocations.append(result.get("listing_copy"))
+
         logger.info("Finished gathering menus. Organizing for export...")
         self.organize_into_clean_list()
 
@@ -419,7 +444,9 @@ class CanaData:
                     f"Error for {error['location']['slug']}: {error['error']}"
                 )
 
-    def _fetch_and_process_menu(self, location: dict[str, Any]) -> bool:
+    def _fetch_and_process_menu(
+        self, location: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Fetch and process menu for a single location"""
         location_slug = location["slug"]
         location_type = location.get("type", "dispensary")
@@ -430,27 +457,27 @@ class CanaData:
                 location_slug, listing_path_type
             )
             if discovery_items is not None:
-                self.process_menu_items_json(discovery_items, location)
-                return True
+                return self.process_menu_items_json(discovery_items, location)
 
             # Fallback to legacy endpoint if discovery menu items fail.
             legacy_url = f"https://weedmaps.com/api/web/v1/listings/{location_slug}/menu?type={location_type}"
             if self.testMode:
                 logger.debug(f"Legacy menu URL: {legacy_url}")
 
-            resp = self.session.get(legacy_url, headers=self.default_headers, timeout=30)
+            resp = self.session.get(
+                legacy_url, headers=self.default_headers, timeout=30
+            )
             if resp.status_code == 200:
-                self.process_menu_json(resp.json())
-                return True
+                return self.process_menu_json(resp.json())
 
             logger.error(
                 f"Failed to fetch menu for {location_slug}: {resp.status_code}"
             )
-            return False
+            return None
 
         except Exception as e:
             logger.error(f"Error processing {location_slug}: {e!s}")
-            return False
+            return None
 
     def _to_listing_path_type(self, location_type: str) -> str:
         """Map listing type to discovery path segment."""
@@ -561,7 +588,7 @@ class CanaData:
                 break
         logger.info(f"Retrieved {self.strainsFound} strains.")
 
-    def process_menu_json(self, menu_json: dict[str, Any]) -> None:
+    def process_menu_json(self, menu_json: dict[str, Any]) -> dict[str, Any] | None:
         """
         Process the JSON response for a single location's menu.
         """
@@ -570,7 +597,7 @@ class CanaData:
         listing_slug = listing.get("slug")
         if listing_id is None:
             logger.warning(f"Skipping menu without listing id for {listing_slug}")
-            return
+            return None
 
         listing_type = (
             "deliveries" if listing.get("_type") == "delivery" else "dispensaries"
@@ -614,19 +641,16 @@ class CanaData:
         listing_copy = dict(listing)
         listing_copy["num_menu_items"] = str(menu_items_count)
 
-        with self._menu_data_lock:
-            self.allMenuItems[listing_id] = local_menu_items
-            if is_empty_menu:
-                self.emptyMenus[listing_id] = listing_copy
-
-            for slug, strain in local_extracted_strains.items():
-                if slug not in self.extractedStrains:
-                    self.extractedStrains[slug] = strain
-
-            self.menuItemsFound += menu_items_count
-            self.totalLocations.append(listing_copy)
-
         logger.info(f"Processed {menu_items_count} items for {listing_slug}")
+
+        return {
+            "listing_id": listing_id,
+            "local_menu_items": local_menu_items,
+            "is_empty_menu": is_empty_menu,
+            "listing_copy": listing_copy,
+            "local_extracted_strains": local_extracted_strains,
+            "menu_items_count": menu_items_count,
+        }
 
     def process_menu_items_json(
         self, menu_json: dict[str, Any], location: dict[str, Any]
@@ -676,21 +700,18 @@ class CanaData:
             "num_menu_items": str(menu_items_count),
         }
 
-        with self._menu_data_lock:
-            self.allMenuItems[listing_id] = local_menu_items
-            if menu_items_count == 0:
-                self.emptyMenus[listing_id] = listing_copy
-
-            for slug, strain in local_extracted_strains.items():
-                if slug not in self.extractedStrains:
-                    self.extractedStrains[slug] = strain
-
-            self.menuItemsFound += menu_items_count
-            self.totalLocations.append(listing_copy)
-
         logger.info(
             f"Processed {menu_items_count} items for {listing_slug} via discovery menu_items"
         )
+
+        return {
+            "listing_id": listing_id,
+            "local_menu_items": local_menu_items,
+            "is_empty_menu": menu_items_count == 0,
+            "listing_copy": listing_copy,
+            "local_extracted_strains": local_extracted_strains,
+            "menu_items_count": menu_items_count,
+        }
 
     def getLeaflyData(self):
         """
@@ -972,7 +993,9 @@ class CanaData:
                 # Sanitize values to prevent CSV Injection (Formula Injection)
                 sanitized_values = []
                 for val in row.values():
-                    if isinstance(val, str) and val.startswith(("=", "+", "-", "@", "\t", "\n")):
+                    if isinstance(val, str) and val.startswith(
+                        ("=", "+", "-", "@", "\t", "\n")
+                    ):
                         sanitized_values.append(f"'{val}")
                     else:
                         sanitized_values.append(val)
