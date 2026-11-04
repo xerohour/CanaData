@@ -18,3 +18,7 @@
 ## 2026-11-02 - Remove Global Lock Contention in Menu Item Processing
 **Learning:** Using a global threading lock (`_menu_data_lock`) to append items to a shared list when running highly concurrent requests (like ThreadPoolExecutor in `CanaData.py`) completely eliminates the benefits of multiprocessing, forcing the application into sequential behavior at the collection step.
 **Action:** When gathering high-volume network responses concurrently, local processing functions should return their data back to the dispatcher instead of mutating shared state. The dispatcher can then accumulate or batch the returned values (e.g., using `concurrent.futures.as_completed`) without contention, drastically reducing execution latency.
+
+## 2026-11-20 - Preserving business logic during flattening refactor
+**Learning:** When refactoring dictionary flattening logic (e.g., bypassing `pd.json_normalize`) in `OptimizedDataProcessor`, you must preserve exact original behavior to avoid business logic regressions: flatten nested dicts but leave lists intact, convert entire columns containing lists/dicts into JSON strings, replace missing values with 'None', and specifically coerce 'price', 'amount', and 'thc' columns to numeric types.
+**Action:** When bypassing Pandas for performance in nested dictionary processing, ensure that Python-based iterations meticulously follow the exact same type coercion, missing value rules, and output shape as the replaced logic.
