@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import re
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from dotenv import load_dotenv
@@ -84,7 +84,7 @@ class CanaParse:
         self.csv_file = csv_file or os.getenv("CSV_FILE", "colorado_results.csv")
         self.csv_folder = csv_folder or os.getenv(
             "CSV_FOLDER",
-            os.path.join(base_dir, f"CanaData_{datetime.today().strftime('%m-%d-%Y')}"),
+            os.path.join(base_dir, f"CanaData_{datetime.now(tz=UTC).strftime('%m-%d-%Y')}"),
         )
         self.no_filter = no_filter
         self.filters = []
@@ -497,8 +497,7 @@ class CanaParse:
                 ):
                     self._generate_navbar(doc, tag, text)
                     # Global Search Bar
-                    with tag("div", klass="search-container"):
-                        with tag("div", style="position: relative; width: 100%; max-width: 600px;"):
+                    with tag("div", klass="search-container"), tag("div", style="position: relative; width: 100%; max-width: 600px;"):
                             doc.stag(
                                 "input",
                                 (
@@ -1460,12 +1459,11 @@ class CanaParse:
                         text(brand_name)
 
             # Category
-            with tag("td"):
-                with tag(
-                    "span",
-                    style="background: rgba(0, 212, 255, 0.1); color: var(--secondary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;",
-                ):
-                    text(category_name)
+            with tag("td"), tag(
+                "span",
+                style="background: rgba(0, 212, 255, 0.1); color: var(--secondary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;",
+            ):
+                text(category_name)
 
             # THC
             thc_val = self.extract_thc(row)
