@@ -21,7 +21,8 @@ class OptimizedDataProcessor:
         self, all_menu_items: dict[str, list[dict]]
     ) -> list[dict[str, Any]]:
         """
-        Process all menu items with optimized flattening.
+        Process all menu items with optimized flattening using pure Python
+        to avoid Pandas DataFrame object allocation overhead.
 
         Args:
             all_menu_items: Dictionary mapping location IDs to lists of menu items
@@ -29,26 +30,9 @@ class OptimizedDataProcessor:
         Returns:
             List of flattened dictionaries ready for CSV export
         """
-        logger.info("Starting optimized data processing...")
+        logger.info("Starting optimized data processing (pure Python)...")
 
-        # Convert to DataFrame for batch processing
-        flat_items = self._flatten_all_items(all_menu_items)
-
-        # Normalize and clean data
-        normalized_data = self._normalize_data(flat_items)
-
-        # Convert back to list of dictionaries
-        result = normalized_data.to_dict("records")
-
-        logger.info(f"Processed {len(result)} menu items")
-        return result
-
-    def _flatten_all_items(self, all_menu_items: dict[str, list[dict]]) -> pd.DataFrame:
-        """
-        Flatten all menu items using pandas json_normalize for efficiency.
-        """
-        # Collect all items with location info
-        # Using list comprehension for initialization performance
+        # 1. Flatten all items with location info directly
         items_with_location = [
             {**item, "_location_id": location_id}
             for location_id, items in all_menu_items.items()
@@ -56,93 +40,53 @@ class OptimizedDataProcessor:
         ]
 
         if not items_with_location:
-            return pd.DataFrame()
+            return []
 
-        # Use pandas json_normalize for efficient flattening
-        try:
-            df = pd.json_normalize(items_with_location, sep=".")
-
-            # Handle any remaining nested structures
-            df = self._handle_remaining_nesting(df)
-
-            return df
-        except Exception as e:
-            logger.warning(
-                f"Pandas normalization failed, falling back to custom method: {e}"
-            )
-            return self._fallback_flattening(items_with_location)
-
-    def _handle_remaining_nesting(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Handle any remaining nested structures that json_normalize couldn't flatten.
-        """
-        # Identify columns that still contain nested data
-        nested_columns = []
-        for col in df.columns:
-            # Check if any value in column is a dict or list
-            # Avoid O(N) dropna() by using first_valid_index
-            if df[col].dtype == "object":
-                first_idx = df[col].first_valid_index()
-                if first_idx is not None:
-                    val = df[col].loc[first_idx]
-                    if isinstance(val, pd.Series):
-                        # Avoid full dropna() operation on Series by using first_valid_index again
-                        series_first_idx = val.first_valid_index()
-                        if series_first_idx is not None:
-                            val = val.loc[series_first_idx]
-                        else:
-                            continue
-                    if isinstance(val, (dict, list)):
-                        nested_columns.append(col)
-
-        # Bind types and methods locally to reduce global lookup overhead in loop
-        # This provides a 10-15% performance improvement in tight stringification loops
-        _dumps = json.dumps
-        _isinstance = isinstance
-        _dict = dict
-        _list = list
-        _str = str
-
-        # Flatten nested columns
-        for col in nested_columns:
-            try:
-                # Convert to string representation for nested data
-                # Using list comprehension and local bindings for performance
-                df[col] = [
-                    _dumps(x) if x and _isinstance(x, (_dict, _list)) else _str(x)
-                    for x in df[col]
-                ]
-            except Exception as e:
-                logger.warning(f"Failed to flatten column {col}: {e}")
-                df[col] = df[col].astype(str)
-
-        return df
-
-    def _fallback_flattening(self, items: list[dict]) -> pd.DataFrame:
-        """
-        Fallback to custom flattening if pandas fails.
-        """
-        logger.info("Using fallback flattening method")
-
-        # Process in parallel batches
+        # 2. Flatten nested dictionaries/lists in batches for parallelism
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = []
-            batch_size = max(1, len(items) // self.max_workers)
+            batch_size = max(1, len(items_with_location) // self.max_workers)
 
-            for i in range(0, len(items), batch_size):
-                batch = items[i : i + batch_size]
+            for i in range(0, len(items_with_location), batch_size):
+                batch = items_with_location[i : i + batch_size]
                 future = executor.submit(self._flatten_batch, batch)
                 futures.append(future)
 
-            # Collect results
-            flattened_batches = [future.result() for future in futures]
+            flat_items = []
+            for future in futures:
+                flat_items.extend(future.result())
 
-        # Combine all batches
-        all_flattened = []
-        for batch in flattened_batches:
-            all_flattened.extend(batch)
+        # 3. Get all unique keys safely without dictionary update overhead
+        all_keys = set().union(*(item.keys() for item in flat_items))
+        sorted_keys = sorted(all_keys)
 
-        return pd.DataFrame(all_flattened)
+        # 4. Normalize and ensure consistent keys
+        result = []
+        for item in flat_items:
+            normalized_item = {}
+            for k in sorted_keys:
+                v = item.get(k, "None")
+                if v is None or v == "":
+                    v = "None"
+
+                # Replicate numeric string coercion for specific keys
+                if "price" in k.lower() or "amount" in k.lower() or "thc" in k.lower():
+                    if isinstance(v, (int, float)):
+                        pass
+                    elif isinstance(v, str) and v != "None":
+                        try:
+                            v_float = float(v)
+                            v = int(v_float) if v_float.is_integer() else v_float
+                        except ValueError:
+                            pass
+                elif type(v) is bool:
+                    v = str(v)
+
+                normalized_item[k] = v
+            result.append(normalized_item)
+
+        logger.info(f"Processed {len(result)} menu items")
+        return result
 
     def _flatten_batch(self, batch: list[dict]) -> list[dict]:
         """
@@ -167,61 +111,35 @@ class OptimizedDataProcessor:
         _list = list
         _dumps = json.dumps
         _isinstance = isinstance
-        _str = str
 
         while stack:
             for k, v in stack[-1]:
                 key = ".".join(keys + [k]) if keys else k
 
                 if _isinstance(v, _dict):
-                    keys.append(k)
-                    stack.append(iter(v.items()))
-                    break
+                    if not v:
+                        result[key] = "None"
+                    else:
+                        keys.append(k)
+                        stack.append(iter(v.items()))
+                        break
                 elif _isinstance(v, _list):
                     if v and _isinstance(v[0], _dict):
-                        if len(v) == 1:
-                            for sub_k, sub_v in v[0].items():
-                                result[f"{k}.{sub_k}"] = sub_v
-                        else:
-                            result[key] = _dumps(v)
+                        result[key] = _dumps(v)
                     else:
-                        result[key] = _str(v) if v else "None"
-                elif v is None:
+                        if v == []:
+                            result[key] = "[]"
+                        else:
+                            result[key] = _dumps(v) if v else "None"
+                elif v is None or (hasattr(pd, "NA") and v is pd.NA):
+                    result[key] = "None"
+                elif v == "":
                     result[key] = "None"
                 else:
-                    result[key] = _str(v)
+                    result[key] = v
             else:
                 if len(stack) > 1:
                     keys.pop()
                 stack.pop()
 
         return result
-
-    def _normalize_data(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Normalize and clean the flattened data.
-        """
-        if df.empty:
-            return df
-
-        # Ensure all columns are present and fill missing values
-        df = df.fillna("None")
-
-        # Convert data types where possible
-        for col in df.columns:
-            # Try to convert to numeric where possible. Carefully constrain to avoid coercing string IDs.
-            if (
-                "price" in col.lower()
-                or "amount" in col.lower()
-                or "thc" in col.lower()
-            ):
-                original_col = df[col]
-                numeric_col = pd.to_numeric(original_col, errors="coerce")
-                df[col] = numeric_col.where(numeric_col.notna(), original_col)
-
-        # Sort columns for consistency
-        # Avoid .reindex() which is slow on large dataframes
-        sorted_cols = sorted(df.columns)
-        df = df[sorted_cols]
-
-        return df
