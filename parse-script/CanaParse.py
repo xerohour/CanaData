@@ -1435,7 +1435,8 @@ class CanaParse:
                         doc.stag(
                             "img",
                             src=safe_img_url,
-                            alt=prod_name,
+                            alt="",
+                            **{"aria-hidden": "true"},
                             klass="img-thumbnail",
                             onerror="this.src='https://images.weedmaps.com/static/avatar/dispensary.png';",
                         )
