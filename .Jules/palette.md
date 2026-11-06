@@ -19,3 +19,6 @@
 ## 2024-08-04 - Dynamic Table Accessibility enhancements
 **Learning:** Adding dynamic aria-sort and aria-live properties significantly boosts the UX for screen reader users on interactive tables.
 **Action:** Always inject aria-sort (none/ascending/descending) on sortable table headers and add aria-live='polite' to dynamic status updates like pagination text and empty state messages.
+## 2026-08-01 - Global Keyboard Shortcuts
+**Learning:** Adding a keyboard shortcut indicator without actual `aria-keyshortcuts` creates an inconsistent experience for screen reader users who expect native semantic support for global key bindings.
+**Action:** Always pair visual keyboard shortcut hints (like "Press /") with the `aria-keyshortcuts="/"` attribute on the target input element, and include a `title` on the visual hint for sighted users.

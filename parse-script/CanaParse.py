@@ -84,7 +84,9 @@ class CanaParse:
         self.csv_file = csv_file or os.getenv("CSV_FILE", "colorado_results.csv")
         self.csv_folder = csv_folder or os.getenv(
             "CSV_FOLDER",
-            os.path.join(base_dir, f"CanaData_{datetime.now(tz=UTC).strftime('%m-%d-%Y')}"),
+            os.path.join(
+                base_dir, f"CanaData_{datetime.now(tz=UTC).strftime('%m-%d-%Y')}"
+            ),
         )
         self.no_filter = no_filter
         self.filters = []
@@ -497,21 +499,33 @@ class CanaParse:
                 ):
                     self._generate_navbar(doc, tag, text)
                     # Global Search Bar
-                    with tag("div", klass="search-container"), tag("div", style="position: relative; width: 100%; max-width: 600px;"):
-                            doc.stag(
-                                "input",
-                                (
-                                    "aria-label",
-                                    "Search products, brands, categories, or dispensaries",
-                                ),
-                                type="text",
-                                id="global-search",
-                                placeholder="🔍 Search products, brands, categories, or dispensaries...",
-                                klass="search-input",
-                                style="max-width: 100%;"
-                            )
-                            with tag("div", klass="search-shortcut", **{"aria-hidden": "true"}):
-                                text("/")
+                    with (
+                        tag("div", klass="search-container"),
+                        tag(
+                            "div",
+                            style="position: relative; width: 100%; max-width: 600px;",
+                        ),
+                    ):
+                        doc.stag(
+                            "input",
+                            (
+                                "aria-label",
+                                "Search products, brands, categories, or dispensaries",
+                            ),
+                            ("aria-keyshortcuts", "/"),
+                            type="text",
+                            id="global-search",
+                            placeholder="🔍 Search products, brands, categories, or dispensaries...",
+                            klass="search-input",
+                            style="max-width: 100%;",
+                        )
+                        with tag(
+                            "div",
+                            klass="search-shortcut",
+                            title="Press / to focus search",
+                            **{"aria-hidden": "true"},
+                        ):
+                            text("/")
                     for i, f in enumerate(self.filters):
                         self._generate_filter_section(doc, tag, text, i, f)
                     self._generate_footer(doc, tag, text)
@@ -1102,8 +1116,8 @@ class CanaParse:
                     var nextBtn = $('<button class="btn btn-secondary" aria-label="Next page" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Next</button>');
                     var info = $('<span aria-live="polite" style="color: var(--text-muted); font-size: 0.9rem;">Showing ' + (start + 1) + '-' + Math.min(end, totalRows) + ' of ' + totalRows + '</span>');
                     
-                    if (page === 1) prevBtn.prop('disabled', true).attr('aria-disabled', 'true').css({'opacity': 0.5, 'cursor': 'not-allowed'});
-                    if (page === totalPages) nextBtn.prop('disabled', true).attr('aria-disabled', 'true').css({'opacity': 0.5, 'cursor': 'not-allowed'});
+                    if (page === 1) prevBtn.prop('disabled', true).attr('aria-disabled', 'true').attr('title', 'Already on first page').css({'opacity': 0.5, 'cursor': 'not-allowed'});
+                    if (page === totalPages) nextBtn.prop('disabled', true).attr('aria-disabled', 'true').attr('title', 'Already on last page').css({'opacity': 0.5, 'cursor': 'not-allowed'});
                     
                     prevBtn.on('click', function() {
                         currentPages[id]--;
@@ -1460,9 +1474,12 @@ class CanaParse:
                         text(brand_name)
 
             # Category
-            with tag("td"), tag(
-                "span",
-                style="background: rgba(0, 212, 255, 0.1); color: var(--secondary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;",
+            with (
+                tag("td"),
+                tag(
+                    "span",
+                    style="background: rgba(0, 212, 255, 0.1); color: var(--secondary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;",
+                ),
             ):
                 text(category_name)
 
