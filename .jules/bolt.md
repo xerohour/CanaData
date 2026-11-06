@@ -18,3 +18,7 @@
 ## 2026-11-02 - Remove Global Lock Contention in Menu Item Processing
 **Learning:** Using a global threading lock (`_menu_data_lock`) to append items to a shared list when running highly concurrent requests (like ThreadPoolExecutor in `CanaData.py`) completely eliminates the benefits of multiprocessing, forcing the application into sequential behavior at the collection step.
 **Action:** When gathering high-volume network responses concurrently, local processing functions should return their data back to the dispatcher instead of mutating shared state. The dispatcher can then accumulate or batch the returned values (e.g., using `concurrent.futures.as_completed`) without contention, drastically reducing execution latency.
+
+## 2026-11-20 - Pre-compute string checks and optimize dictionary initialization in loops
+**Learning:** Checking string conditions inside loops that iterate over thousands of objects repeatedly creates massive overhead. Furthermore, copying every key-value default iteratively in loops to fill a dict before actual dictionary key matching can cause O(N) operations per item.
+**Action:** When evaluating strings in a large batch of items inside loops, pre-compute combinations of specific key attributes using set unions outside the loop. Use `dict.fromkeys(keys, default_value)` instead of loops for populating defaults before adding values from matching specific items.

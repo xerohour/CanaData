@@ -62,15 +62,28 @@ class OptimizedDataProcessor:
 
         # 4. Normalize and ensure consistent keys
         result = []
+
+        # Pre-compute keys that need coercion to avoid repetitive string matching
+        coercion_keys = {
+            k
+            for k in sorted_keys
+            if "price" in k.lower() or "amount" in k.lower() or "thc" in k.lower()
+        }
+
         for item in flat_items:
-            normalized_item = {}
+            # Initialize with default value "None" for all keys
+            normalized_item = dict.fromkeys(sorted_keys, "None")
+
+            # Update with actual values present in sorted_keys
             for k in sorted_keys:
-                v = item.get(k, "None")
+                if k not in item:
+                    continue
+                v = item[k]
                 if v is None or v == "":
                     v = "None"
 
                 # Replicate numeric string coercion for specific keys
-                if "price" in k.lower() or "amount" in k.lower() or "thc" in k.lower():
+                if k in coercion_keys:
                     if isinstance(v, (int, float)):
                         pass
                     elif isinstance(v, str) and v != "None":
