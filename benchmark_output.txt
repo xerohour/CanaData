@@ -1,0 +1,45 @@
+Running flattening benchmark...
+Flattening took 0.0015s
+         2340 function calls (2338 primitive calls) in 0.002 seconds
+
+   Ordered by: cumulative time
+   List reduced from 81 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.002    0.002 /app/performance_tests/benchmark_canadata.py:20(run_flatten_benchmark)
+        5    0.001    0.000    0.001    0.000 /app/CanaData.py:846(flatten_dictionary)
+        1    0.000    0.000    0.001    0.001 /app/CanaData.py:74(__init__)
+        2    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/sessions.py:442(__init__)
+        1    0.000    0.000    0.000    0.000 /app/cache_manager.py:21(__init__)
+      740    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:1306(mkdir)
+        1    0.000    0.000    0.000    0.000 {built-in method posix.mkdir}
+      317    0.000    0.000    0.000    0.000 {method 'join' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:447(__fspath__)
+        4    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/adapters.py:201(__init__)
+        2    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:437(__str__)
+        1    0.000    0.000    0.000    0.000 /app/cached_api_client.py:15(__init__)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:551(drive)
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:407(_load_parts)
+      420    0.000    0.000    0.000    0.000 {method 'pop' of 'list' objects}
+        1    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pathlib.py:387(_parse_path)
+      416    0.000    0.000    0.000    0.000 {method 'append' of 'list' objects}
+        2    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/utils.py:951(default_headers)
+        2    0.000    0.000    0.000    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/requests/structures.py:49(__init__)
+
+
+
+Running memory benchmark...
+Filename: /app/performance_tests/benchmark_canadata.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    28     97.3 MiB     97.3 MiB           1   @profile
+    29                                         def run_memory_benchmark():
+    30     97.3 MiB      0.0 MiB           1       scraper = CanaData()
+    31                                             # add a bunch of items to self.allMenuItems
+    32     97.3 MiB      0.0 MiB           1       items = mock_data.get("data", {}).get("products", []) * 10  # duplicate for scale
+    33     97.3 MiB      0.0 MiB           1       scraper.allMenuItems["test-listing"] = items
+    34
+    35                                             # Process
+    36     97.4 MiB      0.1 MiB           1       scraper.organize_into_clean_list()
