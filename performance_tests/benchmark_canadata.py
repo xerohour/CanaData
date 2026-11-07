@@ -20,7 +20,7 @@ mock_location = {"slug": "test-slug", "name": "Test Location", "type": "dispensa
 def run_flatten_benchmark():
     scraper = CanaData()
     start_time = time.time()
-    for item in mock_data.get("data", {}).get("menu_items", []):
+    for item in mock_data.get("data", {}).get("products", []):
         scraper.flatten_dictionary(item)
     print(f"Flattening took {time.time() - start_time:.4f}s")
 
@@ -29,7 +29,7 @@ def run_flatten_benchmark():
 def run_memory_benchmark():
     scraper = CanaData()
     # add a bunch of items to self.allMenuItems
-    items = mock_data.get("data", {}).get("menu_items", []) * 10  # duplicate for scale
+    items = mock_data.get("data", {}).get("products", []) * 10  # duplicate for scale
     scraper.allMenuItems["test-listing"] = items
 
     # Process
