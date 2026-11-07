@@ -413,7 +413,10 @@ def generate_html_report(data, region_name="Colorado"):
                     </div>
                     <div class="footer-actions">
                         <span style="font-size: 0.8rem; color: var(--text-muted)">{html.escape(str(item.get("license_type", "Recreational")))}</span>
-                        <a href="{html.escape(str(item.get("web_url") or "#") if is_safe_url(item.get("web_url") or "#") else "#")}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get("name", "")))} on Weedmaps" class="btn btn-primary">View on Weedmaps</a>
+                        <a href="{html.escape(str(item.get("web_url") or "#") if is_safe_url(item.get("web_url") or "#") else "#")}" target="_blank" rel="noopener noreferrer" aria-label="View {html.escape(str(item.get("name", "")))} on Weedmaps (opens in a new tab)" class="btn btn-primary">
+                            View on Weedmaps
+                            <svg aria-hidden="true" focusable="false" style="width: 14px; height: 14px; margin-left: 4px; vertical-align: -2px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                        </a>
                     </div>
                 </div>
         """
