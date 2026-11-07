@@ -980,7 +980,10 @@ class CanaParse:
                 // Product Name & Brand
                 var prodTd = $('<td data-label="Product"></td>');
                 var prodLink = $('<a target="_blank" style="font-weight: 600; display: block; margin-bottom: 4px;"></a>')
-                    .attr('href', item.url || '#').text(item.name || 'N/A');
+                    .attr('href', item.url || '#')
+                    .attr('aria-label', (item.name || 'N/A') + ' (opens in a new tab)')
+                    .text(item.name || 'N/A')
+                    .append('<svg aria-hidden="true" focusable="false" style="width: 14px; height: 14px; margin-left: 4px; vertical-align: -2px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>');
                 prodTd.append(prodLink);
                 if (item.brand) {
                     var brandSpan = $('<span style="font-size: 0.8rem; color: var(--text-muted);"></span>').text(item.brand);
@@ -1464,9 +1467,11 @@ class CanaParse:
                     "a",
                     href=safe_url,
                     target="_blank",
+                    **{"aria-label": f"{prod_name} (opens in a new tab)"},
                     style="font-weight: 600; display: block; margin-bottom: 4px;",
                 ):
                     text(prod_name)
+                    doc.asis('<svg aria-hidden="true" focusable="false" style="width: 14px; height: 14px; margin-left: 4px; vertical-align: -2px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>')
                 if brand_name:
                     with tag(
                         "span", style="font-size: 0.8rem; color: var(--text-muted);"
