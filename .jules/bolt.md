@@ -22,3 +22,7 @@
 ## 2026-11-20 - Pre-compute string checks and optimize dictionary initialization in loops
 **Learning:** Checking string conditions inside loops that iterate over thousands of objects repeatedly creates massive overhead. Furthermore, copying every key-value default iteratively in loops to fill a dict before actual dictionary key matching can cause O(N) operations per item.
 **Action:** When evaluating strings in a large batch of items inside loops, pre-compute combinations of specific key attributes using set unions outside the loop. Use `dict.fromkeys(keys, default_value)` instead of loops for populating defaults before adding values from matching specific items.
+
+## 2024-05-18 - O(1) Cache Eviction Optimization
+**Learning:** In `CacheManager`, the LRU eviction method `_prune_memory_cache` used `min()` on the dictionary keys with a lambda checking timestamps, making it an O(N) operation. When the cache hits its size limit (e.g., 1000 items), every subsequent insert triggers an O(N) scan.
+**Action:** Since Python 3.7+ dictionaries maintain insertion order, implement an O(1) LRU eviction by popping the first item using `next(iter(dict))`. We must ensure accessed items are moved to the end by removing and re-inserting them on hits.
