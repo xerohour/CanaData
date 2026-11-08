@@ -4,3 +4,7 @@
 ## 2026-11-02 - Semantic Landmarks and Redundant Image Announcements
 **Learning:** When images immediately precede text containing the exact same information (like a product name or avatar next to a heading), screen readers will redundantly read the text twice. Additionally, screen readers need semantic HTML5 landmarks like `<main>` to navigate effectively.
 **Action:** Use `alt="" aria-hidden="true"` on redundant images when the adjacent text already provides the context, and always wrap the primary content of a page in a `<main>` tag instead of a generic `<div id="main-content">`.
+
+## 2026-11-07 - Accessible External Links
+**Learning:** External links (`target="_blank"`) without visual indicators or accessible names confuse users, particularly screen reader users, when the link abruptly opens a new tab.
+**Action:** Always append `(opens in a new tab)` to the `aria-label` or accessible name of an external link, and provide a visual indicator (like an SVG icon) to prepare sighted users.
