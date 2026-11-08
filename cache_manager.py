@@ -68,6 +68,9 @@ class CacheManager:
             if time.time() - entry["timestamp"] < self.memory_cache_ttl:
                 self.stats["memory_hits"] += 1
                 entry["timestamp"] = time.time()
+
+                # Move to end to maintain LRU order (Python 3.7+ dicts preserve insertion order)
+                self.memory_cache[cache_key] = self.memory_cache.pop(cache_key)
                 logger.debug(f"Memory cache hit for {url}")
                 return entry["data"]
             else:
@@ -97,6 +100,9 @@ class CacheManager:
         """Store data in cache"""
         cache_key = self._generate_cache_key(url, params)
 
+        # Remove existing to move it to the end (maintaining LRU order)
+        self.memory_cache.pop(cache_key, None)
+
         # Store in memory cache
         self.memory_cache[cache_key] = {"data": data, "timestamp": time.time()}
         self._prune_memory_cache()
@@ -108,9 +114,8 @@ class CacheManager:
     def _prune_memory_cache(self) -> None:
         """Enforce memory cache size using oldest-entry eviction."""
         while len(self.memory_cache) > self.memory_cache_size:
-            oldest_key = min(
-                self.memory_cache, key=lambda key: self.memory_cache[key]["timestamp"]
-            )
+            # O(1) eviction by popping the first item (oldest inserted)
+            oldest_key = next(iter(self.memory_cache))
             self.memory_cache.pop(oldest_key, None)
 
     def _get_from_disk(self, cache_key: str) -> Any | None:
