@@ -47,6 +47,7 @@ class FlowerFilter:
         self.thc_floor_strict = False
         self.cbd_floor_strict = False
         self.terpenes = []
+        self._lowercased = False
 
         if filter_data:
             self.load_from_dict(filter_data)
@@ -60,18 +61,19 @@ class FlowerFilter:
         self.key = str(data.get("key", ""))
         self.compare = str(data.get("compare", ""))
         self.price = float(data.get("price", 0.0))
-        self.categories = data.get("categories", [])
-        self.brands = data.get("brands", [])
-        self.stores = data.get("stores", [])
-        self.strains = data.get("strains", [])
-        self.bad_words = data.get("bad_words", [])
-        self.good_words = data.get("good_words", [])
+        self.categories = [c.lower() for c in data.get("categories", [])]
+        self.brands = [b.lower() for b in data.get("brands", [])]
+        self.stores = [s.lower() for s in data.get("stores", [])]
+        self.strains = [s.lower() for s in data.get("strains", [])]
+        self.bad_words = [w.lower() for w in data.get("bad_words", [])]
+        self.good_words = [w.lower() for w in data.get("good_words", [])]
         self.priority_words = data.get("priority_words", [])
         self.thc_floor = int(data.get("thc_floor", 0))
         self.cbd_floor = float(data.get("cbd_floor", 0.0))
         self.thc_floor_strict = bool(data.get("thc_floor_strict", False))
         self.cbd_floor_strict = bool(data.get("cbd_floor_strict", False))
         self.terpenes = data.get("terpenes", [])
+        self._lowercased = True
 
 
 class CanaParse:
@@ -230,6 +232,16 @@ class CanaParse:
         self.filtered_tables = []
         for f in self.filters:
             logger.info(f"Filtering for: {f.name}")
+
+            # Ensure filter strings are lowercased to avoid repeated .lower() overhead in is_match
+            if hasattr(f, '_lowercased') and not f._lowercased:
+                f.categories = [c.lower() for c in f.categories]
+                f.brands = [b.lower() for b in f.brands]
+                f.stores = [s.lower() for s in f.stores]
+                f.strains = [s.lower() for s in f.strains]
+                f.bad_words = [w.lower() for w in f.bad_words]
+                f.good_words = [w.lower() for w in f.good_words]
+                f._lowercased = True
 
             # Identify the column key for the price (gram, eighth, etc.)
             price_col = f.key
@@ -397,33 +409,33 @@ class CanaParse:
             cat_val = (
                 str(row[cat_idx]).lower() if cat_idx >= 0 and cat_idx < len(row) else ""
             )
-            if cat_val not in [c.lower() for c in f.categories]:
+            if cat_val not in f.categories:
                 return False
 
         # 3. Join row for word-based searches
         row_str = " ".join([str(x) for x in row]).lower()
 
         # 4. Brands
-        if f.brands and not any(brand.lower() in row_str for brand in f.brands):
+        if f.brands and not any(brand in row_str for brand in f.brands):
             return False
 
         # 5. Strains
-        if f.strains and not any(strain.lower() in row_str for strain in f.strains):
+        if f.strains and not any(strain in row_str for strain in f.strains):
             return False
 
         # 6. Stores
         if f.stores:
             loc_id = str(row[0]) if len(row) > 0 else ""
             dispensary_name = self.listings_map.get(loc_id, "").lower()
-            if not any(store.lower() in dispensary_name for store in f.stores):
+            if not any(store in dispensary_name for store in f.stores):
                 return False
 
         # 7. Bad Words (Exclusion)
-        if f.bad_words and any(word.lower() in row_str for word in f.bad_words):
+        if f.bad_words and any(word in row_str for word in f.bad_words):
             return False
 
         # 8. Good Words (Required)
-        if f.good_words and not any(word.lower() in row_str for word in f.good_words):
+        if f.good_words and not any(word in row_str for word in f.good_words):
             return False
 
         # 9. THC Floor
