@@ -1384,7 +1384,7 @@ class CanaParse:
                     headers.extend(["Dispensary", "City", "Details"])
 
                     for label in headers:
-                        with tag("th"):
+                        with tag("th", scope="col"):
                             text(label)
 
                 with tag("tbody"):
