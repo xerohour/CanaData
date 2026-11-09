@@ -8,3 +8,6 @@
 ## 2026-11-07 - Accessible External Links
 **Learning:** External links (`target="_blank"`) without visual indicators or accessible names confuse users, particularly screen reader users, when the link abruptly opens a new tab.
 **Action:** Always append `(opens in a new tab)` to the `aria-label` or accessible name of an external link, and provide a visual indicator (like an SVG icon) to prepare sighted users.
+## 2026-11-25 - Dynamic DOM Accessibility & Decorative Emojis Fix
+**Learning:** Purely decorative emojis in empty states need `<span aria-hidden="true">` to prevent screen reader noise. When using client-side JavaScript to mutate tables dynamically (filtering/sorting/pagination), binding to `keyup` is unreliable.
+**Action:** Changed the global search event listener from `keyup` to `input` to ensure it responds immediately to drag-and-drop operations, context-menu pasting, and clearing the input with native browser `type="search"` clear buttons. Also implemented an accessible and visually distinct empty state container with an icon and helper text when zero results are found.

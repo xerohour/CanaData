@@ -7,7 +7,6 @@ import psutil
 import pytest
 
 from CanaData import CanaData
-from cache_manager import CacheManager
 from optimized_data_processor import OptimizedDataProcessor
 
 def load_sample_data():
