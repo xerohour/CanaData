@@ -74,11 +74,10 @@ class OptimizedDataProcessor:
             # Initialize with default value "None" for all keys
             normalized_item = dict.fromkeys(sorted_keys, "None")
 
-            # Update with actual values present in sorted_keys
-            for k in sorted_keys:
-                if k not in item:
-                    continue
-                v = item[k]
+            # ⚡ Bolt Optimization: Iterate over item.items() which is O(K) where K is actual keys,
+            # rather than sorted_keys which is O(N) where N is all unique keys in dataset.
+            # Reduces redundant lookups for keys missing in the current item.
+            for k, v in item.items():
                 if v is None or v == "":
                     v = "None"
 
