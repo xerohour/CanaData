@@ -1,36 +1,36 @@
-         625586 function calls (547335 primitive calls) in 0.553 seconds
+         438576 function calls (437693 primitive calls) in 0.372 seconds
 
    Ordered by: cumulative time
-   List reduced from 619 to 30 due to restriction <30>
+   List reduced from 135 to 30 due to restriction <30>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-        1    0.003    0.003    0.552    0.552 /app/profile_system.py:12(profile_target)
-        5    0.000    0.000    0.549    0.110 /app/optimized_data_processor.py:20(process_menu_data)
-        5    0.001    0.000    0.208    0.042 /app/optimized_data_processor.py:46(_flatten_all_items)
-        5    0.002    0.000    0.171    0.034 /app/optimized_data_processor.py:195(_normalize_data)
-        5    0.000    0.000    0.170    0.034 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:1945(to_dict)
-        5    0.041    0.008    0.169    0.034 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/methods/to_dict.py:101(to_dict)
-        5    0.002    0.000    0.154    0.031 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:302(json_normalize)
-   1255/5    0.002    0.000    0.115    0.023 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:218(_simple_json_normalize)
-     1250    0.015    0.000    0.113    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:193(_normalize_json_ordered)
-75000/1250    0.072    0.000    0.090    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/io/json/_normalize.py:152(_normalize_json)
-       80    0.001    0.000    0.058    0.001 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/generic.py:10557(where)
-       80    0.002    0.000    0.058    0.001 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/generic.py:10331(_where)
-216266/215296    0.046    0.000    0.056    0.000 {built-in method builtins.isinstance}
-      535    0.005    0.000    0.054    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/internals/managers.py:410(apply)
-        5    0.004    0.001    0.053    0.011 /app/optimized_data_processor.py:75(_handle_remaining_nesting)
-      480    0.002    0.000    0.050    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/indexing.py:1327(__getitem__)
-    45000    0.039    0.000    0.050    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/dtypes/cast.py:166(maybe_box_native)
-        5    0.000    0.000    0.044    0.009 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:1376(itertuples)
-      150    0.000    0.000    0.042    0.000 {method 'extend' of 'list' objects}
-      315    0.001    0.000    0.042    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:1450(<genexpr>)
-        5    0.000    0.000    0.037    0.007 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:466(__init__)
-    30440    0.009    0.000    0.034    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/arrays/base.py:584(__iter__)
-      310    0.001    0.000    0.033    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/indexing.py:2369(_getitem_tuple)
-       80    0.020    0.000    0.030    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/tools/numeric.py:50(to_numeric)
-        5    0.000    0.000    0.029    0.006 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:6507(reindex)
-        5    0.000    0.000    0.029    0.006 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/generic.py:5275(reindex)
-        5    0.000    0.000    0.029    0.006 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/generic.py:5548(_reindex_axes)
-      770    0.003    0.000    0.029    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/frame.py:4239(_ixs)
-       80    0.000    0.000    0.028    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/internals/managers.py:479(where)
-    31100    0.024    0.000    0.028    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/pandas/core/arrays/_mixins.py:385(__getitem__)
+       17    0.000    0.000    0.441    0.026 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:1117(join)
+       17    0.000    0.000    0.440    0.026 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:1155(_wait_for_tstate_lock)
+  221/165    0.004    0.000    0.434    0.003 {method 'acquire' of '_thread.lock' objects}
+        1    0.003    0.003    0.372    0.372 /app/profile_system.py:12(profile_target)
+        5    0.052    0.010    0.368    0.074 /app/optimized_data_processor.py:20(process_menu_data)
+       40    0.002    0.000    0.302    0.008 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:323(wait)
+        5    0.000    0.000    0.294    0.059 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/_base.py:646(__exit__)
+        5    0.000    0.000    0.294    0.059 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/thread.py:220(shutdown)
+     17/5    0.001    0.000    0.292    0.058 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:1018(_bootstrap)
+     17/5    0.000    0.000    0.291    0.058 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:1058(_bootstrap_inner)
+     17/5    0.000    0.000    0.213    0.043 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:1001(run)
+     17/5    0.000    0.000    0.212    0.042 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/thread.py:70(_worker)
+     22/5    0.002    0.000    0.212    0.042 {method 'get' of '_queue.SimpleQueue' objects}
+       25    0.001    0.000    0.205    0.008 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/thread.py:165(submit)
+       25    0.000    0.000    0.203    0.008 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/thread.py:184(_adjust_thread_count)
+       17    0.001    0.000    0.199    0.012 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:975(start)
+       17    0.000    0.000    0.198    0.012 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/threading.py:637(wait)
+ 1250/612    0.150    0.000    0.134    0.000 /app/optimized_data_processor.py:113(_flatten_dictionary_custom)
+       25    0.000    0.000    0.110    0.004 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/_base.py:428(result)
+     25/8    0.000    0.000    0.098    0.012 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/thread.py:54(run)
+     25/8    0.001    0.000    0.098    0.012 /app/optimized_data_processor.py:103(_flatten_batch)
+   203253    0.045    0.000    0.045    0.000 {built-in method builtins.isinstance}
+    69000    0.027    0.000    0.027    0.000 {method 'join' of 'str' objects}
+1500/1469    0.001    0.000    0.021    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/json/__init__.py:183(dumps)
+1500/1469    0.004    0.000    0.019    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/json/encoder.py:183(encode)
+    64141    0.015    0.000    0.015    0.000 {built-in method builtins.hasattr}
+1500/1472    0.011    0.000    0.010    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/json/encoder.py:205(iterencode)
+    25025    0.008    0.000    0.008    0.000 {method 'append' of 'list' objects}
+    23750    0.008    0.000    0.008    0.000 {method 'pop' of 'list' objects}
+     1250    0.006    0.000    0.006    0.000 {built-in method fromkeys}
