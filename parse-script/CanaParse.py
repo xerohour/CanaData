@@ -1096,7 +1096,7 @@ class CanaParse:
                 if (totalRows === 0) {
                     container.find('.table-container').hide();
                     if (container.find('.no-match-msg').length === 0) {
-                        container.append('<p class="no-match-msg" aria-live="polite" style="color: var(--text-muted); padding: 1rem;">No matching items found in this section.</p>');
+                        container.append('<div class="empty-state no-match-msg" aria-live="polite" style="text-align: center; padding: 4rem 2rem; background: var(--glass); border-radius: 20px; border: 1px dashed var(--glass-border);"><div class="empty-state-icon" aria-hidden="true" style="font-size: 3rem; margin-bottom: 1rem;">🏜️</div><h3 style="margin-bottom: 0.5rem; font-size: 1.5rem;">No Results Found</h3><p style="color: var(--text-muted);">We could not find any items matching your search criteria in this section.</p><p class="helper-text" style="font-size: 0.9rem; margin-top: 0.5rem; color: var(--text-muted);">Try adjusting your search terms or clearing the filter.</p></div>');
                     } else {
                         container.find('.no-match-msg').show();
                     }
@@ -1193,7 +1193,7 @@ class CanaParse:
             });
 
             // Global search
-            $('#global-search').on('keyup', function() {
+            $('#global-search').on('input', function() {
                 var val = $(this).val();
                 $.each(sections, function(id, data) {
                     activeFilters[id] = val;
