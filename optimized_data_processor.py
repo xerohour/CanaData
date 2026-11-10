@@ -70,9 +70,11 @@ class OptimizedDataProcessor:
             if "price" in k.lower() or "amount" in k.lower() or "thc" in k.lower()
         }
 
+        template_dict = dict.fromkeys(sorted_keys, "None")
+
         for item in flat_items:
             # Initialize with default value "None" for all keys
-            normalized_item = dict.fromkeys(sorted_keys, "None")
+            normalized_item = template_dict.copy()
 
             # ⚡ Bolt Optimization: Iterate over item.items() which is O(K) where K is actual keys,
             # rather than sorted_keys which is O(N) where N is all unique keys in dataset.
