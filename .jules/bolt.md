@@ -29,3 +29,7 @@
 ## 2026-11-08 - Pre-compute lowercase string lists in FlowerFilter
 **Learning:** Checking string conditions inside list comprehensions that iterate over hundreds of thousands of objects repeatedly creates massive overhead by repeatedly calling `.lower()`.
 **Action:** When filtering rows based on categories, brands, stores, strains, and keywords, pre-compute the lowercase string evaluations during `FlowerFilter` load time rather than during inner-loop evaluation in `is_match`. By converting array parameters to lowercase once, execution latency drops from ~0.4s to ~0.05s.
+
+## 2024-05-18 - Dictionary Initialization Iteration
+**Learning:** In OptimizedDataProcessor, iterating over `sorted_keys` and checking `if k not in item` is surprisingly much slower than simply iterating over `item.items()` when building a default-initialized dictionary, because most keys in `sorted_keys` are not present in a given item, causing unnecessary string matching and O(1) miss lookups in a tight loop.
+**Action:** Replace `for k in sorted_keys: if k not in item: continue; v = item[k]` with `for k, v in item.items():` for faster dictionary population, followed by checking coercions.
