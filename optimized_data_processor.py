@@ -70,9 +70,14 @@ class OptimizedDataProcessor:
             if "price" in k.lower() or "amount" in k.lower() or "thc" in k.lower()
         }
 
+        # ⚡ Bolt Optimization: Pre-compute the template dictionary and use .copy()
+        # instead of dict.fromkeys() inside the loop. This reduces dictionary allocation
+        # overhead and speeds up flattening processing significantly.
+        template_dict = dict.fromkeys(sorted_keys, "None")
+
         for item in flat_items:
             # Initialize with default value "None" for all keys
-            normalized_item = dict.fromkeys(sorted_keys, "None")
+            normalized_item = template_dict.copy()
 
             # ⚡ Bolt Optimization: Iterate over item.items() which is O(K) where K is actual keys,
             # rather than sorted_keys which is O(N) where N is all unique keys in dataset.

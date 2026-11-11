@@ -33,3 +33,7 @@
 ## 2024-05-18 - Dictionary Initialization Iteration
 **Learning:** In OptimizedDataProcessor, iterating over `sorted_keys` and checking `if k not in item` is surprisingly much slower than simply iterating over `item.items()` when building a default-initialized dictionary, because most keys in `sorted_keys` are not present in a given item, causing unnecessary string matching and O(1) miss lookups in a tight loop.
 **Action:** Replace `for k in sorted_keys: if k not in item: continue; v = item[k]` with `for k, v in item.items():` for faster dictionary population, followed by checking coercions.
+
+## 2026-11-10 - Optimize dictionary initialization inside processing loop
+**Learning:** Using `dict.fromkeys(keys, default)` inside a tight processing loop requires CPython to repeatedly iterate over the iterable, hash each element, and insert them one by one. Conversely, `dict.copy()` is highly optimized to clone the underlying hash table's memory directly.
+**Action:** When initializing default dictionaries inside a tight loop with identical keys, pre-compute a template dictionary using `dict.fromkeys(keys, default)` outside the loop and use `template.copy()` inside the loop for a significant performance gain.
