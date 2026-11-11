@@ -412,16 +412,26 @@ class CanaParse:
             if cat_val not in f.categories:
                 return False
 
-        # 3. Join row for word-based searches
-        row_str = " ".join([str(x) for x in row]).lower()
+        # 3. Lazy word-based searches
+        needs_row_str = f.brands or f.strains or f.bad_words or f.good_words
+        if needs_row_str:
+            row_str = " ".join([str(x) for x in row]).lower()
 
-        # 4. Brands
-        if f.brands and not any(brand in row_str for brand in f.brands):
-            return False
+            # 4. Brands
+            if f.brands and not any(brand in row_str for brand in f.brands):
+                return False
 
-        # 5. Strains
-        if f.strains and not any(strain in row_str for strain in f.strains):
-            return False
+            # 5. Strains
+            if f.strains and not any(strain in row_str for strain in f.strains):
+                return False
+
+            # 7. Bad Words (Exclusion)
+            if f.bad_words and any(word in row_str for word in f.bad_words):
+                return False
+
+            # 8. Good Words (Required)
+            if f.good_words and not any(word in row_str for word in f.good_words):
+                return False
 
         # 6. Stores
         if f.stores:
@@ -429,14 +439,6 @@ class CanaParse:
             dispensary_name = self.listings_map.get(loc_id, "").lower()
             if not any(store in dispensary_name for store in f.stores):
                 return False
-
-        # 7. Bad Words (Exclusion)
-        if f.bad_words and any(word in row_str for word in f.bad_words):
-            return False
-
-        # 8. Good Words (Required)
-        if f.good_words and not any(word in row_str for word in f.good_words):
-            return False
 
         # 9. THC Floor
         if f.thc_floor > 0:
