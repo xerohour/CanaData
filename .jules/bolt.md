@@ -37,3 +37,7 @@
 ## 2026-11-10 - Optimize dictionary initialization inside processing loop
 **Learning:** Using `dict.fromkeys(keys, default)` inside a tight processing loop requires CPython to repeatedly iterate over the iterable, hash each element, and insert them one by one. Conversely, `dict.copy()` is highly optimized to clone the underlying hash table's memory directly.
 **Action:** When initializing default dictionaries inside a tight loop with identical keys, pre-compute a template dictionary using `dict.fromkeys(keys, default)` outside the loop and use `template.copy()` inside the loop for a significant performance gain.
+
+## 2026-11-11 - Optimize is_match with lazy string evaluation
+**Learning:** Checking word conditions by unconditionally pre-computing `row_str = " ".join([str(x) for x in row]).lower()` creates massive execution overhead, regardless of whether word filters are actually active.
+**Action:** When evaluating keyword filters over large rows, conditionally construct the concatenated search string only if dependent filters are active, and evaluate early-exit conditions (like price/categories) beforehand.
